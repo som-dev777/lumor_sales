@@ -177,3 +177,41 @@ replaces it.
     optional peer of Better Auth's command-line tool, which the app doesn't use.
   - The suggested "fix" downgrades these tools to old, incompatible versions.
 - **Why:** Re-checking at every release is the rule in D-005. Recheck again at v1.1.0.
+
+## D-015: Persona lists come from the PRD (the Base44 spec isn't available)
+
+- **Date:** 2026-10-16 · **Status:** Accepted
+- **Decision:**
+  - The PRD says the full seniority, function and title lists are in
+    `base44-prompt-lumor-sales-hub.md` §6, which isn't in the project. So:
+    - seniority uses the PRD's 8 levels
+    - job titles and tools use the PRD appendix examples
+    - function uses: Research, Insights, Product, Design, CX, Brand, Marketing,
+      Leadership, Consulting
+  - Admins can edit any Official persona.
+  - If the Base44 file is added to docs/, the seed and the function list will be updated
+    from it.
+- **Why:** The owner's choice: start R2 with what the PRD has.
+
+## D-016: No SMB QR persona or account filter in the seed (for now)
+
+- **Date:** 2026-10-16 · **Status:** Accepted. Answers a PRD open question.
+- **Decision:** The seed loads only the PRD's 5 personas and 6 account filters. An Admin can
+  add SMB QR items in the app later.
+- **Why:** The owner's choice: the details aren't decided yet.
+
+## D-017: Library details the PRD leaves open
+
+- **Date:** 2026-10-16 · **Status:** Accepted
+- **Decision:**
+  - The Personal tab shows everyone's Personal items (the PRD lets anyone view and duplicate
+    them), with a "Mine only" switch.
+  - Only the owner edits, archives or deletes a Personal item. Admins manage Official items.
+  - **Reply rate** on persona, filter and template cards = people with a reply ÷ people who
+    accepted the connection request. That's the PRD's Accepted → Replied benchmark step.
+  - Archiving or deleting an item with a pending proposal withdraws it (recorded as Rejected,
+    "Withdrawn by the owner").
+  - Approving an account filter whose code clashes with an Official one is refused until
+    it's renamed.
+- **Why:** These keep ownership simple and make stats comparable with the dashboard
+  benchmarks (R4).

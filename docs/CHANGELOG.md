@@ -7,7 +7,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Nothing yet. R2 (Library) starts next.
+R2 Library, in progress.
+
+- Feature docs written for Personas (F04), Account filters (F05), Templates (F06) and Approvals (F07), with the shared library rules; decisions D-015 to D-017.
 
 ## [1.0.0] - 2026-10-16
 

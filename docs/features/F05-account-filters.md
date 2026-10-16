@@ -1,17 +1,61 @@
 # F05: Account filters
 
-- **Priority:** P0 · **Release:** R2 (v1.1.0) · **Status:** Planned
-- **PRD:** [Screens → Personas and Account Filters; Business rules → Library items; Appendix: seed data](../PRD.md)
+- **Priority:** P0 · **Release:** R2 (v1.1.0) · **Status:** In progress
+- **PRD:** [Screens → Personas and Account Filters](../PRD.md#screens-and-functional-requirements), [Business rules → Library items](../PRD.md#business-rules), [Appendix: seed data](../PRD.md#appendix-seed-data)
 
 ## What it does
 
-Official and Personal account filters (codes A1–A6 seeded), with the same tabs, live stats, actions and archive rules as Personas.
+An account filter is a saved Sales Navigator account search: which companies to look at
+(industry, headcount, HQ, keywords, exclusions) and why they matter. Leads and companies
+point to the filter they came from, so the team can see which account lists convert.
 
-This is a placeholder. The full doc (screens, rules, tests) is written before any code
-for this feature, at the start of R2.
+## Rules
+
+All the **library rules in [F04](F04-personas.md#library-rules-shared-by-personas-account-filters-f05-and-templates-f06)**
+apply: Official/Personal tabs, lock for Users, duplicate, propose, archive-not-delete when in
+use, live stats, audit. Plus:
+
+- **Code** (e.g. A1): required, up to 10 characters. Official codes are unique (the database
+  enforces it). Personal filters may reuse a code. A duplicate's code gets a "-copy" suffix.
+  Approving a proposal whose code clashes with an Official one is refused until the code is
+  changed.
+- Stats count people and companies whose account filter is this one.
+
+## Fields
+
+| Field             | Rules                                                   |
+| ----------------- | ------------------------------------------------------- |
+| Code              | required (A1, A2…), unique among Official               |
+| Name              | required                                                |
+| Industries        | list                                                    |
+| Company headcount | text, e.g. "11–500"                                     |
+| HQ location       | list, default "India"                                   |
+| Key filters       | text (e.g. Sales Navigator keywords or department size) |
+| Exclusions        | text                                                    |
+| Keywords          | text                                                    |
+| Why it matters    | text                                                    |
+
+## Screen: `/account-filters`
+
+Same layout as Personas: tabs, cards with code badge, fields, stats and actions; add/edit
+dialog. Cards are sorted by code.
+
+## Seed data (R2)
+
+The 6 Official filters from the PRD appendix (A1 Research Agencies … A6 Consumer & D2C
+Brands), with their industries, headcount, key filters and exclusions (A3 and A4 exclude
+Market Research, Staffing, Higher Ed, Hospitals, Biotech and Pharma). HQ is India unless
+the PRD says otherwise (A6: Bengaluru, Mumbai, Delhi NCR). Loaded by `npm run seed:library`.
+
+## Tests
+
+- Automated: Official code uniqueness (including at approval), Personal code reuse,
+  duplicate code suffix, the shared library rules, seed.
+- Browser: covered by the R2 exit-check journey.
 
 ## Change history
 
 | Date       | Version    | Change                   |
 | ---------- | ---------- | ------------------------ |
 | 2026-10-16 | Unreleased | Placeholder doc created. |
+| 2026-10-16 | Unreleased | Full doc written (R2).   |
