@@ -21,13 +21,14 @@ Then open http://localhost:3000.
 
 ## Other commands
 
-| Command                         | What it does                                             |
-| ------------------------------- | -------------------------------------------------------- |
-| `npm test`                      | Run the automated tests                                  |
-| `npm run typecheck`             | Check the code for type mistakes                         |
-| `npm run lint`                  | Check the code for common mistakes                       |
-| `npm run format`                | Tidy the formatting of every file                        |
-| `npm run db:generate`           | After a schema change: write the new migration file      |
-| `npm run db:studio`             | Open a browser view of the database (read and edit data) |
-| `npm run audit:check-lock`      | Prove the Audit Log can't be edited or deleted           |
-| `npm run seed:admin -- --reset` | Default Admin locked out: restore the starting password  |
+| Command                         | What it does                                                |
+| ------------------------------- | ----------------------------------------------------------- |
+| `npm test`                      | Run the automated tests                                     |
+| `npm run typecheck`             | Check the code for type mistakes                            |
+| `npm run lint`                  | Check the code for common mistakes                          |
+| `npm run format`                | Tidy the formatting of every file                           |
+| `npm run db:generate`           | After a schema change: write the new migration file         |
+| `npm run db:studio`             | Open a browser view of the database (read and edit data)    |
+| `npm run releases:sync`         | Copy released versions from the CHANGELOG to the About page |
+| `npm run audit:check-lock`      | Prove the Audit Log can't be edited or deleted              |
+| `npm run seed:admin -- --reset` | Default Admin locked out: restore the starting password     |

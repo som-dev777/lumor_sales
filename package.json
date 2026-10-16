@@ -16,7 +16,8 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "seed:admin": "tsx scripts/seed-admin.ts",
-    "audit:check-lock": "tsx scripts/check-audit-lock.ts"
+    "audit:check-lock": "tsx scripts/check-audit-lock.ts",
+    "releases:sync": "tsx scripts/sync-releases.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
