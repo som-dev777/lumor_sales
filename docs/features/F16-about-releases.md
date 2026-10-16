@@ -1,6 +1,6 @@
 # F16: About and releases
 
-- **Priority:** P0 · **Release:** R1 (v1.0.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R1 (v1.0.0) · **Status:** Done (v1.0.0)
 - **PRD:** [Screens → About](../PRD.md#screens-and-functional-requirements), [Documentation and versioning](../PRD.md#non-functional-requirements-and-stack)
 
 ## What it does
@@ -53,7 +53,8 @@ summary and list of changes. Everyone can see it.
 
 ## Change history
 
-| Date       | Version    | Change                                                          |
-| ---------- | ---------- | --------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Feature doc written (R1).                                       |
-| 2026-10-16 | Unreleased | About page, CHANGELOG parser and `npm run releases:sync` built. |
+| Date       | Version | Change                                                          |
+| ---------- | ------- | --------------------------------------------------------------- |
+| 2026-10-16 | 1.0.0   | Feature doc written (R1).                                       |
+| 2026-10-16 | 1.0.0   | About page, CHANGELOG parser and `npm run releases:sync` built. |
+| 2026-10-16 | 1.0.0   | Released in v1.0.0 (R1 Foundation).                             |

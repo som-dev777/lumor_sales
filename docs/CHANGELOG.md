@@ -5,28 +5,21 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 **Format** (`npm run releases:sync` reads this file into the About page, so keep it exact):
 
-- Work in progress goes under `## [Unreleased]`.
-- At a release, rename it to `## [X.Y.Z] - YYYY-MM-DD`.
-- The first plain line under a release heading is its one-sentence summary.
-- Every `- ` bullet under it is one change.
+- Work in progress goes under `## [Unreleased]
 
-## [Unreleased]
+Nothing yet. R2 (Library) starts next.
 
-R1 Foundation, in progress.
+## [1.0.0] - 2026-10-16
 
-- Set up the Next.js project with the R1 packages (Drizzle + libSQL, Better Auth, Zod, React Hook Form, Radix UI, Lucide, TanStack Table, date-fns, SCSS, Vitest, Prettier).
-- Added CLAUDE.md standing rules and the environment variable template (.env.example).
-- Added the docs system: README with feature index, CHANGELOG, data model, roles and permissions, AI prompts placeholder, decisions, and one doc per feature (F01–F16).
-- Added the database: all 12 PRD entities plus login, invite and template-history tables, with allowed-value rules, required lost reason, unique LinkedIn URL, and links that block deleting in-use items.
-- Added database locks: the audit log can't be edited or deleted, users can't be deleted, and deactivating a user ends all their sessions.
-- Added `npm run db:migrate` (creates data/app.db) and 19 automated database tests.
-- Added the core building blocks: India-time date helpers (IST days, Monday–Sunday weeks, months), the one shared permission check (`can()` / `assertCan()`) covering every row of the PRD permission table, and `writeAudit()`, which records before/after values in the same transaction as the change. 38 new automated tests.
-- Added the design system and app shell: PRD colours, Inter font and 12px cards as CSS variables; left sidebar with all 11 menu items (current page highlighted, slide-out menu on mobile); placeholder pages showing which release builds each screen; Settings page with Users, Product Facts and Playbook sections; loading, error and "Page not found" screens.
-- Branding: the Lumor logo with "Sales Hub" in Bricolage Grotesque replaces the placeholder logo in the sidebar and mobile top bar. Inter remains the font for the rest of the app. Fixed a stray shadow on the left edge on mobile.
-- Login and access (F01): email and password login; invite-only registration (links work once, for 7 days); password reset links (work once, for 24 hours); forced password change for the first Admin; "Access disabled, contact your admin" for deactivated users on every page; Users can't see or open Approvals, Audit Log or Settings → Users; the signed-in name, role, Change password and Log out in the sidebar. `npm run seed:admin` creates the first Admin (`-- --reset` if locked out).
-- Changed: Better Auth's admin plugin and web endpoints aren't used, and deactivation keeps the session so the "Access disabled" message can show (D-010). Login attempt limiting is still to do before R4 (D-011).
-- Sign-up: anyone with an @lumor.tech email can create their own User account at /signup (D-012). Other emails still need an invite.
-- Default Admins: `npm run seed:admin` now creates somnath@, arijeet@ and prince@lumor.tech as Admins, with the starting password from `.env.local` and no forced change (D-013). This replaces the earlier single gmail Admin.
-- Settings → Users (F01): team table with role, status and open leads; Invite person (copyable link); pending invites with Cancel; Make Admin / Make User; Deactivate / Reactivate; password reset links. Each action asks for confirmation and is recorded in the Audit Log. You can't change your own role or deactivate yourself, and the app always keeps at least one active Admin.
-- Audit Log page (F14, Admin only): every change, newest first, with who, when, the record and a readable summary; expandable before/after details; search and filters (user, type, action, IST dates) kept in the page address; Export CSV of the filtered view; no edit or delete controls. A reusable change-history panel for detail pages (from R2). `npm run audit:check-lock` shows the database refuses edits and deletes.
-- About page (F16): the current version and the latest 5 releases (date, summary, changes), visible to everyone. `npm run releases:sync` copies released versions from this CHANGELOG into the database; the reader is strict, so formatting mistakes are reported with their line number.
+R1 Foundation: login and team management, the Audit Log, the About page, and the app's design and navigation.
+
+- Log in with email and password. Anyone with an @lumor.tech email can sign up as a User; anyone else joins through an Admin's invite link (works once, for 7 days).
+- Three default Admins: somnath@, arijeet@ and prince@lumor.tech. Everyone can change their password from the sidebar.
+- Settings → Users (Admins): invite people, see pending invites, make someone an Admin or a User, deactivate and reactivate, and create password reset links (work once, for 24 hours). You can't change your own role or deactivate yourself, and there's always at least one active Admin.
+- Deactivated people are blocked at once: every page shows "Access disabled, contact your admin" and their login is refused. Nobody is ever deleted.
+- Users don't see Approvals or Audit Log, and get "Not allowed" if they open them, checked on the server, not just hidden.
+- Audit Log (Admins): every change with who, when and before/after values; search, filters, CSV export. Entries can't be edited or deleted by anyone, enforced by the database itself.
+- About page: the current version and the latest releases.
+- Lumor design: logo, Inter font, brand colours, a left sidebar with all 11 sections (later ones show which release builds them), and a mobile menu.
+- Behind the scenes: one shared permission check and one audit writer for every change, the full database for all 16 features, India time everywhere, 106 automated tests and 13 browser tests, and the docs system.
+- Known gaps before going online at R4: email verification for sign-up, limits on repeated wrong passwords, and changing the shared default Admin password (decisions D-011 to D-013).

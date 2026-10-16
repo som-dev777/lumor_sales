@@ -1,6 +1,6 @@
 # F14: Audit Log
 
-- **Priority:** P0 · **Release:** R1 (v1.0.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R1 (v1.0.0) · **Status:** Done (v1.0.0)
 - **PRD:** [Business rules → Audit Log](../PRD.md#business-rules), [Screens → Audit Log](../PRD.md#screens-and-functional-requirements)
 
 ## What it does
@@ -74,9 +74,10 @@ before and after values. Nobody can edit or delete an entry, not even an Admin.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                       |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| 2026-10-16 | Unreleased | Feature doc written (R1).                                                                                    |
-| 2026-10-16 | Unreleased | audit_log table and insert-only triggers added, with tests.                                                  |
-| 2026-10-16 | Unreleased | writeAudit() and diffChanges() added: changed fields only, secrets left out, saved together with the change. |
-| 2026-10-16 | Unreleased | Audit Log page, filters, CSV export, change history panel and lock-check command built.                      |
+| Date       | Version | Change                                                                                                       |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------ |
+| 2026-10-16 | 1.0.0   | Feature doc written (R1).                                                                                    |
+| 2026-10-16 | 1.0.0   | audit_log table and insert-only triggers added, with tests.                                                  |
+| 2026-10-16 | 1.0.0   | writeAudit() and diffChanges() added: changed fields only, secrets left out, saved together with the change. |
+| 2026-10-16 | 1.0.0   | Audit Log page, filters, CSV export, change history panel and lock-check command built.                      |
+| 2026-10-16 | 1.0.0   | Released in v1.0.0 (R1 Foundation).                                                                          |

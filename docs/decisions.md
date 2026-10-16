@@ -165,3 +165,15 @@ replaces it.
 - **Why:** The owner's choice.
 - **Known risk:** a shared, guessable Admin password. Each default Admin should change theirs
   before the app goes online at R4. The R4 checklist includes checking this.
+
+## D-014: Dependency warnings rechecked at v1.0.0
+
+- **Date:** 2026-10-16 · **Status:** Accepted. Confirms D-005 for this release.
+- **Decision:** `npm audit` still reports 9 warnings (4 moderate, 5 high). None of them reach
+  the live app:
+  - **High:** `braces`, inside ESLint (the code checker), which only runs on the developer's
+    computer.
+  - **Moderate:** esbuild, inside `drizzle-kit` (the database setup tool). It's listed as an
+    optional peer of Better Auth's command-line tool, which the app doesn't use.
+  - The suggested "fix" downgrades these tools to old, incompatible versions.
+- **Why:** Re-checking at every release is the rule in D-005. Recheck again at v1.1.0.
