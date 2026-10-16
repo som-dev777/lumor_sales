@@ -19,7 +19,8 @@ use, live stats, audit. Plus:
   enforces it). Personal filters may reuse a code. A duplicate's code gets a "-copy" suffix.
   Approving a proposal whose code clashes with an Official one is refused until the code is
   changed.
-- Stats count people and companies whose account filter is this one.
+- Stats count the people (leads) whose account filter is this one, like personas. Companies
+  that point to it still block deleting it.
 
 ## Fields
 
@@ -55,7 +56,8 @@ the PRD says otherwise (A6: Bengaluru, Mumbai, Delhi NCR). Loaded by `npm run se
 
 ## Change history
 
-| Date       | Version    | Change                   |
-| ---------- | ---------- | ------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created. |
-| 2026-10-16 | Unreleased | Full doc written (R2).   |
+| Date       | Version    | Change                                                                         |
+| ---------- | ---------- | ------------------------------------------------------------------------------ |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                       |
+| 2026-10-16 | Unreleased | Full doc written (R2).                                                         |
+| 2026-10-16 | Unreleased | Account filter rules (Official code uniqueness, copy codes) built, with tests. |

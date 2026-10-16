@@ -51,7 +51,8 @@ sees the outcome.
 
 ## Change history
 
-| Date       | Version    | Change                   |
-| ---------- | ---------- | ------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created. |
-| 2026-10-16 | Unreleased | Full doc written (R2).   |
+| Date       | Version    | Change                                                                |
+| ---------- | ---------- | --------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                              |
+| 2026-10-16 | Unreleased | Full doc written (R2).                                                |
+| 2026-10-16 | Unreleased | Propose, approve, reject, withdraw and queue rules built, with tests. |

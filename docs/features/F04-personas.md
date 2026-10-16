@@ -86,7 +86,8 @@ again changes nothing.
 
 ## Change history
 
-| Date       | Version    | Change                                                |
-| ---------- | ---------- | ----------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                              |
-| 2026-10-16 | Unreleased | Full doc written (R2), with the shared library rules. |
+| Date       | Version    | Change                                                                 |
+| ---------- | ---------- | ---------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                               |
+| 2026-10-16 | Unreleased | Full doc written (R2), with the shared library rules.                  |
+| 2026-10-16 | Unreleased | Library rules built on the server (`src/server/library/`), with tests. |

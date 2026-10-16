@@ -19,6 +19,19 @@ export const SENIORITIES = [
   "Owner / Partner",
 ] as const;
 
+/** Persona "function" choices (D-015: the PRD's Base44 list isn't available). */
+export const PERSONA_FUNCTIONS = [
+  "Research",
+  "Insights",
+  "Product",
+  "Design",
+  "CX",
+  "Brand",
+  "Marketing",
+  "Leadership",
+  "Consulting",
+] as const;
+
 export const LEVELS = ["Leader", "Practitioner"] as const;
 export const TEMPLATE_LEVELS = ["Leader", "Practitioner", "Any"] as const;
 export const TIERS = [1, 2, 3] as const;
