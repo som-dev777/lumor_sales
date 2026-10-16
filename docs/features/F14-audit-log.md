@@ -52,6 +52,7 @@ before and after values. Nobody can edit or delete an entry, not even an Admin.
 
 ## Change history
 
-| Date       | Version    | Change                    |
-| ---------- | ---------- | ------------------------- |
-| 2026-10-16 | Unreleased | Feature doc written (R1). |
+| Date       | Version    | Change                                                      |
+| ---------- | ---------- | ----------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Feature doc written (R1).                                   |
+| 2026-10-16 | Unreleased | audit_log table and insert-only triggers added, with tests. |

@@ -9,8 +9,10 @@ This document must match the code. Update it in the same step as any schema chan
 
 - Table and column names are snake_case.
 - `id` is a text UUID, except the two single-row settings tables (`id` = 1).
-- Every table has `id`, `created_at`, `created_by` (→ user.id) and `updated_at`.
-  These are not repeated in the tables below.
+- Every Lumor table has `id`, `created_at`, `created_by` (→ user.id) and `updated_at`.
+  These are not repeated in the tables below. Better Auth's own `session`, `account` and
+  `verification` tables follow Better Auth's layout (no `created_by`).
+- `created_at` and `updated_at` are filled in automatically, by the app and by the database.
 - Date-times are stored as integers: UTC milliseconds. They are shown in IST (Asia/Kolkata).
 - Plain dates (no time) are `YYYY-MM-DD` text, meaning an IST calendar date.
 - Lists and multi-selects are JSON text arrays. Their allowed values are checked with Zod.
@@ -18,7 +20,12 @@ This document must match the code. Update it in the same step as any schema chan
 - Fixed lists of allowed values (enums) are enforced with CHECK constraints.
 - Foreign keys use ON DELETE RESTRICT. The database refuses to delete a row that others
   still point to, which is how "archive, don't delete" is enforced.
-- `PRAGMA foreign_keys = ON` is set on every connection.
+- Foreign keys are enforced on every connection, including inside transactions. libSQL turns
+  this on by default, and a test fails if that ever changes.
+- Schema code: `src/lib/db/schema/` (one file per table group). Allowed values:
+  `src/lib/db/enums.ts`. Migrations: `drizzle/` (generated with `npm run db:generate`;
+  the triggers are in the hand-written `0001_lock_audit_log_and_users.sql`).
+  Apply them with `npm run db:migrate`.
 
 ## Enumerations
 
@@ -50,16 +57,19 @@ This document must match the code. Update it in the same step as any schema chan
 
 Better Auth's user table, with Lumor's fields added.
 
-| Column               | Rules                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| name                 | required                                                               |
-| email                | required, unique                                                       |
-| email_verified       | 0/1 (required by Better Auth)                                          |
-| image                | optional (required by Better Auth)                                     |
-| role                 | Role, default User                                                     |
-| active               | 0/1, default 1                                                         |
-| must_change_password | 0/1, default 0. Forces a password change before any other page (D-006) |
-| created_by           | may be empty: the first Admin is created by a script                   |
+| Column               | Rules                                                                            |
+| -------------------- | -------------------------------------------------------------------------------- |
+| name                 | required                                                                         |
+| email                | required, unique                                                                 |
+| email_verified       | 0/1 (required by Better Auth)                                                    |
+| image                | optional (required by Better Auth)                                               |
+| role                 | Role, default User                                                               |
+| active               | 0/1, default 1                                                                   |
+| must_change_password | 0/1, default 0. Forces a password change before any other page (D-006)           |
+| banned               | 0/1, default 0. Better Auth admin plugin; set together with `active = 0` (D-008) |
+| ban_reason           | Better Auth admin plugin                                                         |
+| ban_expires          | Better Auth admin plugin (not used: deactivation has no end date)                |
+| created_by           | may be empty: the first Admin is created by a script                             |
 
 ### persona
 
@@ -238,14 +248,16 @@ Indexes: occurred_at, (entity_type, record_id), user_id.
 
 | Table             | Why it exists                                                                                                               |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| session           | Better Auth: one row per signed-in browser.                                                                                 |
+| session           | Better Auth: one row per signed-in browser (token, expires_at, user_id, ip_address, user_agent, impersonated_by).           |
 | account           | Better Auth: login method and password hash.                                                                                |
 | verification      | Better Auth: password-reset tokens.                                                                                         |
 | invite            | email, role, token_hash (unique; only a hash of the link's secret is stored), expires_at (7 days), accepted_at, revoked_at. |
 | template_revision | template_id, revision, body; unique (template_id, revision). Keeps old template bodies (F06).                               |
 
-The Better Auth admin plugin may add its own columns (decided in R1 Step 7). The PRD's
-`role` and `active` columns stay the source of truth.
+The PRD's `role` and `active` columns are the source of truth. The admin plugin's `banned`
+column mirrors `active` so Better Auth also refuses deactivated users by itself (D-008).
+
+The two settings tables get their single row (with PRD defaults) from the migration itself.
 
 ## Triggers (database-level locks)
 

@@ -60,6 +60,7 @@ blocked everywhere at once.
 
 ## Change history
 
-| Date       | Version    | Change                    |
-| ---------- | ---------- | ------------------------- |
-| 2026-10-16 | Unreleased | Feature doc written (R1). |
+| Date       | Version    | Change                                                                                                  |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Feature doc written (R1).                                                                               |
+| 2026-10-16 | Unreleased | user/session/account/verification/invite tables, no-delete and deactivation triggers added, with tests. |

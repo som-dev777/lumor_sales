@@ -73,3 +73,14 @@ replaces it.
 - **Why:** The PRD needs invite-only signup and "editing a template creates a new version
   and keeps the old one", but its data model has no place for either. It gives no default
   for the daily message target.
+
+## D-008: Better Auth admin plugin, with `active` as the source of truth
+
+- **Date:** 2026-10-16 · **Status:** Accepted
+- **Decision:** Use Better Auth's admin plugin (as the PRD lists). Its extra columns (`banned`,
+  `ban_reason`, `ban_expires` on user; `impersonated_by` on session) are in the schema.
+  Lumor's own `role` ('Admin'/'User') and `active` columns stay the source of truth.
+  Deactivating a user sets `active = 0` and `banned = 1` in the same transaction;
+  reactivating clears both.
+- **Why:** Two independent locks. Our checks refuse inactive users, and Better Auth refuses
+  banned users at login by itself. Database tests cover the session trigger.
