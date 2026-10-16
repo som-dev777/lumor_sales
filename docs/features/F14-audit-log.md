@@ -27,15 +27,33 @@ before and after values. Nobody can edit or delete an entry, not even an Admin.
 
 ## Screens
 
-- **`/audit-log` (Admin only):**
-  - searchable table, newest first
-  - filters: user, entity type, action and date range (IST)
-  - expandable before/after detail for each entry
-  - **Export CSV** of the filtered view
-  - no edit or delete control anywhere
-- **Change history panel** (`ChangeHistory` component): every record's detail page shows
-  that record's own audit entries. Users see this; only Admins see the full log.
-  Used from R2 onwards.
+- **`/audit-log` (Admin only; Users see "Not allowed"):**
+  - A table, 50 entries per page, newest first: when (IST), who ("System" for the seed
+    script), action, record, and a one-line summary. New records list their values;
+    changes show before → after.
+  - Click the arrow on a row to see every changed field's before (red) and after (green).
+  - Filters (in the page address, so a view can be bookmarked):
+    - search across names, emails, record names and values
+    - user (including System)
+    - type
+    - action
+    - From and To dates (IST, both included)
+  - **Export CSV** downloads exactly the filtered view (up to 50,000 rows), from
+    `/audit-log/export`. It's Admin only, checked on the server. Spreadsheet formulas are
+    defused, and it opens correctly in Excel.
+  - No edit or delete control anywhere.
+- **Change history panel** (`src/components/audit/ChangeHistory.tsx`): a record's own audit
+  entries, for detail pages from R2 on. Everyone can see it; only Admins see the full log.
+- **`npm run audit:check-lock`:** tries to edit and delete entries directly in the database
+  and shows that both are refused.
+
+## How it works
+
+- `src/lib/audit.ts`: `writeAudit()` and `diffChanges()`.
+- `src/server/audit-query.ts`: search, filters, export and per-record history (read-only).
+- `src/lib/audit-format.ts`: readable labels and values.
+- `src/lib/csv.ts`: safe CSV files.
+- `src/components/audit/`: the table (TanStack Table), filters, details and history.
 
 ## Tests
 
@@ -44,6 +62,10 @@ before and after values. Nobody can edit or delete an entry, not even an Admin.
   - secrets are left out
   - UPDATE and DELETE on audit_log throw
   - the change and the audit entry roll back together
+  - search and every filter, including IST date boundaries and paging
+  - per-record history
+  - CSV quoting and formula defusing
+  - readable formatting
 - Browser (R1 exit check):
   - entries appear for the invite, registration, deactivation and reactivation
   - no edit or delete control
@@ -57,3 +79,4 @@ before and after values. Nobody can edit or delete an entry, not even an Admin.
 | 2026-10-16 | Unreleased | Feature doc written (R1).                                                                                    |
 | 2026-10-16 | Unreleased | audit_log table and insert-only triggers added, with tests.                                                  |
 | 2026-10-16 | Unreleased | writeAudit() and diffChanges() added: changed fields only, secrets left out, saved together with the change. |
+| 2026-10-16 | Unreleased | Audit Log page, filters, CSV export, change history panel and lock-check command built.                      |

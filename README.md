@@ -29,4 +29,5 @@ Then open http://localhost:3000.
 | `npm run format`                | Tidy the formatting of every file                        |
 | `npm run db:generate`           | After a schema change: write the new migration file      |
 | `npm run db:studio`             | Open a browser view of the database (read and edit data) |
+| `npm run audit:check-lock`      | Prove the Audit Log can't be edited or deleted           |
 | `npm run seed:admin -- --reset` | Default Admin locked out: restore the starting password  |
