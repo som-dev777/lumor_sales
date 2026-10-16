@@ -1,6 +1,6 @@
 /** What a Server Action sends back to its form when it doesn't redirect. */
 export type ActionResult =
-  | { ok: true; message?: string }
+  | { ok: true; message?: string; link?: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
 /** Turns Zod issues into one message per field, for showing under each input. */

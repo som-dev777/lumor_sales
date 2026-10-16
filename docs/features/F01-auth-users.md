@@ -29,10 +29,20 @@ blocked everywhere at once.
    - **Any other email:** an Admin sends an invite link. Invites expire after 7 days and work
      once, and only a hash of the link's secret is stored.
    - Better Auth's own sign-up is off, and a hook refuses any user creation outside our code.
-2. **Users page (Admin):** invite (email + role) shows a copyable link. Change role,
-   deactivate and reactivate each have a confirm step and write an audit entry
-   (Created, Role changed, Deactivated, Reactivated). "Generate reset link" gives a
-   copyable password-reset link. The page shows each user's open leads (0 until R3).
+2. **Users page (Admin, `/settings/users`):**
+   - **The team table:** name, email, role, status, open leads (not Paid or Lost) and date
+     joined, with "You" on your own row. A deactivated person with open leads is flagged
+     "Reassign these leads".
+   - **Invite person:** email and role. You get a copyable link that works once, for 7 days.
+     For @lumor.tech people, an invite is only needed to make them an Admin straight away.
+   - **Pending invites** list, with Cancel invite.
+   - **Each person's ⋯ menu:**
+     - Make Admin / Make User
+     - Create password reset link (copyable; works once, for 24 hours)
+     - Deactivate / Reactivate
+   - Every action asks for confirmation, refreshes the page, and writes an audit entry:
+     Role changed, Deactivated, Reactivated, Invite Created/Updated, or Updated
+     (reset link created).
 3. **Deactivation:** never delete. Setting `active = 0`:
    - makes login refuse them with "Access disabled, contact your admin"
    - keeps their session, so any page they open shows that message instead of the login
@@ -63,8 +73,11 @@ blocked everywhere at once.
   starts with.
 - `src/server/actions/auth.ts`: Server Actions for login, logout, register, reset and change
   password.
-- `src/server/invites.ts`, `src/server/password-reset.ts`, `src/server/users.ts`: invite,
-  reset-link and account creation logic.
+- `src/server/invites.ts`, `src/server/password-reset.ts`, `src/server/users.ts`,
+  `src/server/signup.ts`: invite, reset-link, sign-up and account creation logic.
+- `src/server/user-admin.ts` + `src/server/actions/users.ts`: the Users page rules (each
+  checks `user.manage` and writes the audit entry).
+- `src/app/(app)/settings/users/page.tsx` + `src/components/users/`: the Users page.
 - `scripts/seed-admin.ts`: the first Admin.
 
 ## Tests
@@ -79,7 +92,9 @@ blocked everywhere at once.
   - reset links work once and enforce the password length
   - sign-up (`src/server/signup.test.ts`): @lumor.tech only, no look-alikes, default Admin
     emails blocked, one account per email, audited
-  - (Step 8) the self-deactivate and last-Admin guards
+  - Users page rules (`src/server/user-admin.test.ts`): User refused, role changes,
+    deactivate/reactivate, can't change or deactivate yourself, at least one active Admin,
+    invites created and cancelled, reset links, open-lead counts
 - Browser (R1 exit check):
   - Admin first login is forced to change password
   - invite a User and register them
@@ -94,3 +109,4 @@ blocked everywhere at once.
 | 2026-10-16 | Unreleased | user/session/account/verification/invite tables, no-delete and deactivation triggers added, with tests.                           |
 | 2026-10-16 | Unreleased | Login, invite registration, reset and forced password change built; admin plugin dropped and deactivation keeps sessions (D-010). |
 | 2026-10-16 | Unreleased | Self sign-up for @lumor.tech (D-012); three default Admins replace the gmail Admin (D-013).                                       |
+| 2026-10-16 | Unreleased | Settings → Users page built: invite, pending invites, roles, deactivate/reactivate, reset links, guards.                          |

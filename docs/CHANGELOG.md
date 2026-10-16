@@ -27,3 +27,4 @@ R1 Foundation, in progress.
 - Changed: Better Auth's admin plugin and web endpoints aren't used, and deactivation keeps the session so the "Access disabled" message can show (D-010). Login attempt limiting is still to do before R4 (D-011).
 - Sign-up: anyone with an @lumor.tech email can create their own User account at /signup (D-012). Other emails still need an invite.
 - Default Admins: `npm run seed:admin` now creates somnath@, arijeet@ and prince@lumor.tech as Admins, with the starting password from `.env.local` and no forced change (D-013). This replaces the earlier single gmail Admin.
+- Settings → Users (F01): team table with role, status and open leads; Invite person (copyable link); pending invites with Cancel; Make Admin / Make User; Deactivate / Reactivate; password reset links. Each action asks for confirmation and is recorded in the Audit Log. You can't change your own role or deactivate yourself, and the app always keeps at least one active Admin.
