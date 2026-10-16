@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
+import { SIGNUP_EMAIL_DOMAIN } from "@/lib/auth-rules";
 import { loginSchema, type LoginInput } from "@/lib/validation/auth";
 import { login } from "@/server/actions/auth";
 import styles from "./AuthForm.module.scss";
@@ -29,7 +30,7 @@ export function LoginForm() {
   return (
     <>
       <h1 className={styles.title}>Log in</h1>
-      <p className={styles.intro}>Welcome back. Use the email your admin invited.</p>
+      <p className={styles.intro}>Welcome back. Log in with your work email.</p>
 
       <form className={styles.form} onSubmit={onSubmit} noValidate>
         {params.get("registered") && (
@@ -62,6 +63,9 @@ export function LoginForm() {
 
       <p className={styles.footer}>
         <Link href="/forgot-password">Forgot your password?</Link>
+      </p>
+      <p className={styles.footer}>
+        New here? <Link href="/signup">Sign up with your @{SIGNUP_EMAIL_DOMAIN} email</Link>
       </p>
     </>
   );

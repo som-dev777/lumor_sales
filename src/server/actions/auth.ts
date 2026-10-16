@@ -15,13 +15,16 @@ import {
   loginSchema,
   registerSchema,
   resetPasswordSchema,
+  signupSchema,
   type ChangePasswordInput,
   type LoginInput,
   type RegisterInput,
   type ResetPasswordInput,
+  type SignupInput,
 } from "@/lib/validation/auth";
 import { acceptInvite, InviteError } from "../invites";
 import { userIdForResetToken } from "../password-reset";
+import { SignupError, signUpWithCompanyEmail } from "../signup";
 import { findUserByEmail } from "../users";
 
 const invalid = (issues: Parameters<typeof fieldErrorsFrom>[0]): ActionResult => ({
@@ -60,6 +63,29 @@ export async function logout(): Promise<void> {
     // Already signed out: nothing to do.
   }
   redirect("/login");
+}
+
+export async function signUp(input: SignupInput): Promise<ActionResult> {
+  const parsed = signupSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error.issues);
+
+  try {
+    await signUpWithCompanyEmail(getDb(), parsed.data);
+  } catch (e) {
+    if (e instanceof SignupError) return { ok: false, error: e.message };
+    throw e;
+  }
+
+  // Signed straight in after creating the account.
+  try {
+    await getAuth().api.signInEmail({
+      body: { email: parsed.data.email, password: parsed.data.password },
+      headers: await headers(),
+    });
+  } catch {
+    redirect("/login?registered=1");
+  }
+  redirect("/");
 }
 
 export async function register(input: RegisterInput): Promise<ActionResult> {

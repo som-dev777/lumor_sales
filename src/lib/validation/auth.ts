@@ -1,7 +1,12 @@
 // Form rules for login and passwords. The same rules run in the browser (React Hook Form)
 // and again on the server (Server Actions), so the server never trusts the browser.
 import { z } from "zod";
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../auth-rules";
+import {
+  isSignupDomain,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  SIGNUP_EMAIL_DOMAIN,
+} from "../auth-rules";
 
 const password = z
   .string()
@@ -17,6 +22,19 @@ export const loginSchema = z.object({
   password: z.string().min(1, "Enter your password."),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const signupSchema = z
+  .object({
+    name: z.string().trim().min(2, "Enter your full name.").max(100, "Name is too long."),
+    email: z
+      .email("Enter a valid email address.")
+      .trim()
+      .refine(isSignupDomain, `Use your @${SIGNUP_EMAIL_DOMAIN} email.`),
+    password,
+    confirmPassword: z.string(),
+  })
+  .refine(confirmed, mismatch);
+export type SignupInput = z.infer<typeof signupSchema>;
 
 export const registerSchema = z
   .object({

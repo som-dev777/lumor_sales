@@ -13,7 +13,7 @@ First time only: copy `.env.example` to `.env.local` and fill in the values.
 ```bash
 npm install          # install packages
 npm run db:migrate   # create or update the database (data/app.db)
-npm run seed:admin   # first time only: create the first Admin and print a one-time password
+npm run seed:admin   # first time only: create the default Admins (password from .env.local)
 npm run dev          # start the app
 ```
 
@@ -29,4 +29,4 @@ Then open http://localhost:3000.
 | `npm run format`                | Tidy the formatting of every file                        |
 | `npm run db:generate`           | After a schema change: write the new migration file      |
 | `npm run db:studio`             | Open a browser view of the database (read and edit data) |
-| `npm run seed:admin -- --reset` | Admin locked out: print a new one-time password          |
+| `npm run seed:admin -- --reset` | Default Admin locked out: restore the starting password  |

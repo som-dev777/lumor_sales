@@ -132,3 +132,36 @@ replaces it.
   the app at R4, add attempt limiting to the login action, stored in the database so it works
   on Netlify.
 - **Why:** It doesn't matter on a single computer, but it does once the app is on the internet.
+
+## D-012: Self sign-up for @lumor.tech emails
+
+- **Date:** 2026-10-16 · **Status:** Accepted. Changes the PRD rule "Users can't sign up
+  without an invite".
+- **Decision:**
+  - A public `/signup` page lets anyone with an `@lumor.tech` email create their own account
+    as a **User**.
+  - Other emails, look-alike domains (`lumor.tech.evil.com`) and subdomains are refused.
+  - The default Admin emails (D-013) can't be claimed through sign-up.
+  - People with other emails still need an invite from an Admin.
+- **Why:** The owner's choice. The team can join without waiting for an Admin.
+- **Known risk until R4:** there's no email sending yet (D-002), so the app can't check that
+  the person really owns the address they type. Anyone who can reach the app could sign up
+  as an unused @lumor.tech address and see all data.
+- **Planned for R4:** verify sign-up emails through Resend before the account works, and
+  before the app goes online.
+
+## D-013: Three default Admins with a shared starting password
+
+- **Date:** 2026-10-16 · **Status:** Accepted. Replaces D-006 (forced password change) and
+  the PRD's first Admin (s.chakraborty1409@gmail.com).
+- **Decision:**
+  - `npm run seed:admin` creates somnath@, arijeet@ and prince@lumor.tech as Admins.
+  - Their starting password is `SEED_ADMIN_PASSWORD` from `.env.local`. It is never in the
+    code or on GitHub.
+  - They aren't forced to change it; they can change it any time from the sidebar
+    ("Change password").
+  - `npm run seed:admin -- --reset` puts the starting password back if someone is locked out.
+  - The forced-change mechanism (`must_change_password`) stays in the app for later use.
+- **Why:** The owner's choice.
+- **Known risk:** a shared, guessable Admin password. Each default Admin should change theirs
+  before the app goes online at R4. The R4 checklist includes checking this.

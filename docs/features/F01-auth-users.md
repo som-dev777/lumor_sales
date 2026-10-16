@@ -14,6 +14,7 @@ blocked everywhere at once.
 | Path                | Who                   | Purpose                                                               |
 | ------------------- | --------------------- | --------------------------------------------------------------------- |
 | `/login`            | Signed out            | Email + password sign-in                                              |
+| `/signup`           | Signed out            | Self sign-up with an @lumor.tech email, as a User (D-012)             |
 | `/register/[token]` | Holder of invite link | Set name and password; email and role come from the invite            |
 | `/forgot-password`  | Signed out            | Explains: ask your admin for a reset link (D-002)                     |
 | `/reset-password`   | Holder of reset link  | Set a new password                                                    |
@@ -23,10 +24,11 @@ blocked everywhere at once.
 
 ## Rules
 
-1. **Invite-only signup.** Better Auth's open sign-up is turned off, and a Better Auth hook
-   refuses to create any user at all. Accounts are only created by our own code: invite
-   registration and the seed script (D-010). Invites expire after 7 days and
-   work once. Only a hash of the link's secret is stored.
+1. **Getting an account.**
+   - **@lumor.tech email:** sign up yourself on `/signup` and get a User account (D-012).
+   - **Any other email:** an Admin sends an invite link. Invites expire after 7 days and work
+     once, and only a hash of the link's secret is stored.
+   - Better Auth's own sign-up is off, and a hook refuses any user creation outside our code.
 2. **Users page (Admin):** invite (email + role) shows a copyable link. Change role,
    deactivate and reactivate each have a confirm step and write an audit entry
    (Created, Role changed, Deactivated, Reactivated). "Generate reset link" gives a
@@ -39,12 +41,14 @@ blocked everywhere at once.
    - hides them from owner dropdowns
 4. **Guards:** an Admin can't deactivate or demote themselves. The app never has zero
    active Admins. A duplicate email can't be invited.
-5. **First Admin:** `npm run seed:admin` creates Somnath (s.chakraborty1409@gmail.com) as
-   Admin with a one-time password printed once, and sets `must_change_password = 1`.
-   Running it again changes nothing. If the Admin is locked out,
-   `npm run seed:admin -- --reset` gives a new one-time password and logs them out everywhere.
+5. **Default Admins (D-013):** `npm run seed:admin` creates somnath@, arijeet@ and
+   prince@lumor.tech as Admins, with the password in `SEED_ADMIN_PASSWORD` (`.env.local`).
+   They can change it from the sidebar whenever they like. Running it again changes nothing.
+   `npm run seed:admin -- --reset` puts the starting password back for a locked-out Admin.
+   These emails can't be claimed through sign-up.
 6. **Forced password change:** while `must_change_password = 1`, every page and action
    redirects to `/change-password`. Saving clears the flag and writes an audit entry.
+   Not used for the default Admins (D-013); kept for later use.
 7. **Sidebar:** Users don't see Approvals or Audit Log. If they type the address, the server
    shows "Not allowed". The sidebar shows the signed-in name, role, Change password and Log out.
 8. **Passwords:** 10–128 characters. Reset links (made by an Admin) work once, for 24 hours,
@@ -73,6 +77,8 @@ blocked everywhere at once.
     only a hash
   - audit entries for the invite and the new account
   - reset links work once and enforce the password length
+  - sign-up (`src/server/signup.test.ts`): @lumor.tech only, no look-alikes, default Admin
+    emails blocked, one account per email, audited
   - (Step 8) the self-deactivate and last-Admin guards
 - Browser (R1 exit check):
   - Admin first login is forced to change password
@@ -87,3 +93,4 @@ blocked everywhere at once.
 | 2026-10-16 | Unreleased | Feature doc written (R1).                                                                                                         |
 | 2026-10-16 | Unreleased | user/session/account/verification/invite tables, no-delete and deactivation triggers added, with tests.                           |
 | 2026-10-16 | Unreleased | Login, invite registration, reset and forced password change built; admin plugin dropped and deactivation keeps sessions (D-010). |
+| 2026-10-16 | Unreleased | Self sign-up for @lumor.tech (D-012); three default Admins replace the gmail Admin (D-013).                                       |

@@ -1,7 +1,8 @@
 # Roles and permissions
 
 Two roles: **Admin** and **User**. Everyone can read everything; each person edits only what
-they own. The first Admin is Somnath (s.chakraborty1409@gmail.com).
+they own. The default Admins are somnath@, arijeet@ and prince@lumor.tech (D-013). Anyone with
+an @lumor.tech email can sign up as a User (D-012).
 
 ## How it is enforced
 
@@ -56,5 +57,6 @@ answers "Access disabled, contact your admin" instead of "Not allowed".
   They are hidden from owner dropdowns. The Users page lists their open leads for reassignment.
 - An Admin cannot deactivate or demote themselves.
 - The app never allows zero active Admins.
-- Signing up needs a valid, unexpired, unused invite.
+- Signing up needs an @lumor.tech email (not a default Admin email), or a valid, unexpired,
+  unused invite.
 - An Admin can generate a password-reset link for any user. That user must then set a new password.
