@@ -5,14 +5,14 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1792142750174,
+      "when": 1792148835096,
       "tag": "0000_initial_schema",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1792142763357,
+      "when": 1792148835507,
       "tag": "0001_lock_audit_log_and_users",
       "breakpoints": true
     }

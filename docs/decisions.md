@@ -98,3 +98,37 @@ replaces it.
   helps the PRD's 400 ms feedback target.
 - **Note:** Next's experimental `forbidden()` page isn't used. A normal "Not allowed"
   screen is rendered instead.
+
+## D-010: No Better Auth admin plugin or web endpoints; deactivation keeps the session
+
+- **Date:** 2026-10-16 · **Status:** Accepted. **Replaces D-008** and the session-deleting
+  trigger listed under D-001.
+- **Decision:**
+  - The Better Auth admin plugin isn't used. Its `banned`, `ban_reason`, `ban_expires` and
+    `impersonated_by` columns are removed.
+  - Better Auth's own web endpoints aren't mounted (no `/api/auth` route). Login, logout and
+    password changes run through our Server Actions, which call `auth.api.*` on the server.
+  - Users are created only by our code (invite registration, seed script). A Better Auth hook
+    refuses every other attempt.
+  - Deactivation no longer deletes sessions (the `user_deactivate_kills_sessions` trigger is
+    gone). Every page and action checks `active` and sends the person to `/disabled`.
+    Better Auth refuses a deactivated user's login.
+- **Why:**
+  - The admin plugin exposes about 15 endpoints (create user, set role, remove user,
+    impersonate…) that an Admin could call directly, skipping `assertCan()` and
+    `writeAudit()`. That breaks the PRD's "every change is auditable".
+  - Its only other job, refusing banned users at login, is a few lines in our own hook.
+  - The PRD says a deactivated user opening any URL sees "Access disabled, contact your
+    admin". If the session were deleted, the app couldn't know who they were and would show
+    the login page instead.
+  - With no Better Auth endpoints mounted and every page and action re-checking `active`,
+    a kept session gives a deactivated user no access.
+
+## D-011: Login attempt limiting is still to do (before R4)
+
+- **Date:** 2026-10-16 · **Status:** Open
+- **Decision:** Better Auth's built-in rate limiting only covers its web endpoints, which aren't
+  mounted (D-010). Nothing limits repeated wrong passwords yet. Before the team starts using
+  the app at R4, add attempt limiting to the login action, stored in the database so it works
+  on Netlify.
+- **Why:** It doesn't matter on a single computer, but it does once the app is on the internet.

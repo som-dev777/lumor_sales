@@ -11,7 +11,7 @@ export type Owned = { ownerId: string };
 export type LibraryItem = Owned & { type: "Official" | "Personal" };
 
 /** Actions that need no record. */
-type PlainAction =
+export type PlainAction =
   | "user.manage"
   | "record.view"
   | "lead.create"

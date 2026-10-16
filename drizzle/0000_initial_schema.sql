@@ -23,7 +23,6 @@ CREATE TABLE `session` (
 	`ip_address` text,
 	`user_agent` text,
 	`user_id` text NOT NULL,
-	`impersonated_by` text,
 	`created_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
 	FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON UPDATE no action ON DELETE cascade
@@ -40,9 +39,6 @@ CREATE TABLE `user` (
 	`role` text DEFAULT 'User' NOT NULL,
 	`active` integer DEFAULT true NOT NULL,
 	`must_change_password` integer DEFAULT false NOT NULL,
-	`banned` integer DEFAULT false,
-	`ban_reason` text,
-	`ban_expires` integer,
 	`created_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,
 	`created_by` text,
 	`updated_at` integer DEFAULT (cast(unixepoch('subsec') * 1000 as integer)) NOT NULL,

@@ -1,0 +1,28 @@
+@use "../../styles/mixins" as *;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: var(--space-12) var(--space-4);
+
+  @include mobile {
+    padding-top: var(--space-8);
+  }
+}
+
+.brand {
+  margin-bottom: var(--space-6);
+}
+
+.card {
+  @include card;
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-8);
+
+  @include mobile {
+    padding: var(--space-6) var(--space-5);
+  }
+}

@@ -1,9 +1,20 @@
+import { Suspense } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { Sidebar } from "@/components/shell/Sidebar";
+import { SignedInSidebar } from "@/components/shell/SignedInSidebar";
 
-// Every signed-in page shares this frame. In R1 Step 7 the role comes from the signed-in
-// user, and Admin-only items are hidden from Users (the pages also check on the server).
-// Until then the sidebar shows every item.
+// Every signed-in page shares this frame. The frame appears at once; the user-specific
+// sidebar (role, name, Log out) streams in, and its sign-in check protects every page.
 export default function AppLayout({ children }: LayoutProps<"/">) {
-  return <AppShell sidebar={<Sidebar role="Admin" />}>{children}</AppShell>;
+  return (
+    <AppShell
+      sidebar={
+        <Suspense fallback={<Sidebar role={null} />}>
+          <SignedInSidebar />
+        </Suspense>
+      }
+    >
+      {children}
+    </AppShell>
+  );
 }

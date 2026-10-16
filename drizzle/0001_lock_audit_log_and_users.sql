@@ -20,14 +20,6 @@ BEGIN
 END;
 --> statement-breakpoint
 
--- F01: deactivating a user ends every login they have, at once.
-CREATE TRIGGER `user_deactivate_kills_sessions` AFTER UPDATE OF `active` ON `user`
-WHEN NEW.`active` = 0
-BEGIN
-  DELETE FROM `session` WHERE `user_id` = NEW.`id`;
-END;
---> statement-breakpoint
-
 -- F12, F13: the two single-row settings tables always have their row.
 INSERT INTO `playbook_settings` (`id`) VALUES (1);
 --> statement-breakpoint

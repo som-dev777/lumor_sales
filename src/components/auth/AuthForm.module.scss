@@ -1,0 +1,30 @@
+.title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+}
+
+.intro {
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.footer {
+  margin-top: var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}

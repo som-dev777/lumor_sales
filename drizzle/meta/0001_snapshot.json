@@ -1,6 +1,6 @@
 {
-  "id": "ff94cf5e-1842-450f-a7e6-9cc6b349ba22",
-  "prevId": "78877979-1dcf-4e73-ac0f-ea73feb1202d",
+  "id": "4b7e1a88-1ff2-4909-a63f-5697071f732e",
+  "prevId": "57aa86fd-3a2b-42ad-9888-55e1350c1fb6",
   "version": "6",
   "dialect": "sqlite",
   "tables": {
@@ -174,13 +174,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "impersonated_by": {
-          "name": "impersonated_by",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -295,28 +288,6 @@
           "notNull": true,
           "autoincrement": false,
           "default": false
-        },
-        "banned": {
-          "name": "banned",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
-        },
-        "ban_reason": {
-          "name": "ban_reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "ban_expires": {
-          "name": "ban_expires",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
         },
         "created_at": {
           "name": "created_at",

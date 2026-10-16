@@ -147,24 +147,11 @@ describe("user locks (F01)", () => {
     expect(err).toMatch(/users cannot be deleted/);
   });
 
-  it("deactivating a user deletes only their sessions", async () => {
+  it("deactivating keeps the session, so the app knows to show 'Access disabled' (D-010)", async () => {
     const a = await insertTestUser(t.db);
-    const b = await insertTestUser(t.db);
     await addSession(a.id);
-    await addSession(a.id);
-    await addSession(b.id);
-
     await t.db.update(user).set({ active: false }).where(eq(user.id, a.id));
-
-    expect(await t.db.select().from(session).where(eq(session.userId, a.id))).toHaveLength(0);
-    expect(await t.db.select().from(session).where(eq(session.userId, b.id))).toHaveLength(1);
-  });
-
-  it("other user updates leave sessions alone", async () => {
-    const a = await insertTestUser(t.db);
-    await addSession(a.id);
-    await t.db.update(user).set({ name: "Renamed" }).where(eq(user.id, a.id));
-    expect(await t.db.select().from(session)).toHaveLength(1);
+    expect(await t.db.select().from(session).where(eq(session.userId, a.id))).toHaveLength(1);
   });
 
   it("role must be Admin or User", async () => {

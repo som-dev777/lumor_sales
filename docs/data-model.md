@@ -57,19 +57,16 @@ This document must match the code. Update it in the same step as any schema chan
 
 Better Auth's user table, with Lumor's fields added.
 
-| Column               | Rules                                                                            |
-| -------------------- | -------------------------------------------------------------------------------- |
-| name                 | required                                                                         |
-| email                | required, unique                                                                 |
-| email_verified       | 0/1 (required by Better Auth)                                                    |
-| image                | optional (required by Better Auth)                                               |
-| role                 | Role, default User                                                               |
-| active               | 0/1, default 1                                                                   |
-| must_change_password | 0/1, default 0. Forces a password change before any other page (D-006)           |
-| banned               | 0/1, default 0. Better Auth admin plugin; set together with `active = 0` (D-008) |
-| ban_reason           | Better Auth admin plugin                                                         |
-| ban_expires          | Better Auth admin plugin (not used: deactivation has no end date)                |
-| created_by           | may be empty: the first Admin is created by a script                             |
+| Column               | Rules                                                                  |
+| -------------------- | ---------------------------------------------------------------------- |
+| name                 | required                                                               |
+| email                | required, unique                                                       |
+| email_verified       | 0/1 (required by Better Auth)                                          |
+| image                | optional (required by Better Auth)                                     |
+| role                 | Role, default User                                                     |
+| active               | 0/1, default 1                                                         |
+| must_change_password | 0/1, default 0. Forces a password change before any other page (D-006) |
+| created_by           | may be empty: the first Admin is created by a script                   |
 
 ### persona
 
@@ -248,25 +245,27 @@ Indexes: occurred_at, (entity_type, record_id), user_id.
 
 | Table             | Why it exists                                                                                                               |
 | ----------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| session           | Better Auth: one row per signed-in browser (token, expires_at, user_id, ip_address, user_agent, impersonated_by).           |
+| session           | Better Auth: one row per signed-in browser (token, expires_at, user_id, ip_address, user_agent).                            |
 | account           | Better Auth: login method and password hash.                                                                                |
 | verification      | Better Auth: password-reset tokens.                                                                                         |
 | invite            | email, role, token_hash (unique; only a hash of the link's secret is stored), expires_at (7 days), accepted_at, revoked_at. |
 | template_revision | template_id, revision, body; unique (template_id, revision). Keeps old template bodies (F06).                               |
 
-The PRD's `role` and `active` columns are the source of truth. The admin plugin's `banned`
-column mirrors `active` so Better Auth also refuses deactivated users by itself (D-008).
+The PRD's `role` and `active` columns are the source of truth. The Better Auth admin plugin is
+not used (D-010).
 
 The two settings tables get their single row (with PRD defaults) from the migration itself.
 
 ## Triggers (database-level locks)
 
-| Trigger                        | What it does                                                  |
-| ------------------------------ | ------------------------------------------------------------- |
-| audit_log_no_update            | Rejects any UPDATE of audit_log: "audit_log is insert-only".  |
-| audit_log_no_delete            | Rejects any DELETE of audit_log.                              |
-| user_no_delete                 | Rejects any DELETE of a user: deactivate instead.             |
-| user_deactivate_kills_sessions | When `active` becomes 0, deletes all of that user's sessions. |
+Deactivation no longer deletes sessions: the app needs the session to show "Access disabled"
+(D-010). Every page and action checks `active` instead.
+
+| Trigger             | What it does                                                 |
+| ------------------- | ------------------------------------------------------------ |
+| audit_log_no_update | Rejects any UPDATE of audit_log: "audit_log is insert-only". |
+| audit_log_no_delete | Rejects any DELETE of audit_log.                             |
+| user_no_delete      | Rejects any DELETE of a user: deactivate instead.            |
 
 Limit: someone with direct admin access to the database file or the Turso console could
 drop a trigger. The app never runs schema-changing commands at runtime.

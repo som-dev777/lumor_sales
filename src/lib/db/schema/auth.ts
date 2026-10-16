@@ -18,10 +18,6 @@ export const user = sqliteTable(
     role: text("role", { enum: ROLES }).notNull().default("User"),
     active: flag("active").notNull().default(true),
     mustChangePassword: flag("must_change_password").notNull().default(false),
-    // Better Auth admin plugin fields. Deactivation also sets banned = 1 (see F01).
-    banned: flag("banned").default(false),
-    banReason: text("ban_reason"),
-    banExpires: timestamp("ban_expires"),
     createdAt: timestamp("created_at")
       .notNull()
       .default(nowMs)
@@ -54,7 +50,6 @@ export const session = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    impersonatedBy: text("impersonated_by"),
     createdAt: timestamp("created_at")
       .notNull()
       .default(nowMs)

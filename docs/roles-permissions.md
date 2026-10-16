@@ -8,6 +8,7 @@ they own. The first Admin is Somnath (s.chakraborty1409@gmail.com).
 SQLite has no row-level security, and the browser never talks to the database. Every
 Server Action and Route Handler runs this sequence on the server:
 
+0. `src/proxy.ts` sends anyone without a login cookie to `/login` (a fast first check only).
 1. `requireUser()` (`src/lib/session.ts`): signed in, account active, and no forced
    password change pending. Otherwise the user is sent to `/login`, `/disabled` or
    `/change-password`.
@@ -50,7 +51,8 @@ answers "Access disabled, contact your admin" instead of "Not allowed".
 ## Extra guards
 
 - **Deactivated users:** never deleted. They are blocked on every page and action and
-  shown "Access disabled, contact your admin". Their sessions are deleted by a trigger.
+  shown "Access disabled, contact your admin". Their login is refused. (Their session is
+  kept so the app knows to show that message; it grants nothing, see D-010.)
   They are hidden from owner dropdowns. The Users page lists their open leads for reassignment.
 - An Admin cannot deactivate or demote themselves.
 - The app never allows zero active Admins.
