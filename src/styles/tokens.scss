@@ -1,0 +1,68 @@
+// Design tokens from the PRD (Non-functional requirements → Design). Every colour, radius,
+// space and font size in the app comes from these CSS variables. No hard-coded values in
+// components, no Tailwind, no inline styles.
+:root {
+  // Brand and surfaces
+  --color-primary: #3d5dfd;
+  --color-primary-hover: #2f4fe8;
+  --color-primary-soft: #eef1ff;
+  --color-page: #f6f6f6;
+  --color-card: #ffffff;
+  --color-border: #e8e8e8;
+  --color-border-strong: #d4d4d4;
+
+  // Text
+  --color-text: #111111;
+  --color-text-secondary: #3f3f3f;
+  --color-text-muted: #6b6b6b;
+  --color-text-on-primary: #ffffff;
+
+  // Status (PRD: green for converted/paid, red for lost/overdue; amber for below benchmark)
+  --color-success: #32d74b;
+  --color-success-soft: #e9faec;
+  --color-success-text: #13801f;
+  --color-danger: #ff453a;
+  --color-danger-soft: #ffeceb;
+  --color-danger-text: #c4271d;
+  --color-warning: #ff9f0a;
+  --color-warning-soft: #fff4e2;
+  --color-warning-text: #9a5b00;
+
+  // Shape
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 4%);
+  --shadow-overlay: 0 12px 32px rgb(0 0 0 / 16%);
+
+  // Spacing scale (4px steps)
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  // Type (Inter, loaded in the root layout as --font-inter)
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --leading: 1.5;
+
+  // Layout
+  --sidebar-width: 240px;
+  --topbar-height: 56px;
+  --content-max-width: 1200px;
+  --focus-ring: 0 0 0 3px rgb(61 93 253 / 35%);
+}

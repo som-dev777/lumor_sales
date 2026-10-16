@@ -84,3 +84,17 @@ replaces it.
   reactivating clears both.
 - **Why:** Two independent locks. Our checks refuse inactive users, and Better Auth refuses
   banned users at login by itself. Database tests cover the session trigger.
+
+## D-009: Keep Next.js Cache Components and Partial Prefetching on
+
+- **Date:** 2026-10-16 · **Status:** Accepted
+- **Decision:** Keep `cacheComponents: true` and `partialPrefetching: true`, which this
+  Next.js version sets by default. Pages are pre-built as a static frame (sidebar, headings).
+  Anything that depends on the signed-in user or the database is placed inside a
+  `<Suspense>` boundary and streams in at request time. Nothing user-specific is cached
+  with `use cache`.
+- **Why:** Both become mandatory in the next major Next.js version, so turning them off would
+  mean redoing the work later. The static frame also makes pages appear instantly, which
+  helps the PRD's 400 ms feedback target.
+- **Note:** Next's experimental `forbidden()` page isn't used. A normal "Not allowed"
+  screen is rendered instead.

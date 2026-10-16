@@ -21,3 +21,4 @@ R1 Foundation, in progress.
 - Added database locks: the audit log can't be edited or deleted, users can't be deleted, and deactivating a user ends all their sessions.
 - Added `npm run db:migrate` (creates data/app.db) and 19 automated database tests.
 - Added the core building blocks: India-time date helpers (IST days, Monday–Sunday weeks, months), the one shared permission check (`can()` / `assertCan()`) covering every row of the PRD permission table, and `writeAudit()`, which records before/after values in the same transaction as the change. 38 new automated tests.
+- Added the design system and app shell: PRD colours, Inter font and 12px cards as CSS variables; left sidebar with all 11 menu items (current page highlighted, slide-out menu on mobile); placeholder pages showing which release builds each screen; Settings page with Users, Product Facts and Playbook sections; loading, error and "Page not found" screens.

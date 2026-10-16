@@ -1,0 +1,28 @@
+@use "../../styles/mixins" as *;
+
+.box {
+  @include card;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-10) var(--space-6);
+  text-align: center;
+}
+
+.title {
+  font-weight: var(--weight-semibold);
+}
+
+.body {
+  color: var(--color-text-secondary);
+}
+
+.error {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+
+  .title {
+    color: var(--color-danger-text);
+  }
+}

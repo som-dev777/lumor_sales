@@ -1,0 +1,29 @@
+// Shared SCSS helpers. Import in a module with a relative path, e.g.
+// @use "../../styles/mixins" as *;
+
+// Below this width the sidebar becomes a slide-out menu (PRD: Today and People work on mobile).
+$mobile-max: 767px;
+
+@mixin mobile {
+  @media (max-width: $mobile-max) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: $mobile-max + 1) {
+    @content;
+  }
+}
+
+@mixin card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+@mixin focus-ring {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
