@@ -58,6 +58,8 @@ All dates are stored in UTC and shown in IST. Weeks run Monday to Sunday.
   is done. Check real exit codes; never hide a failure behind a pipe.
   Report failures honestly, with the output.
 - New business rules get a Vitest test.
+- Before every release, also run `npm run test:e2e` (the browser tests in e2e/). Each
+  release's exit check gets a browser test.
 - Then tell the owner exactly what to check in the browser.
 
 ## Commits

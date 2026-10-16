@@ -44,3 +44,8 @@ next-env.d.ts
 
 # Lumor Sales Hub: local database file (never committed)
 /data/
+
+# Browser tests (Playwright)
+/.e2e/
+/test-results/
+/playwright-report/

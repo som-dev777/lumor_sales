@@ -17,7 +17,8 @@
     "db:studio": "drizzle-kit studio",
     "seed:admin": "tsx scripts/seed-admin.ts",
     "audit:check-lock": "tsx scripts/check-audit-lock.ts",
-    "releases:sync": "tsx scripts/sync-releases.ts"
+    "releases:sync": "tsx scripts/sync-releases.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -43,6 +44,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
