@@ -48,6 +48,8 @@
 
   // Type (Inter, loaded in the root layout as --font-inter)
   --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  // Only for the "Sales Hub" wordmark next to the logo. Everything else uses Inter.
+  --font-brand: var(--font-bricolage), var(--font-sans);
   --text-xs: 12px;
   --text-sm: 13px;
   --text-base: 14px;

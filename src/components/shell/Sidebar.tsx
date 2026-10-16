@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import type { Role } from "@/lib/db/enums";
+import { Brand } from "./Brand";
 import { isActive, NAV_ITEMS } from "./nav";
 import styles from "./Sidebar.module.scss";
 
@@ -34,7 +35,9 @@ export function Sidebar({ role, footer }: Props) {
         >
           <Menu size={20} aria-hidden />
         </button>
-        <span className={styles.brand}>Lumor Sales Hub</span>
+        <Link href="/" className={styles.logo} aria-label="Lumor Sales Hub, go to Today">
+          <Brand />
+        </Link>
       </header>
 
       {open && (
@@ -48,11 +51,13 @@ export function Sidebar({ role, footer }: Props) {
 
       <aside id="app-sidebar" className={`${styles.sidebar} ${open ? styles.open : ""}`}>
         <div className={styles.header}>
-          <Link href="/" className={styles.logo} onClick={() => setOpen(false)}>
-            <span className={styles.logoMark} aria-hidden>
-              L
-            </span>
-            <span>Lumor Sales Hub</span>
+          <Link
+            href="/"
+            className={styles.logo}
+            aria-label="Lumor Sales Hub, go to Today"
+            onClick={() => setOpen(false)}
+          >
+            <Brand />
           </Link>
           <button
             type="button"
