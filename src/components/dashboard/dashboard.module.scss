@@ -1,0 +1,229 @@
+@use "../../styles/mixins" as *;
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-card);
+}
+
+.segment,
+.segmentActive {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  text-decoration: none;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.segment:hover {
+  background: var(--color-page);
+}
+
+.segmentActive {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: var(--weight-medium);
+}
+
+.periodNav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.periodLabel {
+  min-width: 11rem;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  text-align: center;
+}
+
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-card);
+  color: var(--color-text);
+
+  &:hover {
+    background: var(--color-page);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.card {
+  @include card;
+  margin-bottom: var(--space-5);
+  padding: var(--space-5);
+}
+
+.cardTitle {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.empty {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.chart {
+  width: 100%;
+  min-width: 0;
+}
+
+.tooltip {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+
+.tile,
+.tileBelow {
+  @include card;
+  padding: var(--space-4);
+}
+
+.tileBelow {
+  border-color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.tileLabel {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.tileValue {
+  margin: var(--space-2) 0 var(--space-1);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+}
+
+.tileMeta {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.below {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-warning-text);
+  font-weight: var(--weight-semibold);
+}
+
+.low {
+  color: var(--color-text-muted);
+}
+
+.lowTag {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.breakdownHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+
+  .cardTitle {
+    margin-bottom: 0;
+  }
+}
+
+.tableWrap {
+  position: relative;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+
+  th,
+  td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  thead th {
+    color: var(--color-text-muted);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    white-space: normal;
+    vertical-align: bottom;
+  }
+
+  tbody th {
+    font-weight: var(--weight-medium);
+  }
+}
+
+.num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.totalRow {
+  background: var(--color-page);
+}
+
+.note {
+  margin-top: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
