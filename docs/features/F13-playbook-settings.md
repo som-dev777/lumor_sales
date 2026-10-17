@@ -46,7 +46,8 @@ Everyone can read it; only Admins can edit it.
 
 ## Change history
 
-| Date       | Version    | Change                   |
-| ---------- | ---------- | ------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created. |
-| 2026-10-17 | Unreleased | Full doc written (R5).   |
+| Date       | Version    | Change                                                                                                  |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                |
+| 2026-10-17 | Unreleased | Full doc written (R5).                                                                                  |
+| 2026-10-17 | Unreleased | Rules, page and edit form built (limits, delays in order, audited); used by quick-log; R5 browser test. |

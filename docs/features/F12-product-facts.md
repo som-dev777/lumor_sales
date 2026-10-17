@@ -44,7 +44,8 @@ can edit it. It must be filled in before the AI features are used.
 
 ## Change history
 
-| Date       | Version    | Change                   |
-| ---------- | ---------- | ------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created. |
-| 2026-10-17 | Unreleased | Full doc written (R5).   |
+| Date       | Version    | Change                                                                                    |
+| ---------- | ---------- | ----------------------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                  |
+| 2026-10-17 | Unreleased | Full doc written (R5).                                                                    |
+| 2026-10-17 | Unreleased | Rules, page and edit form built (read for all, edit for Admin, audited); R5 browser test. |

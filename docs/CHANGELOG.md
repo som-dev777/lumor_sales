@@ -13,6 +13,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 R5 Settings, in progress.
 
 - Feature docs written for Product Facts (F12) and Playbook Settings (F13).
+- Product Facts page: what Lumor does, live features, features not live yet, pricing guidance, positioning rules and the calendar link. Everyone reads; Admins edit. Shows who edited last and warns while the facts the AI needs are empty (F12).
+- Playbook Settings page: follow-up delays, withdraw-after, daily targets and the stale-lead threshold. Everyone reads; Admins edit, with limits and delays kept in order. Quick-log uses the new delays straight away (F13).
+- Both keep a change history.
 
 ## [1.3.0] - 2026-10-17
 

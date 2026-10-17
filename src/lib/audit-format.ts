@@ -16,6 +16,15 @@ const SPECIAL_LABELS: Record<string, string> = {
   accountFilterId: "Account filter",
   invitedBy: "Invited by",
   proposedBy: "Proposed by",
+  followUp1DelayDays: "Follow-up 1 delay (days)",
+  followUp2DelayDays: "Follow-up 2 delay (days)",
+  breakUpDelayDays: "Break-up delay (days)",
+  withdrawAfterDays: "Withdraw after (days)",
+  dailyConnectionTarget: "Daily connection target",
+  dailyMessageTarget: "Daily message target",
+  staleLeadDays: "Stale-lead threshold (days)",
+  featuresNotLive: "Features not live yet",
+  whatLumorDoes: "What Lumor does",
 };
 
 /** "mustChangePassword" → "Must change password"; "ownerId" → "Owner". */
