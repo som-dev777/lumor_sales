@@ -34,8 +34,8 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F03 | [Companies](features/F03-companies.md)                          | P0       | R3      | Done (1.2.0) |
 | F15 | [Quick-log and sequence automation](features/F15-quick-log.md)  | P0       | R4      | Done (1.3.0) |
 | F11 | [Dashboard](features/F11-dashboard.md)                          | P0       | R4      | Done (1.3.0) |
-| F12 | [Product Facts](features/F12-product-facts.md)                  | P0       | R5      | Planned      |
-| F13 | [Playbook Settings](features/F13-playbook-settings.md)          | P0       | R5      | Planned      |
+| F12 | [Product Facts](features/F12-product-facts.md)                  | P0       | R5      | In progress  |
+| F13 | [Playbook Settings](features/F13-playbook-settings.md)          | P0       | R5      | In progress  |
 | F08 | [Today planner](features/F08-today-planner.md)                  | P1       | R6      | Planned      |
 | F09 | [Reply Assistant](features/F09-reply-assistant.md)              | P1       | R6      | Planned      |
 | F10 | [Conversation summary and draft](features/F10-summary-draft.md) | P1       | R6      | Planned      |

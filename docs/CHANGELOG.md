@@ -10,7 +10,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-Nothing yet. R5 (Settings: Product Facts and Playbook Settings) starts next.
+R5 Settings, in progress.
+
+- Feature docs written for Product Facts (F12) and Playbook Settings (F13).
 
 ## [1.3.0] - 2026-10-17
 
