@@ -30,16 +30,14 @@ beforeEach(async () => {
   };
   rep = { id: (await insertTestUser(t.db, { name: "Asha" })).id, role: "User", active: true };
   other = { id: (await insertTestUser(t.db, { name: "Ravi" })).id, role: "User", active: true };
-  await t.db
-    .insert(template)
-    .values({
-      name: "M1",
-      type: "Official",
-      ownerId: admin.id,
-      purpose: "Message 1",
-      level: "Any",
-      body: "Hi {Name}",
-    });
+  await t.db.insert(template).values({
+    name: "M1",
+    type: "Official",
+    ownerId: admin.id,
+    purpose: "Message 1",
+    level: "Any",
+    body: "Hi {Name}",
+  });
   await seedPlans(t.db, admin.id);
   const [row] = await t.db.select().from(plan).where(eq(plan.name, "Official Outreach"));
   outreachId = row.id;
@@ -103,14 +101,12 @@ describe("Today v2 sections (F08)", () => {
     const nurture = await lead("Nurture Lead");
     await t.db.update(person).set({ nurtureUntil: "2026-10-29" }).where(eq(person.id, nurture.id));
     const stale = await lead("Stale Lead");
-    await t.db
-      .insert(activity)
-      .values({
-        personId: stale.id,
-        userId: rep.id,
-        occurredAt: on("2026-10-01"),
-        type: "Message sent",
-      });
+    await t.db.insert(activity).values({
+      personId: stale.id,
+      userId: rep.id,
+      occurredAt: on("2026-10-01"),
+      type: "Message sent",
+    });
     await lead("Do Not Contact", { doNotContact: true, dncReason: "Asked us to stop" });
     await lead("Someone Else's", {}, other);
 
