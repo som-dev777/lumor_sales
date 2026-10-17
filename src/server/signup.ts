@@ -4,6 +4,7 @@ import { writeAudit } from "@/lib/audit";
 import { isDefaultAdminEmail, isSignupDomain, SIGNUP_EMAIL_DOMAIN } from "@/lib/auth-rules";
 import type { Db } from "@/lib/db/client";
 import { normaliseEmail } from "@/lib/tokens";
+import { createVerification } from "./email-verification";
 import { createUserWithPassword, findUserByEmail, userAuditFields } from "./users";
 
 export class SignupError extends Error {
@@ -16,7 +17,11 @@ export class SignupError extends Error {
 export async function signUpWithCompanyEmail(
   db: Db,
   input: { name: string; email: string; password: string },
-) {
+  { requireConfirmation = false }: { requireConfirmation?: boolean } = {},
+): Promise<{
+  user: Awaited<ReturnType<typeof createUserWithPassword>>;
+  confirmLink: string | null;
+}> {
   const email = normaliseEmail(input.email);
 
   if (!isSignupDomain(email)) {
@@ -49,6 +54,8 @@ export async function signUpWithCompanyEmail(
       action: "Created",
       after: { ...userAuditFields(created), source: "self sign-up" },
     });
-    return created;
+    // With email set up, the account waits for its owner to open the emailed link (D-023).
+    const confirmLink = requireConfirmation ? await createVerification(tx, created.id) : null;
+    return { user: created, confirmLink };
   });
 }

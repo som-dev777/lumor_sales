@@ -144,3 +144,16 @@ test("a lost lead needs a reason", async () => {
   await d.getByRole("button", { name: "Log it" }).click();
   await expect(stage(rep)).toHaveText("Lost");
 });
+
+test("5 wrong passwords pause logging in to that email", async ({ browser }) => {
+  const page = await (await browser.newContext()).newPage();
+  await page.goto("/login");
+  for (let i = 0; i < 5; i++) {
+    await shown(page.getByLabel("Email")).fill("nobody-r4@lumor.tech");
+    await shown(page.getByLabel("Password")).fill(`wrong-password-${i}`);
+    await page.getByRole("button", { name: "Log in" }).click();
+    await expect(page.getByText("Wrong email or password.")).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Log in" }).click();
+  await expect(page.getByText(/paused for 15 minutes/)).toBeVisible();
+});

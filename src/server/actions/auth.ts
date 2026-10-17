@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { errorMessage, fieldErrorsFrom, type ActionResult } from "@/lib/action-result";
 import { writeAudit } from "@/lib/audit";
 import { ACCESS_DISABLED_MESSAGE, getAuth } from "@/lib/auth";
+import { EMAIL_NOT_CONFIRMED_MESSAGE } from "@/lib/auth-rules";
 import { getDb } from "@/lib/db/client";
 import { user } from "@/lib/db/schema";
 import { requireUser } from "@/lib/session";
@@ -22,7 +23,10 @@ import {
   type ResetPasswordInput,
   type SignupInput,
 } from "@/lib/validation/auth";
+import { emailConfigured, emails, sendEmail } from "../email";
+import { confirmEmail, renewIfExpired, VerificationError } from "../email-verification";
 import { acceptInvite, InviteError } from "../invites";
+import { LOGIN_PAUSED_MESSAGE, loginPausedUntil, recordLoginAttempt } from "../login-limit";
 import { userIdForResetToken } from "../password-reset";
 import { SignupError, signUpWithCompanyEmail } from "../signup";
 import { findUserByEmail } from "../users";
@@ -41,18 +45,30 @@ function safeNext(next: unknown): string {
 export async function login(input: LoginInput, next?: string): Promise<ActionResult> {
   const parsed = loginSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error.issues);
+  const db = getDb();
+  const { email } = parsed.data;
+
+  // 5 wrong passwords in 15 minutes pause this email for 15 minutes (D-023).
+  if (await loginPausedUntil(db, email)) return { ok: false, error: LOGIN_PAUSED_MESSAGE };
 
   try {
     await getAuth().api.signInEmail({ body: parsed.data, headers: await headers() });
   } catch (e) {
     const message = errorMessage(e, "");
-    return {
-      ok: false,
-      error: message === ACCESS_DISABLED_MESSAGE ? message : "Wrong email or password.",
-    };
+    // The password was right; the account just can't log in yet (or any more).
+    if (message === ACCESS_DISABLED_MESSAGE) return { ok: false, error: message };
+    if (message === EMAIL_NOT_CONFIRMED_MESSAGE) {
+      const pending = await findUserByEmail(db, email);
+      const fresh = pending && (await renewIfExpired(db, pending.id));
+      if (fresh) await sendEmail(emails.verify(pending.email, fresh));
+      return { ok: false, error: message };
+    }
+    await recordLoginAttempt(db, email, false);
+    return { ok: false, error: "Wrong email or password." };
   }
 
-  const signedIn = await findUserByEmail(getDb(), parsed.data.email);
+  await recordLoginAttempt(db, email, true);
+  const signedIn = await findUserByEmail(db, email);
   redirect(signedIn?.mustChangePassword ? "/change-password" : safeNext(next));
 }
 
@@ -69,11 +85,22 @@ export async function signUp(input: SignupInput): Promise<ActionResult> {
   const parsed = signupSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error.issues);
 
+  // With email set up, new accounts confirm their address first (D-023).
+  let confirmLink: string | null;
   try {
-    await signUpWithCompanyEmail(getDb(), parsed.data);
+    ({ confirmLink } = await signUpWithCompanyEmail(getDb(), parsed.data, {
+      requireConfirmation: emailConfigured(),
+    }));
   } catch (e) {
     if (e instanceof SignupError) return { ok: false, error: e.message };
     throw e;
+  }
+  if (confirmLink) {
+    if (await sendEmail(emails.verify(parsed.data.email.trim().toLowerCase(), confirmLink))) {
+      redirect("/login?confirm=1");
+    }
+    // The email couldn't be sent: confirm at once rather than lock the person out.
+    await confirmEmail(getDb(), new URL(confirmLink).searchParams.get("token")!);
   }
 
   // Signed straight in after creating the account.
@@ -99,6 +126,19 @@ export async function register(input: RegisterInput): Promise<ActionResult> {
     throw e;
   }
   redirect("/login?registered=1");
+}
+
+export async function confirmMyEmail(token: string): Promise<ActionResult> {
+  if (typeof token !== "string" || !token || token.length > 200) {
+    return { ok: false, error: "This link isn't valid." };
+  }
+  try {
+    await confirmEmail(getDb(), token);
+  } catch (e) {
+    if (e instanceof VerificationError) return { ok: false, error: e.message };
+    throw e;
+  }
+  redirect("/login?confirmed=1");
 }
 
 export async function resetPassword(input: ResetPasswordInput): Promise<ActionResult> {

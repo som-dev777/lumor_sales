@@ -246,13 +246,14 @@ Indexes: occurred_at, (entity_type, record_id), user_id.
 
 ## Support tables (not business entities)
 
-| Table             | Why it exists                                                                                                               |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| session           | Better Auth: one row per signed-in browser (token, expires_at, user_id, ip_address, user_agent).                            |
-| account           | Better Auth: login method and password hash.                                                                                |
-| verification      | Better Auth: password-reset tokens.                                                                                         |
-| invite            | email, role, token_hash (unique; only a hash of the link's secret is stored), expires_at (7 days), accepted_at, revoked_at. |
-| template_revision | template_id, revision, body; unique (template_id, revision). Keeps old template bodies (F06).                               |
+| Table             | Why it exists                                                                                                                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| session           | Better Auth: one row per signed-in browser (token, expires_at, user_id, ip_address, user_agent).                                                                           |
+| account           | Better Auth: login method and password hash.                                                                                                                               |
+| verification      | Better Auth layout: password-reset tokens (`reset-password:…`) and sign-up email confirmations (`verify-email:` + a hash of the secret; value = user id; 24 hours, D-023). |
+| login_attempt     | email, succeeded, occurred_at; index (email, occurred_at). Pauses logins after 5 wrong passwords in 15 minutes (D-023). Rows older than a day are pruned; not audited.     |
+| invite            | email, role, token_hash (unique; only a hash of the link's secret is stored), expires_at (7 days), accepted_at, revoked_at.                                                |
+| template_revision | template_id, revision, body; unique (template_id, revision). Keeps old template bodies (F06).                                                                              |
 
 The PRD's `role` and `active` columns are the source of truth. The Better Auth admin plugin is
 not used (D-010).

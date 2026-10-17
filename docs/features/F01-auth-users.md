@@ -64,6 +64,16 @@ blocked everywhere at once.
 8. **Passwords:** 10–128 characters. Reset links (made by an Admin) work once, for 24 hours,
    and log the person out everywhere else. A password change logs out other devices.
    The audit log records that a password changed, never the password.
+9. **Wrong passwords (D-023):** 5 wrong passwords for one email within 15 minutes pause
+   logging in to that email for 15 minutes from the last one, with the message "Too many
+   wrong passwords…". A successful login resets the count.
+10. **Email (D-023):** when `RESEND_API_KEY` and `EMAIL_FROM` are set, invite and reset links
+    are also emailed to the person (the Admin can still copy them), and a new @lumor.tech
+    sign-up must open the confirmation link emailed to them (24 hours) before logging in.
+    Logging in with an expired link sends a fresh one. The confirm page has a button, so
+    email link previews can't confirm by accident. If the email can't be sent, the account is
+    confirmed at once rather than locked out. Without email set up, everything works as
+    before.
 
 ## How it works
 
@@ -103,11 +113,12 @@ blocked everywhere at once.
 
 ## Change history
 
-| Date       | Version | Change                                                                                                                            |
-| ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | 1.0.0   | Feature doc written (R1).                                                                                                         |
-| 2026-10-16 | 1.0.0   | user/session/account/verification/invite tables, no-delete and deactivation triggers added, with tests.                           |
-| 2026-10-16 | 1.0.0   | Login, invite registration, reset and forced password change built; admin plugin dropped and deactivation keeps sessions (D-010). |
-| 2026-10-16 | 1.0.0   | Self sign-up for @lumor.tech (D-012); three default Admins replace the gmail Admin (D-013).                                       |
-| 2026-10-16 | 1.0.0   | Settings → Users page built: invite, pending invites, roles, deactivate/reactivate, reset links, guards.                          |
-| 2026-10-16 | 1.0.0   | Released in v1.0.0 (R1 Foundation).                                                                                               |
+| Date       | Version    | Change                                                                                                                            |
+| ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.0.0      | Feature doc written (R1).                                                                                                         |
+| 2026-10-16 | 1.0.0      | user/session/account/verification/invite tables, no-delete and deactivation triggers added, with tests.                           |
+| 2026-10-16 | 1.0.0      | Login, invite registration, reset and forced password change built; admin plugin dropped and deactivation keeps sessions (D-010). |
+| 2026-10-16 | 1.0.0      | Self sign-up for @lumor.tech (D-012); three default Admins replace the gmail Admin (D-013).                                       |
+| 2026-10-16 | 1.0.0      | Settings → Users page built: invite, pending invites, roles, deactivate/reactivate, reset links, guards.                          |
+| 2026-10-16 | 1.0.0      | Released in v1.0.0 (R1 Foundation).                                                                                               |
+| 2026-10-17 | Unreleased | Wrong-password pause, emailed invite/reset links and sign-up confirmation through Resend (D-023).                                 |

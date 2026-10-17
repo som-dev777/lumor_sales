@@ -11,3 +11,4 @@ export * from "./activity";
 export * from "./settings";
 export * from "./audit-log";
 export * from "./app-release";
+export * from "./login-attempt";

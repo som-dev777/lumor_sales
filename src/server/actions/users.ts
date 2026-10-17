@@ -10,6 +10,7 @@ import type { Role } from "@/lib/db/enums";
 import { PermissionError } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { inviteSchema, roleSchema, userIdSchema, type InviteInput } from "@/lib/validation/users";
+import { emailConfigured, emails, sendEmail, type Email } from "../email";
 import { InviteError } from "../invites";
 import {
   changeRole as changeRoleFor,
@@ -33,6 +34,14 @@ async function run(work: () => Promise<ActionResult>): Promise<ActionResult> {
   }
 }
 
+/** Emails the link when email is set up (D-023); the link is shown to copy either way. */
+async function emailLink(email: Email, created: string): Promise<string> {
+  if (!emailConfigured()) return `${created} Copy the link and send it.`;
+  return (await sendEmail(email))
+    ? `${created} We emailed it to ${email.to}; you can also copy it.`
+    : `${created} The email couldn't be sent, so copy the link and send it.`;
+}
+
 export async function invite(input: InviteInput): Promise<ActionResult> {
   const viewer = await requireUser();
   const parsed = inviteSchema.safeParse(input);
@@ -46,7 +55,14 @@ export async function invite(input: InviteInput): Promise<ActionResult> {
   return run(async () => {
     const { link } = await inviteUser(getDb(), viewer, parsed.data);
     refresh();
-    return { ok: true, link, message: `Invite created for ${parsed.data.email}.` };
+    return {
+      ok: true,
+      link,
+      message: await emailLink(
+        emails.invite(parsed.data.email, link),
+        `Invite created for ${parsed.data.email}.`,
+      ),
+    };
   });
 }
 
@@ -97,7 +113,14 @@ export async function createResetLink(userId: string): Promise<ActionResult> {
   const viewer = await requireUser();
   if (!userIdSchema.safeParse(userId).success) return { ok: false, error: "Unknown user." };
   return run(async () => {
-    const { link } = await generateResetLink(getDb(), getAuth(), viewer, userId);
-    return { ok: true, link, message: "Reset link created. It works once, for 24 hours." };
+    const { link, email } = await generateResetLink(getDb(), getAuth(), viewer, userId);
+    return {
+      ok: true,
+      link,
+      message: await emailLink(
+        emails.reset(email, link),
+        "Reset link created. It works once, for 24 hours.",
+      ),
+    };
   });
 }

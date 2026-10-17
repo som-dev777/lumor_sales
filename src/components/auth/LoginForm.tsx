@@ -36,6 +36,15 @@ export function LoginForm() {
         {params.get("registered") && (
           <Alert tone="success">Your account is ready. Log in with your new password.</Alert>
         )}
+        {params.get("confirm") && (
+          <Alert tone="success">
+            Account created. We&rsquo;ve emailed you a link: open it to confirm your email, then log
+            in.
+          </Alert>
+        )}
+        {params.get("confirmed") && (
+          <Alert tone="success">Your email is confirmed. Log in to continue.</Alert>
+        )}
         {params.get("reset") && (
           <Alert tone="success">Your password was changed. Log in with the new one.</Alert>
         )}

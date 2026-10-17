@@ -17,6 +17,9 @@ R4 Daily work, in progress.
 - Person page: a "Log what happened" bar (Request sent, Accepted, Message 1 sent, the next follow-up, Got a reply, Demo booked, Demo held, Mark converted, Mark lost). Reply type, demo date and lost reason are asked for; a note can be added. After converting, the page offers to mark the company as a customer (F15).
 - Dashboard counting on the server: funnel stages for a week or month in IST, conversions against benchmarks (amber only with 10+ in the earlier stage), and breakdowns (F11).
 - Dashboard page: Week/Month switch with previous/next arrows, the funnel as a bar chart, the five conversions as tiles (amber below benchmark, or "low sample"), and a breakdown table by persona, level, account filter, template version, market or rep (F11).
+- Logging in is paused for 15 minutes after 5 wrong passwords for the same email.
+- Email through Resend (once a key is added): invite and password-reset links are emailed, and new @lumor.tech sign-ups confirm their email before logging in. Without a key, links are copied by hand as before.
+- Ready to go online: `netlify.toml` (Node 22; each build updates the database, adds the default Admins and starting library if missing, and syncs releases) and a step-by-step guide in docs/deploy.md.
 
 ## [1.2.0] - 2026-10-17
 

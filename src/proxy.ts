@@ -5,7 +5,14 @@ import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Pages anyone can open without being signed in. */
-const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/reset-password", "/disabled"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/reset-password",
+  "/verify-email",
+  "/disabled",
+];
 const PUBLIC_PREFIXES = ["/register/"];
 
 function isPublic(pathname: string) {

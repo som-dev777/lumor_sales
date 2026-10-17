@@ -15,6 +15,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | [roles-permissions.md](roles-permissions.md) | Who can do what, and how the server enforces it.                 |
 | [ai-prompts.md](ai-prompts.md)               | The AI prompts, word for word, with versions (filled in R6).     |
 | [decisions.md](decisions.md)                 | Significant choices and why they were made.                      |
+| [deploy.md](deploy.md)                       | Putting the app online (Turso + Netlify), step by step.          |
 | [features/](features/)                       | One file per feature (F01–F16): requirements, tests, change log. |
 | [../CLAUDE.md](../CLAUDE.md)                 | Standing rules every Claude Code session follows.                |
 

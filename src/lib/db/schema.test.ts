@@ -65,6 +65,7 @@ describe("migrations", () => {
       "audit_log",
       "company",
       "invite",
+      "login_attempt",
       "person",
       "persona",
       "playbook_settings",

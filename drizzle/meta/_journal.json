@@ -22,6 +22,13 @@
       "when": 1792246903353,
       "tag": "0002_unique_company_names",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792249155323,
+      "tag": "0003_login_attempts",
+      "breakpoints": true
     }
   ]
 }

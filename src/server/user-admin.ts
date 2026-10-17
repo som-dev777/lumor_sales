@@ -133,7 +133,7 @@ export async function generateResetLink(db: Db, auth: Auth, actor: Actor, target
     before: { resetLinkCreated: false },
     after: { resetLinkCreated: true },
   });
-  return result;
+  return { ...result, email: target.email };
 }
 
 export type TeamMember = {

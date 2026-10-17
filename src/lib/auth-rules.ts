@@ -2,6 +2,8 @@
 export const PASSWORD_MIN_LENGTH = 10;
 export const PASSWORD_MAX_LENGTH = 128;
 export const ACCESS_DISABLED_MESSAGE = "Access disabled, contact your admin";
+export const EMAIL_NOT_CONFIRMED_MESSAGE =
+  "Confirm your email first: open the link we sent you. (A new link is sent if the old one expired.)";
 
 /** Anyone with an email at this domain may sign up themselves, as a User (D-012). */
 export const SIGNUP_EMAIL_DOMAIN = "lumor.tech";

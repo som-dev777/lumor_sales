@@ -9,7 +9,13 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { eq } from "drizzle-orm";
-import { ACCESS_DISABLED_MESSAGE, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./auth-rules";
+import { awaitingConfirmation } from "@/server/email-verification";
+import {
+  ACCESS_DISABLED_MESSAGE,
+  EMAIL_NOT_CONFIRMED_MESSAGE,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from "./auth-rules";
 import { getDb, type Db } from "./db/client";
 import { account, session, user, verification } from "./db/schema";
 
@@ -53,14 +59,17 @@ export function createAuth(db: Db, { nextJs = true }: { nextJs?: boolean } = {})
       },
       session: {
         create: {
-          // A deactivated user can't log in.
+          // A deactivated user can't log in, nor one who hasn't confirmed their email yet.
           before: async (newSession) => {
             const [row] = await db
-              .select({ active: user.active })
+              .select({ active: user.active, emailVerified: user.emailVerified })
               .from(user)
               .where(eq(user.id, newSession.userId));
             if (!row?.active) {
               throw new APIError("FORBIDDEN", { message: ACCESS_DISABLED_MESSAGE });
+            }
+            if (!row.emailVerified && (await awaitingConfirmation(db, newSession.userId))) {
+              throw new APIError("FORBIDDEN", { message: EMAIL_NOT_CONFIRMED_MESSAGE });
             }
           },
         },
