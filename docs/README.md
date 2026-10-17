@@ -3,7 +3,7 @@
 Lumor Sales Hub is the internal web app where Lumor's sales team manages LinkedIn
 prospecting, from finding a lead in Sales Navigator to a paying customer.
 
-**Current version:** 1.0.0 (R1 Foundation, released 16 Oct 2026). Next: R2 Library (1.1.0).
+**Current version:** 1.1.0 (R2 Library, released 17 Oct 2026). Next: R3 Leads (1.2.0).
 
 ## Documents
 
@@ -25,10 +25,10 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F01 | [Auth and users](features/F01-auth-users.md)                    | P0       | R1      | Done (1.0.0) |
 | F14 | [Audit Log](features/F14-audit-log.md)                          | P0       | R1      | Done (1.0.0) |
 | F16 | [About and releases](features/F16-about-releases.md)            | P0       | R1      | Done (1.0.0) |
-| F04 | [Personas](features/F04-personas.md)                            | P0       | R2      | In progress  |
-| F05 | [Account filters](features/F05-account-filters.md)              | P0       | R2      | In progress  |
-| F06 | [Templates](features/F06-templates.md)                          | P0       | R2      | In progress  |
-| F07 | [Approvals](features/F07-approvals.md)                          | P1       | R2      | In progress  |
+| F04 | [Personas](features/F04-personas.md)                            | P0       | R2      | Done (1.1.0) |
+| F05 | [Account filters](features/F05-account-filters.md)              | P0       | R2      | Done (1.1.0) |
+| F06 | [Templates](features/F06-templates.md)                          | P0       | R2      | Done (1.1.0) |
+| F07 | [Approvals](features/F07-approvals.md)                          | P1       | R2      | Done (1.1.0) |
 | F02 | [People](features/F02-people.md)                                | P0       | R3      | Planned      |
 | F03 | [Companies](features/F03-companies.md)                          | P0       | R3      | Planned      |
 | F15 | [Quick-log and sequence automation](features/F15-quick-log.md)  | P0       | R4      | Planned      |
@@ -44,7 +44,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | Release       | Version | Features           | Status              |
 | ------------- | ------- | ------------------ | ------------------- |
 | R1 Foundation | 1.0.0   | F01, F14, F16      | Released 2026-10-16 |
-| R2 Library    | 1.1.0   | F04, F05, F06, F07 | In progress         |
+| R2 Library    | 1.1.0   | F04, F05, F06, F07 | Released 2026-10-17 |
 | R3 Leads      | 1.2.0   | F02, F03           | Planned             |
 | R4 Daily work | 1.3.0   | F15, F11           | Planned             |
 | R5 Settings   | 1.4.0   | F12, F13           | Planned             |

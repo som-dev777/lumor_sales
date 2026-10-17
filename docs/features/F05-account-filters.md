@@ -1,6 +1,6 @@
 # F05: Account filters
 
-- **Priority:** P0 · **Release:** R2 (v1.1.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R2 (v1.1.0) · **Status:** Done (v1.1.0)
 - **PRD:** [Screens → Personas and Account Filters](../PRD.md#screens-and-functional-requirements), [Business rules → Library items](../PRD.md#business-rules), [Appendix: seed data](../PRD.md#appendix-seed-data)
 
 ## What it does
@@ -56,10 +56,11 @@ the PRD says otherwise (A6: Bengaluru, Mumbai, Delhi NCR). Loaded by `npm run se
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                                   |
-| ---------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                                 |
-| 2026-10-16 | Unreleased | Full doc written (R2).                                                                                                                   |
-| 2026-10-16 | Unreleased | Account filter rules (Official code uniqueness, copy codes) built, with tests.                                                           |
-| 2026-10-17 | Unreleased | Seed: A1–A6 from the PRD (`npm run seed:library`), with tests.                                                                           |
-| 2026-10-17 | Unreleased | Account Filters page built: tabs, cards (code badge, industries, HQ, filters, exclusions) with stats, add/edit form, the shared actions. |
+| Date       | Version | Change                                                                                                                                   |
+| ---------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.1.0   | Placeholder doc created.                                                                                                                 |
+| 2026-10-16 | 1.1.0   | Full doc written (R2).                                                                                                                   |
+| 2026-10-16 | 1.1.0   | Account filter rules (Official code uniqueness, copy codes) built, with tests.                                                           |
+| 2026-10-17 | 1.1.0   | Seed: A1–A6 from the PRD (`npm run seed:library`), with tests.                                                                           |
+| 2026-10-17 | 1.1.0   | Account Filters page built: tabs, cards (code badge, industries, HQ, filters, exclusions) with stats, add/edit form, the shared actions. |
+| 2026-10-17 | 1.1.0   | Released in v1.1.0 (R2 Library).                                                                                                         |

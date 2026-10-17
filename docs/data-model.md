@@ -16,6 +16,7 @@ This document must match the code. Update it in the same step as any schema chan
 - Date-times are stored as integers: UTC milliseconds. They are shown in IST (Asia/Kolkata).
 - Plain dates (no time) are `YYYY-MM-DD` text, meaning an IST calendar date.
 - Lists and multi-selects are JSON text arrays. Their allowed values are checked with Zod.
+  Persona function and seniority accept team-added options besides the built-in lists (D-018).
 - Yes/no fields are integers 0 or 1.
 - Fixed lists of allowed values (enums) are enforced with CHECK constraints.
 - Foreign keys use ON DELETE RESTRICT. The database refuses to delete a row that others

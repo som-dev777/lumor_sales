@@ -1,6 +1,6 @@
 # F04: Personas
 
-- **Priority:** P0 · **Release:** R2 (v1.1.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R2 (v1.1.0) · **Status:** Done (v1.1.0)
 - **PRD:** [Screens → Personas and Account Filters](../PRD.md#screens-and-functional-requirements), [Business rules → Library items](../PRD.md#business-rules), [Appendix: seed data](../PRD.md#appendix-seed-data)
 
 ## What it does
@@ -86,11 +86,12 @@ again changes nothing.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                                         |
-| ---------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                                       |
-| 2026-10-16 | Unreleased | Full doc written (R2), with the shared library rules.                                                                                          |
-| 2026-10-16 | Unreleased | Library rules built on the server (`src/server/library/`), with tests.                                                                         |
-| 2026-10-17 | Unreleased | Seed: 5 Official personas from the PRD (`npm run seed:library`), with tests.                                                                   |
-| 2026-10-17 | Unreleased | Personas page built: tabs, cards with stats, add/edit form, duplicate, propose, archive/restore, delete, change history, Your proposals strip. |
-| 2026-10-17 | Unreleased | Function and seniority accept new options ("Add another"), offered to everyone afterwards (D-018).                                             |
+| Date       | Version | Change                                                                                                                                         |
+| ---------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.1.0   | Placeholder doc created.                                                                                                                       |
+| 2026-10-16 | 1.1.0   | Full doc written (R2), with the shared library rules.                                                                                          |
+| 2026-10-16 | 1.1.0   | Library rules built on the server (`src/server/library/`), with tests.                                                                         |
+| 2026-10-17 | 1.1.0   | Seed: 5 Official personas from the PRD (`npm run seed:library`), with tests.                                                                   |
+| 2026-10-17 | 1.1.0   | Personas page built: tabs, cards with stats, add/edit form, duplicate, propose, archive/restore, delete, change history, Your proposals strip. |
+| 2026-10-17 | 1.1.0   | Function and seniority accept new options ("Add another"), offered to everyone afterwards (D-018).                                             |
+| 2026-10-17 | 1.1.0   | Released in v1.1.0 (R2 Library).                                                                                                               |

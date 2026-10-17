@@ -1,6 +1,6 @@
 # F06: Templates
 
-- **Priority:** P0 · **Release:** R2 (v1.1.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R2 (v1.1.0) · **Status:** Done (v1.1.0)
 - **PRD:** [Screens → Templates](../PRD.md#screens-and-functional-requirements), [Appendix: seed data](../PRD.md#appendix-seed-data)
 
 ## What it does
@@ -65,10 +65,11 @@ interested / not now / competitor. Openers link to their persona and level. Load
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                                                               |
-| ---------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                                                             |
-| 2026-10-16 | Unreleased | Full doc written (R2).                                                                                                                                               |
-| 2026-10-16 | Unreleased | Template rules (revisions on wording edits, usage stats) built, with tests.                                                                                          |
-| 2026-10-17 | Unreleased | Seed: 12 Official version-A templates, openers linked to persona and level, with tests.                                                                              |
-| 2026-10-17 | Unreleased | Templates page built: sections by purpose, version badges, highlighted placeholders, live placeholder list in the form, Earlier wordings, times used and reply rate. |
+| Date       | Version | Change                                                                                                                                                               |
+| ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.1.0   | Placeholder doc created.                                                                                                                                             |
+| 2026-10-16 | 1.1.0   | Full doc written (R2).                                                                                                                                               |
+| 2026-10-16 | 1.1.0   | Template rules (revisions on wording edits, usage stats) built, with tests.                                                                                          |
+| 2026-10-17 | 1.1.0   | Seed: 12 Official version-A templates, openers linked to persona and level, with tests.                                                                              |
+| 2026-10-17 | 1.1.0   | Templates page built: sections by purpose, version badges, highlighted placeholders, live placeholder list in the form, Earlier wordings, times used and reply rate. |
+| 2026-10-17 | 1.1.0   | Released in v1.1.0 (R2 Library).                                                                                                                                     |

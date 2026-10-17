@@ -1,6 +1,6 @@
 # F07: Approvals
 
-- **Priority:** P1 · **Release:** R2 (v1.1.0) · **Status:** In progress
+- **Priority:** P1 · **Release:** R2 (v1.1.0) · **Status:** Done (v1.1.0)
 - **PRD:** [Screens → Approvals](../PRD.md#screens-and-functional-requirements), [Business rules → Library items](../PRD.md#business-rules)
 
 ## What it does
@@ -51,9 +51,10 @@ sees the outcome.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                                                                   |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                                                                 |
-| 2026-10-16 | Unreleased | Full doc written (R2).                                                                                                                                                   |
-| 2026-10-16 | Unreleased | Propose, approve, reject, withdraw and queue rules built, with tests.                                                                                                    |
-| 2026-10-17 | Unreleased | Approvals page built: queue with item preview, Approve (confirm) and Reject (optional note), Recently decided, waiting count in the sidebar; R2 exit-check browser test. |
+| Date       | Version | Change                                                                                                                                                                   |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-16 | 1.1.0   | Placeholder doc created.                                                                                                                                                 |
+| 2026-10-16 | 1.1.0   | Full doc written (R2).                                                                                                                                                   |
+| 2026-10-16 | 1.1.0   | Propose, approve, reject, withdraw and queue rules built, with tests.                                                                                                    |
+| 2026-10-17 | 1.1.0   | Approvals page built: queue with item preview, Approve (confirm) and Reject (optional note), Recently decided, waiting count in the sidebar; R2 exit-check browser test. |
+| 2026-10-17 | 1.1.0   | Released in v1.1.0 (R2 Library).                                                                                                                                         |

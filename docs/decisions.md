@@ -227,3 +227,10 @@ replaces it.
   - The database stores them as plain text lists, so no schema change was needed.
 - **Why:** The owner asked for a way to add functions and seniority. The PRD's seniority
   list (8 levels) stays as the default set.
+
+## D-019: Dependency warnings rechecked at v1.1.0
+
+- **Date:** 2026-10-17 · **Status:** Accepted. Confirms D-014 for this release.
+- **Decision:** `npm audit` reports the same 9 warnings as at v1.0.0 (`braces` in ESLint,
+  esbuild in drizzle-kit). No packages were added in R2. None of them reach the live app.
+  Recheck at v1.2.0.

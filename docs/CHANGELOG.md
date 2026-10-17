@@ -7,9 +7,22 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-R2 Library, in progress.
+Nothing yet. R3 (Leads: People and Companies) starts next.
 
-- Feature docs written for Personas (F04), Account filters (F05), Templates (F06) and Approvals (F07), with the shared library rules; decisions D-015 to D-017.
+## [1.1.0] - 2026-10-17
+
+R2 Library: the team's playbook of personas, account filters and templates, with proposals and approvals.
+
+- Personas, Account Filters and Templates pages, each with Official and Personal tabs, "Mine only" and "Show archived", and a card per item with live stats (leads, replied, demos, paid, reply rate; templates show times used and reply rate).
+- The starting playbook from the PRD is loaded: 5 personas, account filters A1–A6 and 12 version-A templates.
+- Official items are the team's playbook: only Admins change them, and Users see a lock. Anyone can keep Personal items and duplicate any item into their own Personal copy.
+- Propose a Personal item as Official. Admins approve (it becomes Official, owned by them) or reject with a note on the new Approvals page, which shows the number waiting in the sidebar. You see the outcome on your item and in "Your proposals".
+- Archive instead of delete: items that leads use can't be deleted, only archived, and archived items can be restored.
+- Persona function and seniority: tick the built-in options or add your own, which everyone can then pick.
+- Templates are grouped by purpose, with A/B/C versions and highlighted {placeholders}. Changing a template's wording keeps the earlier wording.
+- Account filter codes: Official codes are unique; copies get a "-copy" code.
+- Every change is recorded in the Audit Log, and each card has its own change history.
+- Short confirmation messages after each action; fixed a console warning caused by browser extensions.
 
 ## [1.0.0] - 2026-10-16
 
