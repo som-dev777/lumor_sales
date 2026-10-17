@@ -266,3 +266,22 @@ replaces it.
 - **Date:** 2026-10-17 · **Status:** Accepted. Confirms D-019.
 - **Decision:** Same 9 build-time warnings (ESLint's `braces`, drizzle-kit's esbuild). No
   packages added in R3. None reach the live app. Recheck at v1.3.0.
+
+## D-023: Getting ready to go online (R4)
+
+- **Date:** 2026-10-17 · **Status:** Accepted
+- **Decision:**
+  - **Login attempt limiting (closes D-011):** after 5 wrong passwords for the same email in
+    15 minutes, logging in to that email is paused for 15 minutes, with a plain message.
+    Attempts are stored in the database (a `login_attempt` table), so it works on Netlify.
+  - **Email (closes D-002's R4 item):** when `RESEND_API_KEY` and `EMAIL_FROM` are set, the app
+    emails sign-up verification links, invites and password-reset links through Resend.
+    Without them, it works as before: links are shown to the Admin, and sign-ups are
+    verified at once. The QA checklist and deploy guide say to set them before going online.
+  - **Sign-up verification (closes D-012's R4 item):** with email set up, a new @lumor.tech
+    account can't log in until its owner clicks the link sent to that address (valid 24 hours).
+  - **Deploying:** `netlify.toml` pins Node 22. Its build runs migrations,
+    `releases:sync` and the build. `docs/deploy.md` gives the click-by-click Turso and Netlify
+    setup. The owner creates the accounts; nothing is published automatically.
+- **Why:** These were the items deferred to "before going online" in R1. Accounts and API
+  keys can only come from the owner.

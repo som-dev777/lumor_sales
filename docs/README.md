@@ -31,8 +31,8 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F07 | [Approvals](features/F07-approvals.md)                          | P1       | R2      | Done (1.1.0) |
 | F02 | [People](features/F02-people.md)                                | P0       | R3      | Done (1.2.0) |
 | F03 | [Companies](features/F03-companies.md)                          | P0       | R3      | Done (1.2.0) |
-| F15 | [Quick-log and sequence automation](features/F15-quick-log.md)  | P0       | R4      | Planned      |
-| F11 | [Dashboard](features/F11-dashboard.md)                          | P0       | R4      | Planned      |
+| F15 | [Quick-log and sequence automation](features/F15-quick-log.md)  | P0       | R4      | In progress  |
+| F11 | [Dashboard](features/F11-dashboard.md)                          | P0       | R4      | In progress  |
 | F12 | [Product Facts](features/F12-product-facts.md)                  | P0       | R5      | Planned      |
 | F13 | [Playbook Settings](features/F13-playbook-settings.md)          | P0       | R5      | Planned      |
 | F08 | [Today planner](features/F08-today-planner.md)                  | P1       | R6      | Planned      |
@@ -46,7 +46,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | R1 Foundation | 1.0.0   | F01, F14, F16      | Released 2026-10-16 |
 | R2 Library    | 1.1.0   | F04, F05, F06, F07 | Released 2026-10-17 |
 | R3 Leads      | 1.2.0   | F02, F03           | Released 2026-10-17 |
-| R4 Daily work | 1.3.0   | F15, F11           | Planned             |
+| R4 Daily work | 1.3.0   | F15, F11           | In progress         |
 | R5 Settings   | 1.4.0   | F12, F13           | Planned             |
 | R6 AI         | 1.5.0   | F08, F09, F10      | Planned             |
 

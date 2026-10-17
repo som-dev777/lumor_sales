@@ -7,7 +7,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Nothing yet. R4 (Daily work: quick-log and Dashboard) starts next.
+R4 Daily work, in progress.
+
+- Feature docs written for Quick-log (F15) and Dashboard (F11); D-023 (getting ready to go online).
 
 ## [1.2.0] - 2026-10-17
 
