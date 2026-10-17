@@ -1,6 +1,14 @@
 // Form rules for people (F02) and companies (F03). Used in the browser and again on the server.
 import { z } from "zod";
-import { COMPANY_STATUSES, LEVELS, LOST_REASONS, REPLY_TYPES, STAGES } from "../db/enums";
+import {
+  CALL_OUTCOMES,
+  COMPANY_STATUSES,
+  LEVELS,
+  LOST_REASONS,
+  REPLY_TYPES,
+  SENIORITIES,
+  STAGES,
+} from "../db/enums";
 import { checkSalesNavUrl, normaliseLinkedInUrl } from "../linkedin";
 import { isIstDate } from "../time";
 
@@ -65,6 +73,27 @@ export const personSchema = z
     nextAction: optionalText(200),
     nextActionDate: optionalDate,
     notes: optionalText(5000),
+    // v2 (R7): contact details, seniority, Do not contact.
+    phone: optionalText(30).refine(
+      (v) => v === null || /^[+()\d\s-]{6,30}$/.test(v),
+      "Use digits, spaces, + ( ) or -.",
+    ),
+    email: optionalText(200).refine(
+      (v) => v === null || z.email().safeParse(v).success,
+      "That doesn't look like an email address.",
+    ),
+    seniority: z
+      .enum(SENIORITIES)
+      .optional()
+      .nullable()
+      .or(z.literal(""))
+      .transform((v) => (v ? v : null)),
+    doNotContact: z.boolean().optional().default(false),
+    dncReason: optionalText(500),
+  })
+  .refine((d) => !d.doNotContact || d.dncReason !== null, {
+    message: "Say why this person must not be contacted.",
+    path: ["dncReason"],
   })
   .refine((d) => d.stage !== "Lost" || d.lostReason !== null, {
     message: "Choose why this lead was lost.",
@@ -110,19 +139,27 @@ export type CustomerData = z.output<typeof customerSchema>;
 
 /** One quick-log click (F15). Reply type, demo date and lost reason are required where used. */
 export const quickLogSchema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("requestSent") }),
+  z.object({ action: z.literal("requestSent"), withNote: z.boolean().optional() }),
   z.object({ action: z.literal("accepted") }),
-  z.object({ action: z.literal("message1Sent"), templateId: optionalId }),
-  z.object({ action: z.literal("followUpSent") }),
+  z.object({
+    action: z.literal("messageSent"),
+    channel: z.enum(["LinkedIn", "InMail", "Email", "WhatsApp"]).optional(),
+    templateId: optionalId,
+  }),
+  z.object({
+    action: z.literal("callLogged"),
+    outcome: z.enum(CALL_OUTCOMES, { error: "Choose the call outcome." }),
+  }),
   z.object({
     action: z.literal("gotReply"),
     replyType: z.enum(REPLY_TYPES, { error: "Choose the reply type." }),
   }),
   z.object({
-    action: z.literal("demoBooked"),
-    demoDate: z.string().refine((v) => isIstDate(v), "Pick the demo date."),
+    action: z.literal("meetingBooked"),
+    meetingDate: z.string().refine((v) => isIstDate(v), "Pick the meeting date."),
   }),
-  z.object({ action: z.literal("demoHeld") }),
+  z.object({ action: z.literal("meetingHeld") }),
+  z.object({ action: z.literal("proposalSent") }),
   z.object({ action: z.literal("markConverted") }),
   z.object({
     action: z.literal("markLost"),

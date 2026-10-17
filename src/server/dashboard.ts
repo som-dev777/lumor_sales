@@ -142,6 +142,7 @@ async function funnelEvents(db: DbOrTx, period: Range): Promise<Event[]> {
       type: activity.type,
       replyType: activity.replyType,
       content: activity.content,
+      toStage: activity.toStage,
       personId: activity.personId,
       occurredAt: activity.occurredAt,
       repId: activity.userId,
@@ -156,8 +157,8 @@ async function funnelEvents(db: DbOrTx, period: Range): Promise<Event[]> {
           "Request sent",
           "Request accepted",
           "Reply received",
-          "Demo booked",
-          "Demo held",
+          "Meeting booked",
+          "Meeting held",
           "Stage change",
         ]),
       ),
@@ -208,9 +209,9 @@ async function funnelEvents(db: DbOrTx, period: Range): Promise<Event[]> {
     const b = base(r);
     if (r.type === "Request sent") events.push({ stage: "requests", ...b });
     else if (r.type === "Request accepted") events.push({ stage: "accepted", ...b });
-    else if (r.type === "Demo booked") events.push({ stage: "demoBooked", ...b });
-    else if (r.type === "Demo held") events.push({ stage: "demoHeld", ...b });
-    else if (r.type === "Stage change" && r.content?.includes("→ Trial/Pilot"))
+    else if (r.type === "Meeting booked") events.push({ stage: "demoBooked", ...b });
+    else if (r.type === "Meeting held") events.push({ stage: "demoHeld", ...b });
+    else if (r.type === "Stage change" && r.toStage === "Trial")
       events.push({ stage: "trial", ...b });
     else if (r.type === "Reply received") {
       if (r.replyType === "Interested") events.push({ stage: "interested", ...b });

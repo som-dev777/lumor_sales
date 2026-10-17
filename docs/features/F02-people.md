@@ -40,6 +40,17 @@ same LinkedIn profile twice, so two reps never message the same person.
 8. **CSV export:** the current filtered view, all matching rows (up to 10,000).
 9. Every create, edit, note, stage change and reassignment is audited.
 
+## v2 fields (R7)
+
+- **Phone** and **email** (optional, checked for shape). Plans use them to choose a call or an
+  email step (F17).
+- **Seniority** (optional, the persona seniority list). Vice President and CXO get the 45-day
+  Outreach limit (D-033).
+- **Do not contact** with a reason (required) and the date it was set. It stops the person's
+  plan and blocks outreach logging on the server.
+- Stages use the v2 list (D-029). The People list and export show the person's plan and step
+  instead of the old sequence step.
+
 ## Screens
 
 - **`/people`:**
@@ -73,10 +84,11 @@ same LinkedIn profile twice, so two reps never message the same person.
 
 ## Change history
 
-| Date       | Version | Change                                                                                                                                        |
-| ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | 1.2.0   | Placeholder doc created.                                                                                                                      |
-| 2026-10-17 | 1.2.0   | Full doc written (R3).                                                                                                                        |
-| 2026-10-17 | 1.2.0   | Rules built: link normalising, duplicates, ownership, notes, stage changes, bulk reassign, filters; with tests.                               |
-| 2026-10-17 | 1.2.0   | People list (filters, My/All, bulk reassign, CSV) and person page (header, claimed message, notes, timeline, history) built; R3 browser test. |
-| 2026-10-17 | 1.2.0   | Released in v1.2.0 (R3 Leads).                                                                                                                |
+| Date       | Version    | Change                                                                                                                                        |
+| ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.2.0      | Placeholder doc created.                                                                                                                      |
+| 2026-10-17 | 1.2.0      | Full doc written (R3).                                                                                                                        |
+| 2026-10-17 | 1.2.0      | Rules built: link normalising, duplicates, ownership, notes, stage changes, bulk reassign, filters; with tests.                               |
+| 2026-10-17 | 1.2.0      | People list (filters, My/All, bulk reassign, CSV) and person page (header, claimed message, notes, timeline, history) built; R3 browser test. |
+| 2026-10-17 | 1.2.0      | Released in v1.2.0 (R3 Leads).                                                                                                                |
+| 2026-10-18 | Unreleased | v2 (R7): phone, email, seniority, Do not contact; v2 stages; plan shown in the list and export.                                               |

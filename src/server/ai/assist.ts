@@ -73,7 +73,6 @@ async function leadContext(db: DbOrTx, personId: string) {
       level: row.p.level,
       market: row.p.market,
       stage: row.p.stage,
-      sequenceStep: row.p.sequenceStep,
     },
     PERSONA_ANGLE: row.persona?.leadWithAngle ?? null,
     TIMELINE: events.reverse().map((e) => ({
@@ -102,7 +101,13 @@ async function loadOwnLead(db: DbOrTx, actor: Actor, personId: string) {
 
 // --- P02 Reply Assistant ---------------------------------------------------------------------
 
-const AI_STAGES_AFTER_REPLY = ["Replied", "Demo booked", "Demo done", "Trial/Pilot"] as const;
+const AI_STAGES_AFTER_REPLY = [
+  "Replied",
+  "Meeting scheduled",
+  "Meeting done",
+  "Proposal sent",
+  "Trial",
+] as const;
 
 const nextStepSchema = <S extends readonly [string, ...string[]]>(stages: S) =>
   z.object({ stage: z.enum(stages), nextAction: z.string(), nextActionDate: z.string() });
@@ -263,13 +268,13 @@ export async function markSent(db: Db, actor: Actor, personId: string, msg: Sent
 }
 
 const CONFIRMABLE_STAGES: readonly Stage[] = [
-  "Request sent",
+  "Contacted",
   "Connected",
-  "Messaged",
   "Replied",
-  "Demo booked",
-  "Demo done",
-  "Trial/Pilot",
+  "Meeting scheduled",
+  "Meeting done",
+  "Proposal sent",
+  "Trial",
 ];
 
 /** Confirm the AI's suggested stage and next action (never Lost or Paid). */
@@ -329,13 +334,13 @@ export const summaryResultSchema = z.object({
   needs: z.array(z.string()),
   objections: z.array(z.string()),
   nextStep: nextStepSchema([
-    "Request sent",
+    "Contacted",
     "Connected",
-    "Messaged",
     "Replied",
-    "Demo booked",
-    "Demo done",
-    "Trial/Pilot",
+    "Meeting scheduled",
+    "Meeting done",
+    "Proposal sent",
+    "Trial",
   ] as const),
 });
 export type SummaryResult = z.infer<typeof summaryResultSchema>;

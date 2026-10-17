@@ -55,13 +55,13 @@ describe("Today sections (F08)", () => {
       t.db,
       rep,
       demo.id,
-      { action: "demoBooked", demoDate: "2026-10-30" },
+      { action: "meetingBooked", meetingDate: "2026-10-30" },
       { now: day(20) },
     );
     const fu = await lead("Follow Lead");
-    await quickLog(t.db, rep, fu.id, { action: "message1Sent" }, { now: day(26) }); // FU1 due 30 Oct
+    await quickLog(t.db, rep, fu.id, { action: "accepted" }, { now: day(26) }); // Message 1 due 27 Oct
     const notYet = await lead("Not Yet");
-    await quickLog(t.db, rep, notYet.id, { action: "message1Sent" }, { now: day(28) });
+    await quickLog(t.db, rep, notYet.id, { action: "accepted" }, { now: day(30) });
     const withdraw = await lead("Withdraw Lead");
     await quickLog(t.db, rep, withdraw.id, { action: "requestSent" }, { now: day(15) }); // > 14 days
     const fresh = await lead("Fresh Request");
@@ -99,7 +99,7 @@ describe("Today sections (F08)", () => {
     await quickLog(t.db, rep, withdraw.id, { action: "requestSent" }, { now: day(10) });
     await completeTask(t.db, rep, `withdraw:${withdraw.id}`, NOW);
     const [p] = await t.db.select().from(person).where(eq(person.id, withdraw.id));
-    expect(p).toMatchObject({ stage: "Prospect", sequenceStep: "Not started" });
+    expect(p).toMatchObject({ stage: "Prospect" });
     await expect(completeTask(t.db, other, `reply:${reply.id}`, NOW)).rejects.toThrow(
       PermissionError,
     );

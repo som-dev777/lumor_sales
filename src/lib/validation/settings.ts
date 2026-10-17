@@ -44,28 +44,30 @@ const days = (min: number, max: number) =>
 
 export const playbookSettingsSchema = z
   .object({
-    followUp1DelayDays: days(1, 60),
-    followUp2DelayDays: days(1, 60),
-    breakUpDelayDays: days(1, 90),
     withdrawAfterDays: days(1, 90),
     dailyConnectionTarget: days(0, 200),
     dailyMessageTarget: days(0, 200),
     staleLeadDays: days(1, 365),
+    // Cadence guardrails (F17, D-030).
+    msgAfterAcceptMinDays: days(0, 14),
+    msgAfterAcceptMaxDays: days(0, 14),
+    minGapDays: days(1, 30),
+    maxFollowUps: days(1, 10),
+    weeklyTouchLimit: days(1, 7),
+    outreachMaxDays: days(7, 120),
+    outreachMaxDaysSenior: days(7, 180),
+    nurtureDays: days(1, 365),
+    // AI reply-deadline bounds (F18).
+    replyDeadlineMinDays: days(1, 30),
+    replyDeadlineMaxDays: days(1, 30),
   })
   .superRefine((v, ctx) => {
-    // All delays count from Message 1, so they must go up in order (F13).
-    if (v.followUp2DelayDays <= v.followUp1DelayDays)
-      ctx.addIssue({
-        code: "custom",
-        path: ["followUp2DelayDays"],
-        message: "Must be more days than Follow-up 1.",
-      });
-    if (v.breakUpDelayDays <= v.followUp2DelayDays)
-      ctx.addIssue({
-        code: "custom",
-        path: ["breakUpDelayDays"],
-        message: "Must be more days than Follow-up 2.",
-      });
+    const order = (low: keyof typeof v, high: keyof typeof v, message: string) => {
+      if (v[high] < v[low]) ctx.addIssue({ code: "custom", path: [high], message });
+    };
+    order("msgAfterAcceptMinDays", "msgAfterAcceptMaxDays", "Can't be less than the minimum.");
+    order("outreachMaxDays", "outreachMaxDaysSenior", "Can't be less than the normal limit.");
+    order("replyDeadlineMinDays", "replyDeadlineMaxDays", "Can't be less than the minimum.");
   });
 export type PlaybookSettingsInput = z.input<typeof playbookSettingsSchema>;
 export type PlaybookSettingsData = z.output<typeof playbookSettingsSchema>;

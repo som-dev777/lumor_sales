@@ -1,52 +1,43 @@
-# F15: Quick-log actions and sequence automation
+# F15: Quick-log actions
 
-- **Priority:** P0 · **Release:** R4 (v1.3.0) · **Status:** Done (v1.3.0)
+- **Priority:** P0 · **Release:** R4 (v1.3.0), revised in R7 (v2.0.0) · **Status:** In progress (v2)
 - **PRD:** [Business rules → Quick-log automation](../PRD.md#business-rules)
 
 ## What it does
 
-One-click buttons on the person page to log what just happened on LinkedIn. Each click logs
-the activity with the time, and moves the lead's stage, sequence step and next action
-automatically, so nobody has to remember follow-up dates.
+One-click buttons on the person page to log what just happened. Each click logs the activity
+with the time and moves the lead's stage and next action. From v2, follow-up timing comes from
+**plans** (F17). The fixed sequence and its delays are gone (D-032).
 
-## Rules (from the PRD table)
+## Buttons (v2)
 
-Delays come from Playbook Settings (defaults: follow-ups at 4, 7 and 10 days after Message 1;
-withdraw after 14). Follow-up dates are counted from the Message 1 date (D-020). "Today" means
-today in IST.
+| Button                                                              | Activity logged            | Stage (forward only)     | Next action                                  |
+| ------------------------------------------------------------------- | -------------------------- | ------------------------ | -------------------------------------------- |
+| Request sent (with or without a note)                               | Request sent               | → Contacted              | Check acceptance, today + withdraw days (14) |
+| Accepted                                                            | Request accepted           | → Connected              | Send Message 1, today + 1 (guardrail 1)      |
+| Message sent (LinkedIn, InMail, Email, WhatsApp; template optional) | Message sent / InMail sent | → Contacted              | cleared                                      |
+| Call (outcome required)                                             | Call, with the outcome     | → Contacted if Connected | unchanged                                    |
+| Got a reply (reply type required)                                   | Reply received             | → Replied                | Respond, today. **Pauses the person's plan** |
+| Meeting booked (date required)                                      | Meeting booked             | Meeting scheduled        | Hold meeting, on the date                    |
+| Meeting held                                                        | Meeting held               | Meeting done             | Send recap, today                            |
+| Proposal sent                                                       | Stage change               | Proposal sent            | Follow up on proposal, today + 3             |
+| Mark converted                                                      | Deal update                | Paid                     | none; converted = yes                        |
+| Mark lost (reason required)                                         | Stage change               | Lost                     | none                                         |
 
-| Button           | Activity logged                      | Stage        | Sequence step     | Next action and date                                         |
-| ---------------- | ------------------------------------ | ------------ | ----------------- | ------------------------------------------------------------ |
-| Request sent     | Request sent                         | Request sent | Request sent      | Check acceptance, today + 14                                 |
-| Accepted         | Request accepted                     | Connected    | Message 1         | Send Message 1, today                                        |
-| Message 1 sent   | Message sent (template optional)     | Messaged     | Message 1         | Send Follow-up 1, Message 1 date + 4                         |
-| Follow-up 1 sent | Message sent                         | Messaged     | Follow-up 1       | Send Follow-up 2, Message 1 date + 7                         |
-| Follow-up 2 sent | Message sent                         | Messaged     | Follow-up 2       | Send Break-up, Message 1 date + 10                           |
-| Break-up sent    | Message sent                         | Messaged     | Nurture           | Nurture, no date                                             |
-| Got a reply      | Reply received (reply type required) | Replied      | Stopped (replied) | Respond, today                                               |
-| Demo booked      | Demo booked (demo date required)     | Demo booked  | Stopped (replied) | Hold demo, on the demo date                                  |
-| Demo held        | Demo held                            | Demo done    | unchanged         | Send recap, today                                            |
-| Mark converted   | Deal update                          | Paid         | unchanged         | none; converted = yes, today's date; offers Mark as customer |
-| Mark lost        | Stage change                         | Lost         | Stopped (replied) | none; lost reason required                                   |
-
-- **"Follow-up sent" is one button whose label follows the sequence:** Follow-up 1 → Follow-up
-  2 → Break-up. After Break-up the lead moves to **Nurture** with no date (PRD). It's only
-  offered once Message 1 has been sent and the lead isn't in Nurture or Stopped.
-- **The Message 1 date** is the date of the lead's first "Message sent" activity.
-- Message 1 can record the template used (defaults to the lead's opener template). The
-  template's A/B/C version is stored on the activity for template stats.
-- An optional note (e.g. the reply text) can be added to any quick-log.
-- **Trial/Pilot** is set from the stage dropdown in Edit, not a quick-log button (PRD).
-- **Users can't log outreach on a lead someone else owns:** the buttons aren't offered, the
-  server refuses, and the page shows "This lead is claimed by {owner}" (notes still allowed).
-- Every quick-log writes the activity and a "Person Updated" audit entry (stage, sequence
-  step, next action, converted) in one transaction.
+- "Forward only": outreach never moves a lead backwards, and Lost, Paid and Active customer
+  stay as they are.
+- **Do not contact** blocks Request sent, Message sent and Call on the server.
+- **On a plan:** if the button matches the current step's channel, the app asks "Is this step
+  N of their plan?" **Yes** does the step (F17); **No** logs an extra touch.
+- **Guardrails:** outreach touches are checked first (F17). A block refuses the touch. A
+  warning asks "Log anyway?", and the override is recorded in the audit entry.
+- Users can't log outreach on a lead someone else owns. Every log writes the activity and a
+  "Person Updated" audit entry in one transaction.
 
 ## Screen
 
-Person page: a "Log what happened" bar. Buttons that need more information (reply type,
-demo date, lost reason, template) open a small dialog. After "Mark converted", if the person
-has a company that isn't a customer yet, the app offers Mark as customer straight away.
+Person page: a "Log what happened" bar. Buttons that need more information open a small
+dialog. After Mark converted, the page offers Mark as customer for the company.
 
 ## Tests
 
@@ -58,10 +49,11 @@ has a company that isn't a customer yet, the app offers Mark as customer straigh
 
 ## Change history
 
-| Date       | Version | Change                                                                                            |
-| ---------- | ------- | ------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | 1.3.0   | Placeholder doc created.                                                                          |
-| 2026-10-17 | 1.3.0   | Full doc written (R4).                                                                            |
-| 2026-10-17 | 1.3.0   | Quick-log rules built and tested on the server.                                                   |
-| 2026-10-17 | 1.3.0   | "Log what happened" bar and dialogs on the person page; Mark-as-customer prompt after converting. |
-| 2026-10-17 | 1.3.0   | Released in v1.3.0 (R4 Daily work).                                                               |
+| Date       | Version    | Change                                                                                                                    |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.3.0      | Placeholder doc created.                                                                                                  |
+| 2026-10-17 | 1.3.0      | Full doc written (R4).                                                                                                    |
+| 2026-10-17 | 1.3.0      | Quick-log rules built and tested on the server.                                                                           |
+| 2026-10-17 | 1.3.0      | "Log what happened" bar and dialogs on the person page; Mark-as-customer prompt after converting.                         |
+| 2026-10-17 | 1.3.0      | Released in v1.3.0 (R4 Daily work).                                                                                       |
+| 2026-10-18 | Unreleased | v2 (R7): v2 stages and channels, Call and Proposal sent buttons, Do not contact; the fixed sequence is replaced by plans. |

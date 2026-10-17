@@ -38,16 +38,18 @@ export const TIERS = [1, 2, 3] as const;
 
 export const COMPANY_STATUSES = ["Target", "Engaged", "Customer", "Lost"] as const;
 
+/** v2 stages (PRD Version 2 scope; D-029). Lost (with a reason) can be set from any stage. */
 export const STAGES = [
   "Prospect",
-  "Request sent",
+  "Contacted",
   "Connected",
-  "Messaged",
   "Replied",
-  "Demo booked",
-  "Demo done",
-  "Trial/Pilot",
+  "Meeting scheduled",
+  "Meeting done",
+  "Proposal sent",
+  "Trial",
   "Paid",
+  "Active customer",
   "Lost",
 ] as const;
 export type Stage = (typeof STAGES)[number];
@@ -61,18 +63,6 @@ export const LOST_REASONS = [
   "Other",
 ] as const;
 
-export const SEQUENCE_STEPS = [
-  "Not started",
-  "Warm-up",
-  "Request sent",
-  "Message 1",
-  "Follow-up 1",
-  "Follow-up 2",
-  "Break-up",
-  "Nurture",
-  "Stopped (replied)",
-] as const;
-
 export const ACTIVITY_TYPES = [
   "Profile viewed",
   "Post engaged",
@@ -82,14 +72,50 @@ export const ACTIVITY_TYPES = [
   "Message sent",
   "Reply received",
   "InMail sent",
-  "Demo booked",
-  "Demo held",
+  "Meeting booked",
+  "Meeting held",
   "Meeting note",
   "Stage change",
   "Deal update",
+  "Call",
+  "Task done",
+  "Plan change",
 ] as const;
 
-export const CHANNELS = ["LinkedIn", "InMail", "Email", "Call", "In person"] as const;
+/** "In person" is kept for logging meetings only, never a plan step (D-033). */
+export const CHANNELS = ["LinkedIn", "InMail", "Email", "Call", "WhatsApp", "In person"] as const;
+export type Channel = (typeof CHANNELS)[number];
+
+export const CALL_OUTCOMES = [
+  "Connected",
+  "No answer",
+  "Call back later",
+  "Wrong number",
+  "Not interested",
+] as const;
+export type CallOutcome = (typeof CALL_OUTCOMES)[number];
+
+// --- Plans (F17) ---
+export const PLAN_TYPES = ["Outreach", "Meeting follow-up", "Trial", "Onboarding"] as const;
+export type PlanType = (typeof PLAN_TYPES)[number];
+
+export const STEP_CHANNELS = [
+  "LinkedIn connection request",
+  "LinkedIn message",
+  "InMail",
+  "Email",
+  "Call",
+  "WhatsApp",
+  "Manual task",
+] as const;
+export type StepChannel = (typeof STEP_CHANNELS)[number];
+
+/** When a step's channel option applies (D-033: an ordered list of options per step). */
+export const CHANNEL_CONDITIONS = ["always", "phone", "email"] as const;
+export type ChannelCondition = (typeof CHANNEL_CONDITIONS)[number];
+
+export const ENROLMENT_STATUSES = ["Active", "Paused", "Completed", "Stopped"] as const;
+export type EnrolmentStatus = (typeof ENROLMENT_STATUSES)[number];
 
 export const REPLY_TYPES = [
   "Interested",
@@ -116,7 +142,7 @@ export const TEMPLATE_PURPOSES = [
 export const TEMPLATE_VERSIONS = ["A", "B", "C"] as const;
 export const EDIT_LEVELS = ["None", "Light", "Heavy"] as const;
 
-export const PROPOSAL_ITEM_TYPES = ["Persona", "AccountFilter", "Template"] as const;
+export const PROPOSAL_ITEM_TYPES = ["Persona", "AccountFilter", "Template", "Plan"] as const;
 export const PROPOSAL_DECISIONS = ["Pending", "Approved", "Rejected"] as const;
 
 export const AUDIT_ACTIONS = [

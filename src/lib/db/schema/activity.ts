@@ -1,6 +1,14 @@
 import { sql } from "drizzle-orm";
-import { check, index, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { ACTIVITY_TYPES, CHANNELS, EDIT_LEVELS, REPLY_TYPES, TEMPLATE_VERSIONS } from "../enums";
+import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  ACTIVITY_TYPES,
+  CALL_OUTCOMES,
+  CHANNELS,
+  EDIT_LEVELS,
+  REPLY_TYPES,
+  STAGES,
+  TEMPLATE_VERSIONS,
+} from "../enums";
 import { baseColumns, flag, oneOf, oneOfOrNull, timestamp } from "./_shared";
 import { user } from "./auth";
 import { company } from "./company";
@@ -28,6 +36,15 @@ export const activity = sqliteTable(
     aiSuggestionUsed: flag("ai_suggestion_used").notNull().default(false),
     suggestionApproach: text("suggestion_approach"),
     editLevel: text("edit_level", { enum: EDIT_LEVELS }),
+    // v2 (R7): call outcome, the plan step this touch belongs to, stage changes, request notes.
+    callOutcome: text("call_outcome", { enum: CALL_OUTCOMES }),
+    // Plain id (no foreign key) so plan history never blocks anything.
+    planEnrolmentId: text("plan_enrolment_id"),
+    planStepOrder: integer("plan_step_order"),
+    // For "Stage change" activities: the stage moved to.
+    toStage: text("to_stage", { enum: STAGES }),
+    // A connection request sent with a note counts as a touch (D-033).
+    requestNote: flag("request_note").notNull().default(false),
   },
   (t) => [
     check("activity_type_check", oneOf("type", ACTIVITY_TYPES)),
@@ -41,8 +58,12 @@ export const activity = sqliteTable(
     check("activity_template_version_check", oneOfOrNull("template_version", TEMPLATE_VERSIONS)),
     check("activity_edit_level_check", oneOfOrNull("edit_level", EDIT_LEVELS)),
     check("activity_ai_suggestion_used_check", sql`${t.aiSuggestionUsed} IN (0, 1)`),
+    check("activity_call_outcome_check", oneOfOrNull("call_outcome", CALL_OUTCOMES)),
+    check("activity_to_stage_check", oneOfOrNull("to_stage", STAGES)),
+    check("activity_request_note_check", sql`${t.requestNote} IN (0, 1)`),
     index("activity_person_time_idx").on(t.personId, t.occurredAt),
     index("activity_user_time_idx").on(t.userId, t.occurredAt),
     index("activity_type_time_idx").on(t.type, t.occurredAt),
+    index("activity_enrolment_idx").on(t.planEnrolmentId),
   ],
 );

@@ -30,27 +30,31 @@ This document must match the code. Update it in the same step as any schema chan
 
 ## Enumerations
 
-| Name               | Values                                                                                                                                                                                      |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Role               | Admin, User                                                                                                                                                                                 |
-| Library type       | Official, Personal                                                                                                                                                                          |
-| Library status     | Active, Archived                                                                                                                                                                            |
-| Proposal status    | None, Proposed, Approved, Rejected                                                                                                                                                          |
-| Seniority          | Entry Level, Senior, Entry Level Manager, Experienced Manager, Director, Vice President, CXO, Owner / Partner                                                                               |
-| Level              | Leader, Practitioner (templates also allow Any)                                                                                                                                             |
-| Company status     | Target, Engaged, Customer, Lost                                                                                                                                                             |
-| Stage              | Prospect, Request sent, Connected, Messaged, Replied, Demo booked, Demo done, Trial/Pilot, Paid, Lost                                                                                       |
-| Lost reason        | No budget, Using competitor, Not a priority, No response, Wrong person, Other                                                                                                               |
-| Sequence step      | Not started, Warm-up, Request sent, Message 1, Follow-up 1, Follow-up 2, Break-up, Nurture, Stopped (replied)                                                                               |
-| Activity type      | Profile viewed, Post engaged, Request sent, Request accepted, Request withdrawn, Message sent, Reply received, InMail sent, Demo booked, Demo held, Meeting note, Stage change, Deal update |
-| Channel            | LinkedIn, InMail, Email, Call, In person                                                                                                                                                    |
-| Reply type         | Interested, Asking for details, Not now, Objection, Using a competitor, Not interested                                                                                                      |
-| Template purpose   | Message 1, Follow-up 1, Follow-up 2, Break-up, Reply – interested, Reply – details, Reply – not now, Reply – competitor, Post-demo recap, InMail                                            |
-| Template version   | A, B, C                                                                                                                                                                                     |
-| Edit level         | None, Light, Heavy                                                                                                                                                                          |
-| Proposal item type | Persona, AccountFilter, Template                                                                                                                                                            |
-| Proposal decision  | Pending, Approved, Rejected                                                                                                                                                                 |
-| Audit action       | Created, Updated, Deleted, Approved, Rejected, Reassigned, Role changed, Deactivated, Reactivated                                                                                           |
+| Name               | Values                                                                                                                                                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Role               | Admin, User                                                                                                                                                                                                                     |
+| Library type       | Official, Personal                                                                                                                                                                                                              |
+| Library status     | Active, Archived                                                                                                                                                                                                                |
+| Proposal status    | None, Proposed, Approved, Rejected                                                                                                                                                                                              |
+| Seniority          | Entry Level, Senior, Entry Level Manager, Experienced Manager, Director, Vice President, CXO, Owner / Partner                                                                                                                   |
+| Level              | Leader, Practitioner (templates also allow Any)                                                                                                                                                                                 |
+| Company status     | Target, Engaged, Customer, Lost                                                                                                                                                                                                 |
+| Stage              | v2 (D-029): Prospect, Contacted, Connected, Replied, Meeting scheduled, Meeting done, Proposal sent, Trial, Paid, Active customer, Lost                                                                                         |
+| Lost reason        | No budget, Using competitor, Not a priority, No response, Wrong person, Other                                                                                                                                                   |
+| Activity type      | Profile viewed, Post engaged, Request sent, Request accepted, Request withdrawn, Message sent, Reply received, InMail sent, Meeting booked, Meeting held, Meeting note, Stage change, Deal update, Call, Task done, Plan change |
+| Channel            | LinkedIn, InMail, Email, Call, WhatsApp, In person (In person is for meetings only)                                                                                                                                             |
+| Call outcome       | Connected, No answer, Call back later, Wrong number, Not interested                                                                                                                                                             |
+| Plan type          | Outreach, Meeting follow-up, Trial, Onboarding                                                                                                                                                                                  |
+| Step channel       | LinkedIn connection request, LinkedIn message, InMail, Email, Call, WhatsApp, Manual task                                                                                                                                       |
+| Channel condition  | always, phone (a phone is known), email (an email is known)                                                                                                                                                                     |
+| Enrolment status   | Active, Paused, Completed, Stopped                                                                                                                                                                                              |
+| Reply type         | Interested, Asking for details, Not now, Objection, Using a competitor, Not interested                                                                                                                                          |
+| Template purpose   | Message 1, Follow-up 1, Follow-up 2, Break-up, Reply – interested, Reply – details, Reply – not now, Reply – competitor, Post-demo recap, InMail                                                                                |
+| Template version   | A, B, C                                                                                                                                                                                                                         |
+| Edit level         | None, Light, Heavy                                                                                                                                                                                                              |
+| Proposal item type | Persona, AccountFilter, Template, Plan                                                                                                                                                                                          |
+| Proposal decision  | Pending, Approved, Rejected                                                                                                                                                                                                     |
+| Audit action       | Created, Updated, Deleted, Approved, Rejected, Reassigned, Role changed, Deactivated, Reactivated                                                                                                                               |
 
 ## The 12 PRD entities
 
@@ -129,30 +133,39 @@ Unique: the company name, ignoring case and surrounding spaces (`lower(trim(name
 
 ### person
 
-| Column                  | Rules                                                |
-| ----------------------- | ---------------------------------------------------- |
-| full_name               | required                                             |
-| title                   | text                                                 |
-| linkedin_url            | required, must contain `linkedin.com/in/`            |
-| linkedin_url_normalised | required, **unique**, set by the server (see F02)    |
-| sales_nav_url           | optional                                             |
-| company_id              | → company                                            |
-| persona_id              | → persona                                            |
-| level                   | Leader or Practitioner                               |
-| account_filter_id       | → account_filter                                     |
-| market                  | text (market/country)                                |
-| owner_id                | → user, required                                     |
-| stage                   | Stage, default Prospect                              |
-| sequence_step           | Sequence step, default Not started                   |
-| opener_template_id      | → template                                           |
-| opener_template_version | A, B or C                                            |
-| next_action             | text                                                 |
-| next_action_date        | plain date                                           |
-| snoozed_until           | plain date; hidden from Today until then (F08)       |
-| lost_reason             | Lost reason. **Required when stage is Lost** (CHECK) |
-| converted               | 0/1, default 0                                       |
-| converted_date          | plain date                                           |
-| notes                   | text                                                 |
+| Column                  | Rules                                                       |
+| ----------------------- | ----------------------------------------------------------- |
+| full_name               | required                                                    |
+| title                   | text                                                        |
+| linkedin_url            | required, must contain `linkedin.com/in/`                   |
+| linkedin_url_normalised | required, **unique**, set by the server (see F02)           |
+| sales_nav_url           | optional                                                    |
+| company_id              | → company                                                   |
+| persona_id              | → persona                                                   |
+| level                   | Leader or Practitioner                                      |
+| account_filter_id       | → account_filter                                            |
+| market                  | text (market/country)                                       |
+| owner_id                | → user, required                                            |
+| stage                   | Stage, default Prospect                                     |
+| opener_template_id      | → template                                                  |
+| opener_template_version | A, B or C                                                   |
+| next_action             | text                                                        |
+| next_action_date        | plain date                                                  |
+| snoozed_until           | plain date; hidden from Today until then (F08)              |
+| lost_reason             | Lost reason. **Required when stage is Lost** (CHECK)        |
+| converted               | 0/1, default 0                                              |
+| converted_date          | plain date                                                  |
+| notes                   | text                                                        |
+| phone                   | optional (v2)                                               |
+| email                   | optional (v2)                                               |
+| seniority               | Seniority, optional; Vice President/CXO get 45 days (D-033) |
+| do_not_contact          | 0/1, default 0; stops plans and blocks outreach             |
+| dnc_reason              | required when do_not_contact is on (form rule)              |
+| dnc_date                | plain date it was set                                       |
+| nurture_until           | plain date; no touches until then (F17)                     |
+| awaiting_reply_until    | plain date; reply deadline (set from R8, F18)               |
+
+`sequence_step` was removed in v2 (D-032); a plan's current step replaces it.
 
 Indexes: owner_id, stage, next_action_date, company_id, persona_id.
 
@@ -173,8 +186,13 @@ Indexes: owner_id, stage, next_action_date, company_id, persona_id.
 | ai_suggestion_used  | 0/1, default 0                                                   |
 | suggestion_approach | text                                                             |
 | edit_level          | Edit level                                                       |
+| call_outcome        | Call outcome (v2)                                                |
+| plan_enrolment_id   | the plan enrolment this touch or reply belongs to (no FK)        |
+| plan_step_order     | the plan step number                                             |
+| to_stage            | for Stage change: the stage moved to (filled for v1 rows, D-029) |
+| request_note        | 0/1: a connection request sent with a note (counts as a touch)   |
 
-Indexes: (person_id, occurred_at), (user_id, occurred_at), (type, occurred_at).
+Indexes: (person_id, occurred_at), (user_id, occurred_at), (type, occurred_at), plan_enrolment_id.
 
 ### template
 
@@ -212,15 +230,42 @@ calendar_link, last_edited_by (→ user), last_edited_at.
 
 ### playbook_settings (single row, id = 1)
 
-| Column                  | Default                          |
-| ----------------------- | -------------------------------- |
-| follow_up_1_delay_days  | 4                                |
-| follow_up_2_delay_days  | 7                                |
-| break_up_delay_days     | 10                               |
-| withdraw_after_days     | 14                               |
-| daily_connection_target | 20                               |
-| daily_message_target    | 10 (PRD gives no default; D-007) |
-| stale_lead_days         | 21                               |
+| Column                          | Default                          |
+| ------------------------------- | -------------------------------- |
+| withdraw_after_days             | 14                               |
+| daily_connection_target         | 20                               |
+| daily_message_target            | 10 (PRD gives no default; D-007) |
+| stale_lead_days                 | 21                               |
+| msg_after_accept_min_days / max | 1 / 3 (guardrail 1)              |
+| min_gap_days                    | 3 (guardrail 2)                  |
+| max_follow_ups                  | 4 (guardrail 3)                  |
+| weekly_touch_limit              | 2 (guardrail 4)                  |
+| outreach_max_days / _senior     | 30 / 45 (guardrail 7)            |
+| nurture_days                    | 60                               |
+| reply_deadline_min_days / max   | 1 / 10 (F18, from R8)            |
+
+The v1 follow-up delays (4/7/10) were removed in v2: timing is set per plan step (D-032).
+
+### plan (F17)
+
+name, plan_type (Plan type), persona_id (→ persona, optional), type (Official/Personal),
+owner_id (→ user), status (Active/Archived), proposal_status, current_version (default 1),
+skip_weekends (0/1, default 1).
+
+### plan_step
+
+plan_id (→ plan), version, step_order, channels (JSON ordered list of `{channel, when}`; the
+first that applies is used, D-033), template_purpose (Template purpose, optional), template_id
+(→ template, optional), script (call script, task text or connection-request note), wait_days
+(≥ 0). Unique (plan_id, version, step_order).
+
+### plan_enrolment
+
+person_id (→ person), plan_id (→ plan), version, status (Enrolment status), current_step
+(1-based; more than the step count = all done), next_due_date, waiting_for_acceptance (0/1),
+request_sent_date, accepted_date, ends_by, call_attempts, started_at, paused_at, ended_at,
+end_reason. **Partial unique index `plan_enrolment_one_live`: one Active or Paused row per
+person** (`WHERE status IN ('Active','Paused')`).
 
 ### audit_log (insert-only)
 
@@ -274,3 +319,11 @@ Deactivation no longer deletes sessions: the app needs the session to show "Acce
 
 Limit: someone with direct admin access to the database file or the Turso console could
 drop a trigger. The app never runs schema-changing commands at runtime.
+
+## Migrations and backups
+
+`npm run db:migrate` applies the files in `drizzle/` in order. Before applying any pending
+migration to a local database file, it copies the file to `data/backups/`. Afterwards it runs
+`PRAGMA foreign_key_check` and prints the number of people per stage before and after.
+0005 and 0006 move v1 data to v2 (D-029): stages, activity types, `to_stage`, new columns and
+tables, and dropping `sequence_step` and the old follow-up delays.

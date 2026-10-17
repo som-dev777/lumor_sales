@@ -12,7 +12,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-import { LEVELS, LOST_REASONS, STAGES } from "@/lib/db/enums";
+import { LEVELS, LOST_REASONS, SENIORITIES, STAGES } from "@/lib/db/enums";
 import { personSchema, type PersonData, type PersonInput } from "@/lib/validation/leads";
 import { savePerson } from "@/server/actions/leads";
 import type { LeadFormOptions } from "@/server/leads/options";
@@ -36,6 +36,11 @@ export const EMPTY_PERSON: PersonInput = {
   nextAction: "",
   nextActionDate: "",
   notes: "",
+  phone: "",
+  email: "",
+  seniority: "",
+  doNotContact: false,
+  dncReason: "",
 };
 
 const choices = (items: { id: string; label: string }[], none: string) => [
@@ -73,6 +78,7 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
   });
   const { formError, apply } = useServerResult(setError);
   const stage = useWatch({ control, name: "stage" });
+  const dnc = useWatch({ control, name: "doNotContact" });
 
   const onSubmit = handleSubmit(async (values) => {
     setDuplicateLink(null);
@@ -145,6 +151,25 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
         <SelectField label="Level" options={plain(LEVELS, "Not set")} {...register("level")} />
       </div>
       <div className={styles.row2}>
+        <TextField
+          label="Phone (optional)"
+          type="tel"
+          error={errors.phone?.message}
+          {...register("phone")}
+        />
+        <TextField
+          label="Email (optional)"
+          type="email"
+          error={errors.email?.message}
+          {...register("email")}
+        />
+      </div>
+      <SelectField
+        label="Seniority (optional)"
+        options={plain(SENIORITIES, "Not set")}
+        {...register("seniority")}
+      />
+      <div className={styles.row2}>
         <SelectField
           label="Account filter"
           options={choices(options.accountFilters, "No account filter")}
@@ -199,6 +224,17 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
         />
       </div>
       <TextArea label="Notes" rows={3} error={errors.notes?.message} {...register("notes")} />
+      <label className={styles.checkRow}>
+        <input type="checkbox" {...register("doNotContact")} />
+        Do not contact (stops their plan and blocks outreach)
+      </label>
+      {dnc && (
+        <TextField
+          label="Why not contact them?"
+          error={errors.dncReason?.message}
+          {...register("dncReason")}
+        />
+      )}
       <div className={styles.formActions}>
         <Button variant="secondary" onClick={onDone} disabled={isSubmitting}>
           Cancel

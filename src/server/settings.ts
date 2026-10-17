@@ -20,13 +20,20 @@ export const FACT_FIELDS = [
 ] as const satisfies readonly (keyof ProductFactsData)[];
 
 export const PLAYBOOK_FIELDS = [
-  "followUp1DelayDays",
-  "followUp2DelayDays",
-  "breakUpDelayDays",
   "withdrawAfterDays",
   "dailyConnectionTarget",
   "dailyMessageTarget",
   "staleLeadDays",
+  "msgAfterAcceptMinDays",
+  "msgAfterAcceptMaxDays",
+  "minGapDays",
+  "maxFollowUps",
+  "weeklyTouchLimit",
+  "outreachMaxDays",
+  "outreachMaxDaysSenior",
+  "nurtureDays",
+  "replyDeadlineMinDays",
+  "replyDeadlineMaxDays",
 ] as const satisfies readonly (keyof PlaybookSettingsData)[];
 
 const pick = <K extends string>(row: Record<string, unknown>, keys: readonly K[]) =>

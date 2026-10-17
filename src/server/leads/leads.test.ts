@@ -65,7 +65,7 @@ describe("person form rules", () => {
   it("need a lost reason for Lost, and drop it for other stages", () => {
     expect(personSchema.safeParse(input({ stage: "Lost" })).success).toBe(false);
     expect(data({ stage: "Lost", lostReason: "No budget" }).lostReason).toBe("No budget");
-    expect(data({ stage: "Messaged", lostReason: "No budget" }).lostReason).toBeNull();
+    expect(data({ stage: "Connected", lostReason: "No budget" }).lostReason).toBeNull();
   });
   it("check the Sales Navigator field and dates", () => {
     expect(

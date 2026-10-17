@@ -10,10 +10,12 @@ describe("quick-log input (F15)", () => {
     expect(quickLogSchema.safeParse({ action: "gotReply", replyType: "Interested" }).success).toBe(
       true,
     );
-    expect(quickLogSchema.safeParse({ action: "demoBooked", demoDate: "" }).success).toBe(false);
-    expect(quickLogSchema.safeParse({ action: "demoBooked", demoDate: "2026-10-22" }).success).toBe(
-      true,
+    expect(quickLogSchema.safeParse({ action: "meetingBooked", meetingDate: "" }).success).toBe(
+      false,
     );
+    expect(
+      quickLogSchema.safeParse({ action: "meetingBooked", meetingDate: "2026-10-22" }).success,
+    ).toBe(true);
     expect(quickLogSchema.safeParse({ action: "markLost" }).success).toBe(false);
     expect(quickLogSchema.safeParse({ action: "markLost", lostReason: "No budget" }).success).toBe(
       true,
@@ -21,10 +23,13 @@ describe("quick-log input (F15)", () => {
   });
 
   it("an empty template choice means none; unknown actions are refused", () => {
-    expect(quickLogSchema.parse({ action: "message1Sent", templateId: "" })).toEqual({
-      action: "message1Sent",
+    expect(quickLogSchema.parse({ action: "messageSent", templateId: "" })).toEqual({
+      action: "messageSent",
       templateId: null,
     });
+    expect(quickLogSchema.safeParse({ action: "callLogged", outcome: "Maybe" }).success).toBe(
+      false,
+    );
     expect(quickLogSchema.safeParse({ action: "deleteEverything" }).success).toBe(false);
   });
 });

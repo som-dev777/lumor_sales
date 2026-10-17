@@ -22,7 +22,7 @@ export default function PlaybookPage() {
       </p>
       <PageHeader
         title="Playbook Settings"
-        description="Follow-up delays and daily targets the playbook runs on."
+        description="Daily targets and the cadence guardrails every plan follows."
       />
       <Suspense fallback={<StatusMessage title="Loading…" />}>
         <Playbook />
@@ -40,7 +40,8 @@ async function Playbook() {
     <>
       <div className={styles.topRow}>
         <p className={styles.meta}>
-          Follow-up delays count from the Message 1 date. Changes apply to quick-logs from now on.
+          Follow-up timing now lives in each plan (Plans). These limits keep every plan and manual
+          touch genuine, not spammy.
         </p>
         {can(viewer, "settings.edit") && (
           <PlaybookButton

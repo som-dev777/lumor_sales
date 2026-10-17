@@ -22,7 +22,6 @@ import { requireUser } from "@/lib/session";
 import { formatIstDate, todayIst } from "@/lib/time";
 import { leadFormOptions } from "@/server/leads/options";
 import { canLogOutreach, getPerson, personTimeline } from "@/server/leads/people";
-import { nextFollowUp } from "@/server/leads/quicklog";
 import { aiMode } from "@/server/ai/client";
 import { factsMissing, getProductFacts } from "@/server/settings";
 
@@ -77,7 +76,12 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
           </p>
           <dl className={styles.facts}>
             {fact("Stage", <StageBadge stage={p.stage} />)}
-            {fact("Sequence step", p.sequenceStep)}
+            {fact(
+              "Plan",
+              p.planName
+                ? `${p.planName} · step ${p.planStep}${p.planStatus === "Paused" ? " (paused)" : ""}`
+                : null,
+            )}
             {fact("Persona", p.personaName)}
             {fact("Level", p.level)}
             {fact("Owner", p.ownerName)}
@@ -88,6 +92,13 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
                 : null,
             )}
             {fact("Market", p.market)}
+            {(p.phone || p.email) &&
+              fact("Contact", [p.phone, p.email].filter(Boolean).join(" · "))}
+            {p.doNotContact &&
+              fact(
+                "Do not contact",
+                `${p.dncReason ?? "Yes"}${p.dncDate ? ` (since ${formatIstDate(p.dncDate)})` : ""}`,
+              )}
             {p.stage === "Lost" && fact("Lost reason", p.lostReason)}
           </dl>
         </div>
@@ -134,6 +145,11 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
                 nextAction: p.nextAction ?? "",
                 nextActionDate: p.nextActionDate ?? "",
                 notes: p.notes ?? "",
+                phone: p.phone ?? "",
+                email: p.email ?? "",
+                seniority: p.seniority ?? "",
+                doNotContact: p.doNotContact,
+                dncReason: p.dncReason ?? "",
               }}
             />
           ) : (
@@ -157,15 +173,7 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
         </div>
       )}
 
-      {mayEdit && (
-        <QuickLogBar
-          personId={p.id}
-          followUpLabel={nextFollowUp(p.sequenceStep)?.label ?? null}
-          templates={options.templates}
-          defaultTemplateId={p.openerTemplateId}
-          today={todayIst()}
-        />
-      )}
+      {mayEdit && <QuickLogBar personId={p.id} templates={options.templates} today={todayIst()} />}
 
       {mayEdit && (
         <AiPanel

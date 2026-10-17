@@ -35,13 +35,20 @@ const facts = (over: Record<string, unknown> = {}) =>
   });
 const playbook = (over: Record<string, unknown> = {}) =>
   playbookSettingsSchema.parse({
-    followUp1DelayDays: 4,
-    followUp2DelayDays: 7,
-    breakUpDelayDays: 10,
     withdrawAfterDays: 14,
     dailyConnectionTarget: 20,
     dailyMessageTarget: 10,
     staleLeadDays: 21,
+    msgAfterAcceptMinDays: 1,
+    msgAfterAcceptMaxDays: 3,
+    minGapDays: 3,
+    maxFollowUps: 4,
+    weeklyTouchLimit: 2,
+    outreachMaxDays: 30,
+    outreachMaxDaysSenior: 45,
+    nurtureDays: 60,
+    replyDeadlineMinDays: 1,
+    replyDeadlineMaxDays: 10,
     ...over,
   });
 
@@ -85,11 +92,11 @@ describe("Product Facts (F12)", () => {
 });
 
 describe("Playbook Settings (F13)", () => {
-  it("an Admin changes a delay; the next quick-log uses it; audited", async () => {
-    await savePlaybookSettings(t.db, admin, playbook({ followUp1DelayDays: 3 }));
-    expect((await getPlaybookSettings(t.db)).followUp1DelayDays).toBe(3);
+  it("an Admin changes a guardrail value; the next quick-log uses it; audited", async () => {
+    await savePlaybookSettings(t.db, admin, playbook({ msgAfterAcceptMinDays: 2 }));
+    expect((await getPlaybookSettings(t.db)).msgAfterAcceptMinDays).toBe(2);
     const [entry] = await t.db.select().from(auditLog);
-    expect(entry.changes).toEqual({ followUp1DelayDays: { before: 4, after: 3 } });
+    expect(entry.changes).toEqual({ msgAfterAcceptMinDays: { before: 1, after: 2 } });
 
     const p = await createPerson(
       t.db,
@@ -104,27 +111,26 @@ describe("Playbook Settings (F13)", () => {
       t.db,
       rep,
       p.id,
-      { action: "message1Sent" },
-      {
-        now: new Date(Date.UTC(2026, 9, 16, 6)),
-      },
+      { action: "accepted" },
+      { now: new Date(Date.UTC(2026, 9, 16, 6)) },
     );
-    expect(person.nextActionDate).toBe("2026-10-19");
+    expect(person.nextActionDate).toBe("2026-10-18");
   });
 
   it("Users are refused", async () => {
     await expect(savePlaybookSettings(t.db, rep, playbook())).rejects.toThrow(PermissionError);
   });
 
-  it("delays must go up in order, within their limits", () => {
+  it("minimums can't exceed maximums; values stay within their limits", () => {
     const bad = (over: Record<string, unknown>) =>
       playbookSettingsSchema.safeParse({ ...playbook(), ...over });
-    expect(bad({ followUp2DelayDays: 4 }).error?.issues[0]).toMatchObject({
-      path: ["followUp2DelayDays"],
-      message: "Must be more days than Follow-up 1.",
+    expect(bad({ msgAfterAcceptMaxDays: 0 }).error?.issues[0]).toMatchObject({
+      path: ["msgAfterAcceptMaxDays"],
+      message: "Can't be less than the minimum.",
     });
-    expect(bad({ breakUpDelayDays: 7 }).success).toBe(false);
-    expect(bad({ followUp1DelayDays: 0 }).success).toBe(false);
+    expect(bad({ outreachMaxDaysSenior: 20 }).success).toBe(false);
+    expect(bad({ replyDeadlineMaxDays: 0 }).success).toBe(false);
+    expect(bad({ minGapDays: 0 }).success).toBe(false);
     expect(bad({ staleLeadDays: 366 }).success).toBe(false);
     expect(bad({ dailyConnectionTarget: 2.5 }).success).toBe(false);
     expect(bad({ dailyConnectionTarget: "25" }).success).toBe(true);

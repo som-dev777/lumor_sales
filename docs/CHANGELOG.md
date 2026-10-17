@@ -13,6 +13,12 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 R7 Plans (v2.0.0), in progress.
 
 - PRD Version 2 scope added. Feature docs written for Plans (F17) and the plan-driven Today (F08 v2), with placeholders for F18 and F19; decisions D-028 to D-034.
+- Stages renamed for v2 (Contacted, Meeting scheduled, Meeting done, Trial; new Proposal sent and Active customer). Existing people and activities are migrated automatically, with a backup of the database file made first.
+- People get phone, email, seniority and Do not contact (with a reason). Do not contact blocks outreach.
+- Quick-log buttons for v2: Message sent on any channel, Call with its outcome, Meeting booked and held, Proposal sent. Follow-up dates now come from plans.
+- Playbook Settings: the follow-up delays are replaced by the cadence guardrail values.
+- Seed plans: the Official Outreach plan (5 steps), plus Meeting follow-up, Trial and Onboarding drafts waiting for Admin approval.
+- AI prompts P01–P04 updated to version 1.1 (v2 stage names; every follow-up must add something new).
 
 ## [1.5.0] - 2026-10-17
 

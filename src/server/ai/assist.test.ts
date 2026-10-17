@@ -38,7 +38,7 @@ beforeEach(async () => {
     personSchema.parse({
       fullName: "Priya Sharma",
       linkedinUrl: "linkedin.com/in/priya-ai",
-      stage: "Messaged",
+      stage: "Connected",
     }),
   );
   personId = p.id;
@@ -143,18 +143,18 @@ describe("Mark as sent and Confirm", () => {
 
   it("Confirm sets stage and next action, logs the stage change; never Lost or Paid", async () => {
     await applyNextStep(t.db, rep, personId, {
-      stage: "Demo booked",
-      nextAction: "Hold demo",
+      stage: "Meeting scheduled",
+      nextAction: "Hold meeting",
       nextActionDate: "2026-10-22",
     });
     const [p] = await t.db.select().from(person).where(eq(person.id, personId));
     expect(p).toMatchObject({
-      stage: "Demo booked",
-      nextAction: "Hold demo",
+      stage: "Meeting scheduled",
+      nextAction: "Hold meeting",
       nextActionDate: "2026-10-22",
     });
     const [a] = await t.db.select().from(activity).where(eq(activity.personId, personId));
-    expect(a.content).toBe("Messaged → Demo booked");
+    expect(a.content).toBe("Connected → Meeting scheduled");
     await expect(
       applyNextStep(t.db, rep, personId, {
         stage: "Paid",

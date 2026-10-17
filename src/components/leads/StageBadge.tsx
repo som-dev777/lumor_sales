@@ -3,14 +3,15 @@ import type { Stage } from "@/lib/db/enums";
 
 const TONE: Record<Stage, "neutral" | "primary" | "success" | "danger" | "warning"> = {
   Prospect: "neutral",
-  "Request sent": "neutral",
+  Contacted: "neutral",
   Connected: "primary",
-  Messaged: "primary",
   Replied: "warning",
-  "Demo booked": "warning",
-  "Demo done": "warning",
-  "Trial/Pilot": "warning",
+  "Meeting scheduled": "warning",
+  "Meeting done": "warning",
+  "Proposal sent": "warning",
+  Trial: "warning",
   Paid: "success",
+  "Active customer": "success",
   Lost: "danger",
 };
 

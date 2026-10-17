@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { check, index, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { LEVELS, LOST_REASONS, SEQUENCE_STEPS, STAGES, TEMPLATE_VERSIONS } from "../enums";
+import { LEVELS, LOST_REASONS, SENIORITIES, STAGES, TEMPLATE_VERSIONS } from "../enums";
 import { baseColumns, flag, oneOf, oneOfOrNull } from "./_shared";
 import { accountFilter } from "./account-filter";
 import { user } from "./auth";
@@ -30,7 +30,6 @@ export const person = sqliteTable(
       .notNull()
       .references(() => user.id, { onDelete: "restrict" }),
     stage: text("stage", { enum: STAGES }).notNull().default("Prospect"),
-    sequenceStep: text("sequence_step", { enum: SEQUENCE_STEPS }).notNull().default("Not started"),
     openerTemplateId: text("opener_template_id").references(() => template.id, {
       onDelete: "restrict",
     }),
@@ -44,17 +43,28 @@ export const person = sqliteTable(
     converted: flag("converted").notNull().default(false),
     convertedDate: text("converted_date"),
     notes: text("notes"),
+    // v2 (R7): contact details, Do not contact, seniority, Nurture and reply deadline.
+    phone: text("phone"),
+    email: text("email"),
+    seniority: text("seniority", { enum: SENIORITIES }),
+    doNotContact: flag("do_not_contact").notNull().default(false),
+    dncReason: text("dnc_reason"),
+    // Plain IST dates, YYYY-MM-DD.
+    dncDate: text("dnc_date"),
+    nurtureUntil: text("nurture_until"),
+    awaitingReplyUntil: text("awaiting_reply_until"),
   },
   (t) => [
     check("person_linkedin_url_check", sql`${t.linkedinUrl} LIKE '%linkedin.com/in/%'`),
     check("person_level_check", oneOfOrNull("level", LEVELS)),
     check("person_stage_check", oneOf("stage", STAGES)),
-    check("person_sequence_step_check", oneOf("sequence_step", SEQUENCE_STEPS)),
     check("person_opener_version_check", oneOfOrNull("opener_template_version", TEMPLATE_VERSIONS)),
     check("person_lost_reason_check", oneOfOrNull("lost_reason", LOST_REASONS)),
     // PRD: a lost reason is required when the stage is Lost.
     check("person_lost_needs_reason", sql`${t.stage} <> 'Lost' OR ${t.lostReason} IS NOT NULL`),
     check("person_converted_check", sql`${t.converted} IN (0, 1)`),
+    check("person_seniority_check", oneOfOrNull("seniority", SENIORITIES)),
+    check("person_dnc_check", sql`${t.doNotContact} IN (0, 1)`),
     index("person_owner_idx").on(t.ownerId),
     index("person_stage_idx").on(t.stage),
     index("person_next_action_date_idx").on(t.nextActionDate),

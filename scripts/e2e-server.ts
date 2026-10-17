@@ -9,6 +9,7 @@ const run = (script: string) =>
 run("db:migrate");
 run("seed:admin");
 run("seed:library");
+run("seed:plans");
 
 const server = spawn("npx", ["next", "start", "-p", "3100"], {
   stdio: "inherit",

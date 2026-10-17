@@ -85,6 +85,19 @@ themselves, and new sign-ups can log in straight away. With it, links are emaile
    to do the same as soon as they first log in.
 3. Go through `docs/qa-checklist.md` on the live site.
 
+## Before upgrading to a new version
+
+Each deploy updates the database first. For a big upgrade (like v2.0.0, which renames stages),
+make a copy of the production database first, in Terminal:
+
+```
+turso db create lumor-sales-backup-2026-10 --from-db lumor-sales
+```
+
+(Install the Turso command first: `brew install tursodatabase/tap/turso`, then `turso auth
+login`.) On your own Mac, `npm run db:migrate` copies `data/app.db` into `data/backups/` by
+itself before changing anything.
+
 ## Later
 
 - **New code:** each push to `main` on GitHub redeploys the site automatically.

@@ -19,7 +19,17 @@ import { alias } from "drizzle-orm/sqlite-core";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
 import type { Stage } from "@/lib/db/enums";
-import { accountFilter, activity, company, person, persona, template, user } from "@/lib/db/schema";
+import {
+  accountFilter,
+  activity,
+  company,
+  person,
+  persona,
+  plan,
+  planEnrolment,
+  template,
+  user,
+} from "@/lib/db/schema";
 import { normaliseLinkedInUrl } from "@/lib/linkedin";
 import { assertCan, can, type Actor } from "@/lib/permissions";
 import { addDaysIst, istWeekRange, toIstDate, todayIst } from "@/lib/time";
@@ -82,12 +92,20 @@ async function logStageChange(tx: DbOrTx, actor: Actor, row: PersonRow, from: St
     type: "Stage change",
     channel: "LinkedIn",
     content: `${from} → ${row.stage}${row.lostReason ? ` (${row.lostReason})` : ""}`,
+    toStage: row.stage,
   });
 }
 
-function columnsFrom(data: PersonData) {
+function columnsFrom(data: PersonData, before?: PersonRow) {
   const { companyName: _c, ownerId: _o, ...fields } = data;
-  return { ...fields, market: fields.market ?? "India" };
+  // Do not contact: the date it was set is kept until it's switched off (v2, F02).
+  const dncDate = data.doNotContact ? (before?.doNotContact ? before.dncDate : todayIst()) : null;
+  return {
+    ...fields,
+    market: fields.market ?? "India",
+    dncReason: data.doNotContact ? data.dncReason : null,
+    dncDate,
+  };
 }
 
 export async function createPerson(db: Db, actor: Actor, data: PersonData) {
@@ -155,7 +173,7 @@ export async function updatePerson(db: Db, actor: Actor, id: string, data: Perso
     const [after] = await tx
       .update(person)
       .set({
-        ...columnsFrom(data),
+        ...columnsFrom(data, before),
         linkedinUrlNormalised: norm,
         companyId,
         ownerId,
@@ -293,36 +311,50 @@ export function peopleWhere(f: PeopleFilters, now = new Date()): SQL | undefined
 const owner = alias(user, "owner");
 
 function peopleQuery(db: DbOrTx) {
-  return db
-    .select({
-      id: person.id,
-      fullName: person.fullName,
-      title: person.title,
-      linkedinUrl: person.linkedinUrl,
-      salesNavUrl: person.salesNavUrl,
-      companyId: person.companyId,
-      companyName: company.name,
-      companyStatus: company.status,
-      personaId: person.personaId,
-      personaName: persona.name,
-      level: person.level,
-      accountFilterCode: accountFilter.code,
-      market: person.market,
-      ownerId: person.ownerId,
-      ownerName: owner.name,
-      stage: person.stage,
-      sequenceStep: person.sequenceStep,
-      nextAction: person.nextAction,
-      nextActionDate: person.nextActionDate,
-      lostReason: person.lostReason,
-      converted: person.converted,
-      updatedAt: person.updatedAt,
-    })
-    .from(person)
-    .leftJoin(company, eq(company.id, person.companyId))
-    .leftJoin(persona, eq(persona.id, person.personaId))
-    .leftJoin(accountFilter, eq(accountFilter.id, person.accountFilterId))
-    .leftJoin(owner, eq(owner.id, person.ownerId));
+  return (
+    db
+      .select({
+        id: person.id,
+        fullName: person.fullName,
+        title: person.title,
+        linkedinUrl: person.linkedinUrl,
+        salesNavUrl: person.salesNavUrl,
+        companyId: person.companyId,
+        companyName: company.name,
+        companyStatus: company.status,
+        personaId: person.personaId,
+        personaName: persona.name,
+        level: person.level,
+        accountFilterCode: accountFilter.code,
+        market: person.market,
+        ownerId: person.ownerId,
+        ownerName: owner.name,
+        stage: person.stage,
+        planName: plan.name,
+        planStatus: planEnrolment.status,
+        planStep: planEnrolment.currentStep,
+        doNotContact: person.doNotContact,
+        nextAction: person.nextAction,
+        nextActionDate: person.nextActionDate,
+        lostReason: person.lostReason,
+        converted: person.converted,
+        updatedAt: person.updatedAt,
+      })
+      .from(person)
+      .leftJoin(company, eq(company.id, person.companyId))
+      .leftJoin(persona, eq(persona.id, person.personaId))
+      .leftJoin(accountFilter, eq(accountFilter.id, person.accountFilterId))
+      .leftJoin(owner, eq(owner.id, person.ownerId))
+      // At most one live plan per person (database rule), so this never duplicates rows.
+      .leftJoin(
+        planEnrolment,
+        and(
+          eq(planEnrolment.personId, person.id),
+          inArray(planEnrolment.status, ["Active", "Paused"]),
+        ),
+      )
+      .leftJoin(plan, eq(plan.id, planEnrolment.planId))
+  );
 }
 
 export async function listPeople(

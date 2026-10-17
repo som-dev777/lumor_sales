@@ -19,7 +19,8 @@
     "audit:check-lock": "tsx scripts/check-audit-lock.ts",
     "releases:sync": "tsx scripts/sync-releases.ts",
     "test:e2e": "playwright test",
-    "seed:library": "tsx scripts/seed-library.ts"
+    "seed:library": "tsx scripts/seed-library.ts",
+    "seed:plans": "tsx scripts/seed-plans.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

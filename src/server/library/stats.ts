@@ -60,7 +60,7 @@ export async function leadStats(db: DbOrTx, kind: LibraryKind): Promise<Map<stri
            count(*) as leads,
            sum(p.converted) as paid,
            ${hasActivity("Reply received")} as replied,
-           ${hasActivity("Demo booked")} as demos,
+           ${hasActivity("Meeting booked")} as demos,
            ${hasActivity("Request accepted")} as accepted
     from person p
     where ${column} is not null

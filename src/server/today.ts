@@ -44,11 +44,9 @@ function doneFor(section: SectionKey, nextAction: string | null): QuickLog | nul
     case "reply":
       return { action: "responded" };
     case "demo":
-      return nextAction === "Send recap" ? { action: "recapSent" } : { action: "demoHeld" };
+      return nextAction === "Send recap" ? { action: "recapSent" } : { action: "meetingHeld" };
     case "followUp":
-      return nextAction === "Send Message 1"
-        ? { action: "message1Sent" }
-        : { action: "followUpSent" };
+      return { action: "messageSent" };
     case "withdraw":
       return { action: "requestWithdrawn" };
     case "stale":
@@ -59,14 +57,15 @@ function doneFor(section: SectionKey, nextAction: string | null): QuickLog | nul
 const DONE_LABELS: Record<QuickLog["action"], string> = {
   responded: "Mark replied",
   recapSent: "Recap sent",
-  demoHeld: "Demo held",
-  message1Sent: "Message 1 sent",
-  followUpSent: "Sent",
+  meetingHeld: "Meeting held",
+  messageSent: "Sent",
   requestWithdrawn: "Withdrawn",
   requestSent: "Done",
   accepted: "Done",
   gotReply: "Done",
-  demoBooked: "Done",
+  meetingBooked: "Done",
+  callLogged: "Done",
+  proposalSent: "Done",
   markConverted: "Done",
   markLost: "Done",
 };
@@ -132,15 +131,15 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
       section = "reply";
       detail = `Replied ${formatIstDate(toIstDate(last.at))}`;
     } else if (
-      (p.nextAction === "Hold demo" && due(p.nextActionDate)) ||
-      (p.stage === "Demo done" && p.nextAction === "Send recap" && due(p.nextActionDate))
+      (p.nextAction === "Hold meeting" && due(p.nextActionDate)) ||
+      (p.stage === "Meeting done" && p.nextAction === "Send recap" && due(p.nextActionDate))
     ) {
       section = "demo";
       detail = `${p.nextAction}${when(p.nextActionDate)}`;
     } else if (FOLLOW_UP_ACTIONS.includes(p.nextAction ?? "") && due(p.nextActionDate)) {
       section = "followUp";
       detail = `${p.nextAction}${when(p.nextActionDate)}`;
-    } else if (p.stage === "Request sent" && lastRequest.has(p.id)) {
+    } else if (p.stage === "Contacted" && lastRequest.has(p.id)) {
       const sent = toIstDate(lastRequest.get(p.id)!);
       if (sent < withdrawBefore) {
         section = "withdraw";

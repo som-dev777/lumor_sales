@@ -380,7 +380,7 @@ describe("live stats", () => {
     await log(b.id, "Request accepted", "2026-10-01T10:00:00Z");
     await log(a.id, "Reply received", "2026-10-03T10:00:00Z", { replyType: "Interested" });
     await log(a.id, "Reply received", "2026-10-04T10:00:00Z", { replyType: "Interested" });
-    await log(a.id, "Demo booked", "2026-10-05T10:00:00Z");
+    await log(a.id, "Meeting booked", "2026-10-05T10:00:00Z");
 
     const stats = (await leadStats(t.db, "persona")).get(p.id);
     expect(stats).toEqual({ leads: 3, replied: 1, demos: 1, paid: 1, accepted: 2, replyRate: 0.5 });

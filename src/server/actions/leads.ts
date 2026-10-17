@@ -69,11 +69,14 @@ export async function addPersonNote(personId: string, text: string): Promise<Act
   });
 }
 
+export type LogResult = ActionResult & { warnings?: { rule: number; message: string }[] };
+
 export async function logActivity(
   personId: string,
   input: unknown,
   note?: string,
-): Promise<ActionResult> {
+  _opts: { asStep?: boolean; override?: boolean } = {},
+): Promise<LogResult> {
   const viewer = await requireUser();
   const parsed = quickLogSchema.safeParse(input);
   if (!idSchema.safeParse(personId).success) return { ok: false, error: "Unknown person." };

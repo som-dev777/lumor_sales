@@ -22,7 +22,7 @@ const SECTIONS = [
   {
     href: "/settings/playbook",
     title: "Playbook Settings",
-    description: "Follow-up delays and daily targets. Everyone reads; Admin edits.",
+    description: "Daily targets and cadence guardrails. Everyone reads; Admin edits.",
     icon: SlidersHorizontal,
   },
 ];

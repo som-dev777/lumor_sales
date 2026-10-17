@@ -57,10 +57,10 @@ describe("funnel counts", () => {
     const p = await lead(rep);
     await ql(rep, p.id, { action: "requestSent" }, at(12));
     await ql(rep, p.id, { action: "accepted" }, at(13));
-    await ql(rep, p.id, { action: "message1Sent" }, at(13, 7));
+    await ql(rep, p.id, { action: "messageSent" }, at(13, 7));
     await ql(rep, p.id, { action: "gotReply", replyType: "Interested" }, at(14));
-    await ql(rep, p.id, { action: "demoBooked", demoDate: "2026-10-16" }, at(14, 7));
-    await ql(rep, p.id, { action: "demoHeld" }, at(16));
+    await ql(rep, p.id, { action: "meetingBooked", meetingDate: "2026-10-16" }, at(14, 7));
+    await ql(rep, p.id, { action: "meetingHeld" }, at(16));
     await updatePerson(
       t.db,
       rep,
@@ -68,7 +68,7 @@ describe("funnel counts", () => {
       personSchema.parse({
         fullName: p.fullName,
         linkedinUrl: p.linkedinUrl,
-        stage: "Trial/Pilot",
+        stage: "Trial",
       }),
     );
     await ql(rep, p.id, { action: "markConverted" }, at(17));
@@ -105,7 +105,7 @@ describe("funnel counts", () => {
       personSchema.parse({
         fullName: p.fullName,
         linkedinUrl: p.linkedinUrl,
-        stage: "Trial/Pilot",
+        stage: "Trial",
       }),
     );
     const d = await dashboard(t.db, periodFor("week"), "rep");

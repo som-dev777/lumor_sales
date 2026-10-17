@@ -26,6 +26,7 @@ async function loadPendingProposal(tx: DbOrTx, proposalId: string) {
   const [row] = await tx.select().from(proposal).where(eq(proposal.id, proposalId));
   if (!row) throw new LibraryError("That proposal doesn't exist.");
   if (row.decision !== "Pending") throw new LibraryError("That proposal has already been decided.");
+  if (row.itemType === "Plan") throw new LibraryError("Plan proposals are decided on the plan.");
   return { row, kind: KIND_FOR_LABEL[row.itemType] as LibraryKind };
 }
 
@@ -119,7 +120,7 @@ async function withItems(
 ): Promise<ProposalView[]> {
   return Promise.all(
     rows.map(async (r) => {
-      const kind = KIND_FOR_LABEL[r.itemType] as LibraryKind;
+      const kind = KIND_FOR_LABEL[r.itemType as keyof typeof KIND_FOR_LABEL] as LibraryKind;
       const item = await loadItem(tx, kind, r.itemId).catch(() => null);
       return {
         id: r.id,
