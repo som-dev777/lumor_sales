@@ -10,16 +10,18 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: ReactNode;
+  /** "lg" for long forms. */
+  size?: "md" | "lg";
   children: ReactNode;
 };
 
 /** A centred pop-up window with a title and a close button (Radix: keyboard and screen-reader friendly). */
-export function Dialog({ open, onOpenChange, title, description, children }: Props) {
+export function Dialog({ open, onOpenChange, title, description, size = "md", children }: Props) {
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
         <RadixDialog.Overlay className={styles.overlay} />
-        <RadixDialog.Content className={styles.content}>
+        <RadixDialog.Content className={`${styles.content} ${size === "lg" ? styles.lg : ""}`}>
           <div className={styles.header}>
             <RadixDialog.Title className={styles.title}>{title}</RadixDialog.Title>
             <RadixDialog.Close className={styles.close} aria-label="Close">

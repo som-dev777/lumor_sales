@@ -17,19 +17,9 @@ import {
 import { assertCan, type Actor } from "@/lib/permissions";
 import type { AccountFilterData, PersonaData, TemplateData } from "@/lib/validation/library";
 
-export type LibraryKind = "persona" | "accountFilter" | "template";
+import { KIND_LABEL, KIND_NOUN, type LibraryKind } from "./kinds";
 
-/** How each kind is named in the audit log and on the Approvals page. */
-export const KIND_LABEL = {
-  persona: "Persona",
-  accountFilter: "AccountFilter",
-  template: "Template",
-} as const;
-export const KIND_NOUN = {
-  persona: "persona",
-  accountFilter: "account filter",
-  template: "template",
-} as const;
+export { KIND_LABEL, KIND_NOUN, type LibraryKind };
 
 export class LibraryError extends Error {
   constructor(message: string) {

@@ -86,9 +86,10 @@ again changes nothing.
 
 ## Change history
 
-| Date       | Version    | Change                                                                       |
-| ---------- | ---------- | ---------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                     |
-| 2026-10-16 | Unreleased | Full doc written (R2), with the shared library rules.                        |
-| 2026-10-16 | Unreleased | Library rules built on the server (`src/server/library/`), with tests.       |
-| 2026-10-17 | Unreleased | Seed: 5 Official personas from the PRD (`npm run seed:library`), with tests. |
+| Date       | Version    | Change                                                                                                                                         |
+| ---------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                                       |
+| 2026-10-16 | Unreleased | Full doc written (R2), with the shared library rules.                                                                                          |
+| 2026-10-16 | Unreleased | Library rules built on the server (`src/server/library/`), with tests.                                                                         |
+| 2026-10-17 | Unreleased | Seed: 5 Official personas from the PRD (`npm run seed:library`), with tests.                                                                   |
+| 2026-10-17 | Unreleased | Personas page built: tabs, cards with stats, add/edit form, duplicate, propose, archive/restore, delete, change history, Your proposals strip. |

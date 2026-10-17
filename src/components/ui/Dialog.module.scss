@@ -25,6 +25,10 @@
   }
 }
 
+.lg {
+  width: min(680px, calc(100vw - 2 * var(--space-4)));
+}
+
 .header {
   display: flex;
   align-items: flex-start;
