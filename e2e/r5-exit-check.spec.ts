@@ -80,33 +80,33 @@ test("an Admin fills in Product Facts; a User reads them but can't edit", async 
   await expect(shown(rep.getByText("Live features", { exact: true }).last())).toBeVisible();
 });
 
-test("exit check: a new Follow-up 1 delay is used by the next quick-log", async () => {
+test("exit check: a new guardrail value is used by the next quick-log", async () => {
   await admin.goto("/settings/playbook");
   await admin.getByRole("button", { name: "Edit" }).click();
   const d = admin.getByRole("dialog");
-  await d.getByLabel(/Follow-up 2 delay/).fill("3");
+  await d.getByLabel(/Message after accepting: at most/).fill("0");
   await d.getByRole("button", { name: "Save" }).click();
-  await expect(d.getByText("Must be more days than Follow-up 1.")).toBeVisible();
-  await d.getByLabel(/Follow-up 2 delay/).fill("7");
-  await d.getByLabel(/Follow-up 1 delay/).fill("3");
+  await expect(shown(d.getByText("Can't be less than the minimum."))).toBeVisible();
+  await d.getByLabel(/Message after accepting: at most/).fill("3");
+  await d.getByLabel(/Message after accepting: at least/).fill("2");
   await d.getByRole("button", { name: "Save" }).click();
   await expect(d).toBeHidden();
 
   await rep.goto("/settings/playbook");
   await expect(shown(rep.getByRole("button", { name: "Edit" }))).toHaveCount(0);
-  await expect(shown(rep.getByText("Follow-up 1 delay (days)"))).toBeVisible(); // in the history
+  // In the history:
+  await expect(shown(rep.getByText("Message after accepting, at least (days)"))).toBeVisible();
   await rep.screenshot({ path: "test-results/r5-playbook.png", fullPage: true });
 
   await rep.goto("/people");
-  await rep.getByRole("button", { name: "Add person" }).click();
+  await shown(rep.getByRole("button", { name: "Add person" })).click();
   const add = rep.getByRole("dialog");
   await add.getByLabel("Full name").fill("Delay Test");
   await add.getByLabel("LinkedIn profile link").fill("linkedin.com/in/delay-test-r5");
   await add.getByRole("button", { name: "Add person" }).click();
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
-  await rep.getByRole("button", { name: "Message 1 sent", exact: true }).click();
-  await rep.getByRole("dialog").getByRole("button", { name: "Log it" }).click();
-  await expect(rep.locator("dl").getByText(`Send Follow-up 1 · ${istDatePlus(3)}`)).toBeVisible();
+  await shown(rep.getByRole("button", { name: "Accepted", exact: true })).click();
+  await expect(rep.locator("dl").getByText(`Send Message 1 · ${istDatePlus(2)}`)).toBeVisible();
 });
 
 test.afterAll(async () => {
@@ -114,7 +114,7 @@ test.afterAll(async () => {
   await admin.goto("/settings/playbook");
   await admin.getByRole("button", { name: "Edit" }).click();
   const d = admin.getByRole("dialog");
-  await d.getByLabel(/Follow-up 1 delay/).fill("4");
+  await d.getByLabel(/Message after accepting: at least/).fill("1");
   await d.getByRole("button", { name: "Save" }).click();
   await expect(d).toBeHidden();
 });

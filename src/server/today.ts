@@ -89,8 +89,11 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
         .where(inArray(activity.personId, ids))
         .orderBy(desc(activity.occurredAt))
     : [];
+  // The latest real activity per lead. System events (plan and stage changes) are skipped:
+  // a reply also logs "plan paused" at the same moment, and the reply is what matters.
   const latest = new Map<string, { type: string; at: Date }>();
   for (const e of events) {
+    if (e.type === "Plan change" || e.type === "Stage change") continue;
     if (e.personId && !latest.has(e.personId)) latest.set(e.personId, e);
   }
   const staleBefore = addDaysIst(today, -settings.staleLeadDays);

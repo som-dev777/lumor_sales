@@ -132,9 +132,9 @@ test("Lost needs a reason; a manual stage change appears on the timeline", async
   await dialog.getByRole("button", { name: "Save changes" }).click();
   await expect(rep.getByRole("dialog")).toBeHidden();
   await expect(shown(rep.getByText("Prospect → Lost (Not a priority)"))).toBeVisible();
-  // Back to Messaged for the rest of the journey
+  // Back to Connected for the rest of the journey
   await rep.getByRole("button", { name: "Edit" }).click();
-  await rep.getByRole("dialog").getByLabel("Stage").selectOption("Messaged");
+  await rep.getByRole("dialog").getByLabel("Stage").selectOption("Connected");
   await rep.getByRole("dialog").getByRole("button", { name: "Save changes" }).click();
   await expect(rep.getByRole("dialog")).toBeHidden();
 });

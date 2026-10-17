@@ -111,8 +111,9 @@ test("a User also proposes a template", async () => {
 
 test("Admins see how many proposals are waiting; Users can't open Approvals", async () => {
   await admin.goto("/personas");
+  // 2 library proposals + the 3 draft seed plans waiting for approval (R7).
   await expect(
-    admin.getByRole("link", { name: /Approvals/ }).getByLabel("2 waiting"),
+    admin.getByRole("link", { name: /Approvals/ }).getByLabel("5 waiting"),
   ).toBeVisible();
   await rep.goto("/approvals");
   await expect(shown(rep.getByText("Not allowed", { exact: true }))).toBeVisible();

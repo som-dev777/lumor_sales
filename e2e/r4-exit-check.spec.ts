@@ -1,5 +1,6 @@
-// The R4 exit check from the PRD, automated: one lead walked from Request sent to Paid moves
-// through every stage with the quick-log buttons, and the dashboard counts it at every stage.
+// The R4 exit check from the PRD, automated (updated for v2 stages): one lead walked from
+// Contacted to Paid moves through every stage with the quick-log buttons, and the dashboard
+// counts it at every stage.
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const REP = { name: "Tara Rep", email: "tara@lumor.tech", password: "rep-password-12" };
@@ -43,7 +44,7 @@ test.beforeAll(async ({ browser }) => {
   await expect(rep).toHaveURL("/");
 });
 
-test("exit check: one lead walked from Request sent to Paid", async () => {
+test("exit check: one lead walked from Contacted to Paid", async () => {
   await rep.goto("/people");
   await rep.getByRole("button", { name: "Add person" }).click();
   const add = rep.getByRole("dialog");
@@ -54,13 +55,17 @@ test("exit check: one lead walked from Request sent to Paid", async () => {
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
   personUrl = new URL(rep.url()).pathname;
 
-  await log(rep, "Request sent", "Request sent");
+  await logWithDialog(rep, "Request sent", async () => {}, "Contacted");
   await expect(rep.getByText("Check acceptance ·")).toBeVisible();
   await log(rep, "Accepted", "Connected");
-  await logWithDialog(rep, "Message 1 sent", async () => {}, "Messaged");
-  await expect(rep.locator("dl").getByText("Send Follow-up 1 ·")).toBeVisible();
-  await log(rep, "Follow-up 1 sent", "Messaged");
-  await expect(rep.getByRole("button", { name: "Follow-up 2 sent" })).toBeVisible();
+  // A message on the day they accepted breaks guardrail 1: the app asks first.
+  await rep.getByRole("button", { name: "Message sent", exact: true }).click();
+  await rep.getByRole("dialog").getByRole("button", { name: "Log it" }).click();
+  const warning = rep.getByRole("dialog", { name: "This breaks a cadence guardrail" });
+  await expect(warning).toContainText("after the connection is accepted");
+  await warning.getByRole("button", { name: "Log anyway" }).click();
+  await expect(warning).toBeHidden();
+  await expect(stage(rep)).toHaveText("Connected");
   await logWithDialog(
     rep,
     "Got a reply",
@@ -71,16 +76,17 @@ test("exit check: one lead walked from Request sent to Paid", async () => {
         .then(() => {}),
     "Replied",
   );
-  await logWithDialog(rep, "Demo booked", async () => {}, "Demo booked");
-  await log(rep, "Demo held", "Demo done");
+  await logWithDialog(rep, "Meeting booked", async () => {}, "Meeting scheduled");
+  await log(rep, "Meeting held", "Meeting done");
+  await log(rep, "Proposal sent", "Proposal sent");
 
-  // Trial/Pilot is set from Edit (PRD), not a quick-log button.
+  // Trial is set from Edit (PRD), not a quick-log button.
   await rep.getByRole("button", { name: "Edit" }).click();
   const edit = rep.getByRole("dialog");
-  await edit.getByLabel("Stage").selectOption("Trial/Pilot");
+  await edit.getByLabel("Stage").selectOption("Trial");
   await edit.getByRole("button", { name: "Save changes" }).click();
   await expect(edit).toBeHidden();
-  await expect(stage(rep)).toHaveText("Trial/Pilot");
+  await expect(stage(rep)).toHaveText("Trial");
 
   await log(rep, "Mark converted", "Paid");
   await expect(rep.getByText("Mark Zen Labs R4 as a customer too?")).toBeVisible();
@@ -91,7 +97,8 @@ test("the dashboard counts the lead once at every stage", async () => {
   await rep.goto("/dashboard?by=rep");
   await expect(rep.getByRole("heading", { name: "Funnel" })).toBeVisible();
   const row = rep.getByRole("row", { name: /^Tara Rep/ });
-  // Requests, Accepted, Replied, Interested, Demo booked, Demo held, Trial, Paid
+  // Contacted, Connected, Replied, Interested, Meeting scheduled, Meeting done, Proposal sent,
+  // Trial, Paid, Active customer
   await expect(row.getByRole("cell")).toHaveText([
     "1",
     "1",
@@ -101,6 +108,8 @@ test("the dashboard counts the lead once at every stage", async () => {
     "1",
     "1",
     "1",
+    "1",
+    "0",
     /low sample/,
     /low sample/,
     /low sample/,

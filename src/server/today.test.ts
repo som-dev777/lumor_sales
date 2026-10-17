@@ -183,6 +183,22 @@ describe("Today v2 sections (F08)", () => {
   });
 });
 
+describe("replies on a plan", () => {
+  it("a reply that pauses a plan still shows under Replies waiting", async () => {
+    const p = await lead("Plan Reply");
+    await enrolPeople(t.db, rep, [p.id], outreachId, on("2026-10-26"));
+    const { logWithPlan } = await import("./plans/enrolment");
+    await logWithPlan(
+      t.db,
+      rep,
+      p.id,
+      { action: "gotReply", replyType: "Interested" },
+      { now: NOW },
+    );
+    expect(await sections()).toEqual([["reply", "Plan Reply"]]);
+  });
+});
+
 describe("AI ranking (P01)", () => {
   it("uses the AI's order and reasons; keeps tasks it left out; ignores made-up ids", async () => {
     const [p1] = await t.db
