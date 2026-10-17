@@ -73,8 +73,11 @@ All dates are stored in UTC and shown in IST. Weeks run Monday to Sunday.
 ## Working pace
 
 Work in phases: one phase = one release (R2, R3…). Build a phase's steps one after
-another without waiting for a go-ahead, committing and pushing after each working step.
-Stop at the end of each phase (the release) with a plain-language summary and the
-browser checklist for its exit check, because the PRD says the next release starts only
-after the previous one passes its exit check. Stop earlier only for a decision that
-genuinely needs the owner.
+another without waiting for a go-ahead, committing and pushing after each working step,
+and tag each release. By default, stop at the end of each phase with a plain-language
+summary and the browser checklist for its exit check.
+
+Current instruction (2026-10-17): the owner asked to run all remaining releases (R3–R6)
+back-to-back without stopping, then hand over one manual QA checklist
+(docs/qa-checklist.md) once the platform is ready. Stop earlier only for a decision that
+genuinely needs the owner, or for anything only they can do (accounts, API keys, deploying).

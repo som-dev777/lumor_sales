@@ -7,7 +7,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Nothing yet. R3 (Leads: People and Companies) starts next.
+R3 Leads, in progress.
+
+- Feature docs written for People (F02) and Companies (F03); decisions D-020 (PRD open questions) and D-021 (unique company names).
 
 ## [1.1.0] - 2026-10-17
 

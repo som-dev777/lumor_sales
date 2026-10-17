@@ -234,3 +234,29 @@ replaces it.
 - **Decision:** `npm audit` reports the same 9 warnings as at v1.0.0 (`braces` in ESLint,
   esbuild in drizzle-kit). No packages were added in R2. None of them reach the live app.
   Recheck at v1.2.0.
+
+## D-020: PRD open questions answered with the PRD's own assumptions
+
+- **Date:** 2026-10-17 · **Status:** Accepted (the owner asked to proceed without stopping;
+  any of these can be changed later)
+- **Decision:**
+  - **Deal value:** INR only, whole rupees, as in the data model. USD can be added later as a
+    second field.
+  - **Follow-up delays:** counted from the Message 1 date (days 4, 7, 10), as the PRD assumes.
+  - **Funnel:** counts events dated inside the selected period (not a cohort), as the PRD
+    assumes.
+  - **Trial/Pilot:** kept as a stage, set from the stage dropdown.
+  - **Who besides the default Admins is Admin:** decided in the app (Settings → Users).
+- **Why:** These are the PRD's stated defaults. The owner asked for R3–R6 to be built
+  back-to-back.
+
+## D-021: Company names are unique; people link to companies by name
+
+- **Date:** 2026-10-17 · **Status:** Accepted
+- **Decision:**
+  - Company names are unique, ignoring case and surrounding spaces. A unique index on the
+    lower-cased, trimmed name enforces it.
+  - On the person form you type a company name: an existing company is linked; otherwise a
+    new one is created, owned by the lead's owner.
+- **Why:** Prevents "Acme" and "ACME" becoming two companies, the same way LinkedIn links
+  prevent duplicate people, and keeps adding a lead to one form.
