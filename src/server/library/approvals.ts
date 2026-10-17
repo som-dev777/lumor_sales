@@ -3,7 +3,7 @@ import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
-import { proposal, user } from "@/lib/db/schema";
+import { plan, proposal, user } from "@/lib/db/schema";
 import { assertCan, type Actor } from "@/lib/permissions";
 import {
   assertOfficialCodeFree,
@@ -164,7 +164,7 @@ export async function listPendingProposals(tx: DbOrTx) {
   return withItems(
     tx,
     await selectProposals(tx)
-      .where(eq(proposal.decision, "Pending"))
+      .where(and(eq(proposal.decision, "Pending"), ne(proposal.itemType, "Plan")))
       .orderBy(asc(proposal.proposedAt)),
   );
 }
@@ -180,7 +180,7 @@ export async function listRecentDecisions(tx: DbOrTx, limit = 20) {
   return withItems(
     tx,
     await selectProposals(tx)
-      .where(ne(proposal.decision, "Pending"))
+      .where(and(ne(proposal.decision, "Pending"), ne(proposal.itemType, "Plan")))
       .orderBy(desc(proposal.decidedAt))
       .limit(limit),
   );
@@ -195,4 +195,22 @@ export async function myProposals(tx: DbOrTx, userId: string, kind: LibraryKind,
       .orderBy(desc(proposal.proposedAt))
       .limit(limit),
   );
+}
+
+/** Plans proposed as Official (F17). They're decided on the plan's own page. */
+export async function listPendingPlanProposals(tx: DbOrTx) {
+  return tx
+    .select({
+      id: proposal.id,
+      planId: plan.id,
+      planName: plan.name,
+      planType: plan.planType,
+      proposedByName: proposer.name,
+      proposedAt: proposal.proposedAt,
+    })
+    .from(proposal)
+    .innerJoin(plan, eq(plan.id, proposal.itemId))
+    .innerJoin(proposer, eq(proposer.id, proposal.proposedBy))
+    .where(and(eq(proposal.itemType, "Plan"), eq(proposal.decision, "Pending")))
+    .orderBy(asc(proposal.proposedAt));
 }

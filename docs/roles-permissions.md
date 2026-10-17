@@ -25,24 +25,28 @@ audit log, user deletion and deactivation (see [data-model.md](data-model.md#tri
 Each PRD row maps to one or more action keys in `src/lib/permissions.ts`. Each row has a
 test in `src/lib/permissions.test.ts`.
 
-| PRD row                                                              | Action key(s)                                                        | Admin | User                                        |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------- | ----- | ------------------------------------------- |
-| Invite users, assign roles, deactivate and reactivate users          | `user.manage`                                                        | Yes   | No                                          |
-| View all companies, people, activities and dashboards                | `record.view`                                                        | Yes   | Yes                                         |
-| Create, edit and log activity on leads they own                      | `lead.create`, `lead.edit` (with the lead)                           | Yes   | Yes                                         |
-| View and add notes on leads owned by others                          | `record.view`, `lead.addNote`                                        | Yes   | Yes                                         |
-| Log outreach on leads owned by others                                | `lead.edit` (with the lead): owner or Admin                          | Yes   | No. Shows "This lead is claimed by {owner}" |
-| Use the AI panel, Today's Done and Snooze on a lead                  | `lead.edit` (with the lead): owner or Admin                          | Yes   | Own leads only                              |
-| Reassign the owner of a lead or company (single or bulk)             | `lead.reassign`                                                      | Yes   | No                                          |
-| Create, edit and delete Official personas, filters and templates     | `library.create` / `library.edit` / `library.delete` (Official item) | Yes   | No. Official items show a lock icon         |
-| Create, edit and delete own Personal personas, filters and templates | `library.create` / `library.edit` / `library.delete` (Personal item) | Yes   | Yes, own items only                         |
-| View and duplicate anyone's Personal items                           | `record.view`, `library.duplicate`                                   | Yes   | Yes                                         |
-| Propose a Personal item as Official                                  | `library.propose` (own Personal item)                                | Yes   | Yes                                         |
-| Approve or reject proposals                                          | `proposal.decide`                                                    | Yes   | No                                          |
-| Read Product Facts and Playbook Settings                             | `settings.read`                                                      | Yes   | Yes                                         |
-| Edit Product Facts and Playbook Settings                             | `settings.edit`                                                      | Yes   | No                                          |
-| View the Audit Log                                                   | `audit.view`                                                         | Yes   | No. Users see change history on each record |
-| Edit or delete Audit Log entries                                     | `audit.modify`                                                       | No    | No                                          |
+| PRD row                                                              | Action key(s)                                                         | Admin | User                                        |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------- | ----- | ------------------------------------------- |
+| Invite users, assign roles, deactivate and reactivate users          | `user.manage`                                                         | Yes   | No                                          |
+| View all companies, people, activities and dashboards                | `record.view`                                                         | Yes   | Yes                                         |
+| Create, edit and log activity on leads they own                      | `lead.create`, `lead.edit` (with the lead)                            | Yes   | Yes                                         |
+| View and add notes on leads owned by others                          | `record.view`, `lead.addNote`                                         | Yes   | Yes                                         |
+| Log outreach on leads owned by others                                | `lead.edit` (with the lead): owner or Admin                           | Yes   | No. Shows "This lead is claimed by {owner}" |
+| Use the AI panel, Today's Done and Snooze on a lead                  | `lead.edit` (with the lead): owner or Admin                           | Yes   | Own leads only                              |
+| Reassign the owner of a lead or company (single or bulk)             | `lead.reassign`                                                       | Yes   | No                                          |
+| Create, edit and delete Official personas, filters and templates     | `library.create` / `library.edit` / `library.delete` (Official item)  | Yes   | No. Official items show a lock icon         |
+| Create, edit and delete own Personal personas, filters and templates | `library.create` / `library.edit` / `library.delete` (Personal item)  | Yes   | Yes, own items only                         |
+| View and duplicate anyone's Personal items                           | `record.view`, `library.duplicate`                                    | Yes   | Yes                                         |
+| Propose a Personal item as Official                                  | `library.propose` (own Personal item)                                 | Yes   | Yes                                         |
+| Create Official plans; edit and archive them (F17)                   | `plan.create`, `plan.edit` (Official)                                 | Yes   | No                                          |
+| Create Personal plans; edit, archive and propose your own            | `plan.create`, `plan.edit`, `plan.propose` (own Personal plan)        | Yes   | Yes                                         |
+| See and use a plan (enrol people)                                    | `plan.use`: Official plans for all; Personal for the owner and Admins | Yes   | Official + own                              |
+| Approve or reject a plan proposal                                    | `proposal.decide`                                                     | Yes   | No                                          |
+| Approve or reject proposals                                          | `proposal.decide`                                                     | Yes   | No                                          |
+| Read Product Facts and Playbook Settings                             | `settings.read`                                                       | Yes   | Yes                                         |
+| Edit Product Facts and Playbook Settings                             | `settings.edit`                                                       | Yes   | No                                          |
+| View the Audit Log                                                   | `audit.view`                                                          | Yes   | No. Users see change history on each record |
+| Edit or delete Audit Log entries                                     | `audit.modify`                                                        | No    | No                                          |
 
 "Own" means the record's `owner_id` is the signed-in user. `lead.edit` and the `library.*`
 actions receive the record so `can()` can check its owner and type.

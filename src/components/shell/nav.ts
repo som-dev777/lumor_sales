@@ -7,6 +7,7 @@ import {
   History,
   Info,
   LayoutList,
+  Route,
   Settings,
   UserRound,
   Users,
@@ -21,7 +22,7 @@ export type NavItem = {
   adminOnly?: boolean;
 };
 
-// The 11 sidebar items from the PRD (Screens and functional requirements), in order.
+// The sidebar items from the PRD (Screens; v2 adds Plans after Templates), in order.
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Today", icon: LayoutList },
   { href: "/people", label: "People", icon: Users },
@@ -29,6 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/personas", label: "Personas", icon: UserRound },
   { href: "/account-filters", label: "Account Filters", icon: Filter },
   { href: "/templates", label: "Templates", icon: BookOpenText },
+  { href: "/plans", label: "Plans", icon: Route },
   { href: "/dashboard", label: "Dashboard", icon: ChartColumn },
   { href: "/approvals", label: "Approvals", icon: CircleCheckBig, adminOnly: true },
   { href: "/audit-log", label: "Audit Log", icon: History, adminOnly: true },

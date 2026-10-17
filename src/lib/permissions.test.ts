@@ -77,6 +77,27 @@ describe("PRD permission table", () => {
     expect(can(admin, "library.propose", official)).toBe(false);
   });
 
+  it("Plans (F17): Admins make Official plans; anyone makes and edits their own Personal ones", () => {
+    expect(can(admin, "plan.create", official)).toBe(true);
+    expect(can(rep, "plan.create", official)).toBe(false);
+    expect(can(rep, "plan.create", repsPersonal)).toBe(true);
+    expect(can(admin, "plan.edit", official)).toBe(true);
+    expect(can(rep, "plan.edit", official)).toBe(false);
+    expect(can(rep, "plan.edit", repsPersonal)).toBe(true);
+    expect(can(otherRep, "plan.edit", repsPersonal)).toBe(false);
+    expect(can(admin, "plan.edit", repsPersonal)).toBe(false);
+  });
+
+  it("Plans: everyone uses Official plans; Personal plans are their owner's (Admins see all)", () => {
+    expect(can(rep, "plan.use", official)).toBe(true);
+    expect(can(rep, "plan.use", repsPersonal)).toBe(true);
+    expect(can(otherRep, "plan.use", repsPersonal)).toBe(false);
+    expect(can(admin, "plan.use", repsPersonal)).toBe(true);
+    expect(can(rep, "plan.propose", repsPersonal)).toBe(true);
+    expect(can(otherRep, "plan.propose", repsPersonal)).toBe(false);
+    expect(can(inactiveRep, "plan.use", official)).toBe(false);
+  });
+
   it("Approve or reject proposals: Admin yes, User no", () => {
     expect(can(admin, "proposal.decide")).toBe(true);
     expect(can(rep, "proposal.decide")).toBe(false);

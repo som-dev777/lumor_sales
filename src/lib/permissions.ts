@@ -28,7 +28,16 @@ export type PlainAction =
 type OwnedAction = "lead.edit";
 
 /** Actions on a library item: its type (Official/Personal) and owner matter. */
-type LibraryAction = "library.create" | "library.edit" | "library.delete" | "library.propose";
+type LibraryAction =
+  | "library.create"
+  | "library.edit"
+  | "library.delete"
+  | "library.propose"
+  // Plans (F17) follow the library rules; "plan.use" = see it and enrol people in it.
+  | "plan.create"
+  | "plan.edit"
+  | "plan.propose"
+  | "plan.use";
 
 export type Action = PlainAction | OwnedAction | LibraryAction;
 
@@ -80,7 +89,17 @@ export function can(actor: Actor, action: Action, record?: Partial<LibraryItem>)
 
     // Propose your own Personal item as Official.
     case "library.propose":
+    case "plan.propose":
       return record?.type === "Personal" && isOwner;
+
+    // Plans (F17): Official plans are Admin-made and everyone's to use; Personal plans are
+    // their owner's (Admins can see and use all of them).
+    case "plan.create":
+      return record?.type === "Personal" || isAdmin;
+    case "plan.edit":
+      return record?.type === "Official" ? isAdmin : isOwner;
+    case "plan.use":
+      return record?.type === "Official" || isOwner || isAdmin;
   }
 }
 

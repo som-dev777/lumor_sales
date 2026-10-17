@@ -150,7 +150,8 @@ missing seed plans and never changes existing ones.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                    |
-| ---------- | ---------- | --------------------------------------------------------------------------------------------------------- |
-| 2026-10-18 | Unreleased | Feature doc written (R7), before code.                                                                    |
-| 2026-10-18 | Unreleased | Guardrails (checkPlan, checkTouch) and scheduling rules built with tests, including acceptance on day 13. |
+| Date       | Version    | Change                                                                                                                                           |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-18 | Unreleased | Feature doc written (R7), before code.                                                                                                           |
+| 2026-10-18 | Unreleased | Guardrails (checkPlan, checkTouch) and scheduling rules built with tests, including acceptance on day 13.                                        |
+| 2026-10-18 | Unreleased | Plans page, plan page and builder (live guardrail checks), versions, duplicate, propose, archive; plan proposals in Approvals; plan permissions. |

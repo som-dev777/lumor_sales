@@ -19,6 +19,7 @@ R7 Plans (v2.0.0), in progress.
 - Playbook Settings: the follow-up delays are replaced by the cadence guardrail values.
 - Seed plans: the Official Outreach plan (5 steps), plus Meeting follow-up, Trial and Onboarding drafts waiting for Admin approval.
 - Cadence guardrails and plan scheduling rules (weekends skipped, late steps shift later ones, the weekly touch limit, call retries, pausing), with tests for every rule.
+- New **Plans** page (sidebar): Official and Personal plans, a step-by-step builder that checks the guardrails as you type, versions (people keep the version they started), Duplicate, Propose as Official and Archive. Plan proposals show in Approvals.
 - AI prompts P01–P04 updated to version 1.1 (v2 stage names; every follow-up must add something new).
 
 ## [1.5.0] - 2026-10-17

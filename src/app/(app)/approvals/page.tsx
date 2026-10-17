@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { ProposalActions } from "@/components/approvals/ProposalActions";
 import { ProposalPreview } from "@/components/approvals/ProposalPreview";
@@ -9,7 +10,11 @@ import { Badge } from "@/components/ui/Badge";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { getDb } from "@/lib/db/client";
 import { formatIst } from "@/lib/time";
-import { listPendingProposals, listRecentDecisions } from "@/server/library/approvals";
+import {
+  listPendingPlanProposals,
+  listPendingProposals,
+  listRecentDecisions,
+} from "@/server/library/approvals";
 
 export const metadata: Metadata = { title: "Approvals" };
 
@@ -24,7 +29,7 @@ export default function ApprovalsPage() {
     <RequirePermission action="proposal.decide">
       <PageHeader
         title="Approvals"
-        description="Personal personas, account filters and templates the team has proposed as Official. Oldest first."
+        description="Personal personas, account filters, templates and plans the team has proposed as Official. Oldest first."
       />
       <Suspense fallback={<StatusMessage title="Loading proposals…" />}>
         <Queue />
@@ -35,18 +40,36 @@ export default function ApprovalsPage() {
 
 async function Queue() {
   const db = getDb();
-  const [pending, decided] = await Promise.all([
+  const [pending, decided, plans] = await Promise.all([
     listPendingProposals(db),
     listRecentDecisions(db, 20),
+    listPendingPlanProposals(db),
   ]);
 
   return (
     <>
-      {pending.length === 0 ? (
+      {plans.length > 0 && (
+        <section aria-label="Plans waiting" className={styles.planQueue}>
+          <h2 className={styles.sectionTitle}>Plans waiting</h2>
+          <ul className={styles.decided}>
+            {plans.map((p) => (
+              <li key={p.id}>
+                <Badge tone="primary">Plan</Badge>
+                <Link href={`/plans/${p.planId}`}>{p.planName}</Link>
+                <span className={styles.muted}>
+                  {p.planType} · proposed by {p.proposedByName} · {formatIst(p.proposedAt)}. Open it
+                  to review the steps and approve or reject.
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {pending.length === 0 && plans.length === 0 ? (
         <StatusMessage title="Nothing waiting">
           <p>When someone proposes a Personal item as Official, it appears here.</p>
         </StatusMessage>
-      ) : (
+      ) : pending.length === 0 ? null : (
         <ol className={styles.list} aria-label="Waiting for a decision">
           {pending.map((p) => (
             <li key={p.id} className={styles.card} aria-label={p.itemName}>
