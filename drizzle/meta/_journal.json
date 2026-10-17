@@ -15,6 +15,13 @@
       "when": 1792148835507,
       "tag": "0001_lock_audit_log_and_users",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792246903353,
+      "tag": "0002_unique_company_names",
+      "breakpoints": true
     }
   ]
 }

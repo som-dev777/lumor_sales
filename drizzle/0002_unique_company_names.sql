@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `company_name_unique` ON `company` (lower(trim("name")));

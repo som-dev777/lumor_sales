@@ -1,4 +1,5 @@
-import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { sql } from "drizzle-orm";
+import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { COMPANY_STATUSES } from "../enums";
 import { baseColumns, oneOf } from "./_shared";
 import { accountFilter } from "./account-filter";
@@ -33,5 +34,7 @@ export const company = sqliteTable(
     check("company_status_check", oneOf("status", COMPANY_STATUSES)),
     index("company_owner_idx").on(t.ownerId),
     index("company_status_idx").on(t.status),
+    // D-021: one company per name, ignoring case and surrounding spaces.
+    uniqueIndex("company_name_unique").on(sql`lower(trim(${t.name}))`),
   ],
 );

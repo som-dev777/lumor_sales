@@ -45,7 +45,8 @@ same LinkedIn profile twice, so two reps never message the same person.
 - **`/people`:**
   - My leads / All leads toggle (My leads is the default for Users, All for Admins)
   - filters: owner, persona, level, account filter, stage, market, next action date
-    (Overdue / Today / This week, in IST), plus search by name, title or company
+    (Overdue / Today / This week, in IST; "This week" is Monday–Sunday, so it
+    includes days earlier this week; Paid and Lost leads are left out of all three), plus search by name, title or company
   - a table with 50 per page: name and title, company, persona, stage, next action and
     date (red when overdue), owner
   - Add person dialog; Export CSV; Admins get row checkboxes and "Reassign owner"
@@ -72,7 +73,8 @@ same LinkedIn profile twice, so two reps never message the same person.
 
 ## Change history
 
-| Date       | Version    | Change                   |
-| ---------- | ---------- | ------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created. |
-| 2026-10-17 | Unreleased | Full doc written (R3).   |
+| Date       | Version    | Change                                                                                                          |
+| ---------- | ---------- | --------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                        |
+| 2026-10-17 | Unreleased | Full doc written (R3).                                                                                          |
+| 2026-10-17 | Unreleased | Rules built: link normalising, duplicates, ownership, notes, stage changes, bulk reassign, filters; with tests. |
