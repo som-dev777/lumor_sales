@@ -12,6 +12,7 @@ import { requireUser } from "@/lib/session";
 import { formatIst } from "@/lib/time";
 import { accountFilterSchema, personaSchema, templateSchema } from "@/lib/validation/library";
 import { historyFor } from "../audit-query";
+import { templateRevisionsFor } from "../library/queries";
 import {
   createItem,
   deleteItem,
@@ -159,5 +160,25 @@ export async function itemHistory(kind: LibraryKind, id: string): Promise<Histor
     who: r.userName ?? "System",
     when: formatIst(r.occurredAt),
     changes: r.changes,
+  }));
+}
+
+export type RevisionEntry = {
+  revision: number;
+  body: string;
+  replacedAt: string;
+  replacedBy: string;
+};
+
+/** A template's earlier wordings (everyone signed in can see them). */
+export async function templateRevisions(id: string): Promise<RevisionEntry[]> {
+  await requireUser();
+  if (!idSchema.safeParse(id).success) return [];
+  const rows = await templateRevisionsFor(getDb(), id);
+  return rows.map((r) => ({
+    revision: r.revision,
+    body: r.body,
+    replacedAt: formatIst(r.replacedAt),
+    replacedBy: r.replacedBy ?? "System",
   }));
 }

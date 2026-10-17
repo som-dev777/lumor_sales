@@ -9,9 +9,16 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Dialog } from "@/components/ui/Dialog";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { useToast } from "@/components/ui/Toast";
-import { itemHistory, libraryAction, type HistoryEntry } from "@/server/actions/library";
+import {
+  itemHistory,
+  libraryAction,
+  templateRevisions,
+  type HistoryEntry,
+  type RevisionEntry,
+} from "@/server/actions/library";
 import { KIND_NOUN, type LibraryKind } from "@/server/library/kinds";
 import { LibraryForm } from "./LibraryForm";
+import { TemplateBody } from "./TemplateBody";
 import styles from "./library.module.scss";
 
 export type ItemPermissions = {
@@ -30,6 +37,8 @@ type Props = {
   editValues: unknown;
   /** Extra choices the edit form needs (e.g. persona options). */
   formOptions?: unknown;
+  /** Templates: offer "Earlier wordings" when the body has been edited before. */
+  hasRevisions?: boolean;
 };
 
 type Confirm = "archive" | "delete" | "propose" | null;
@@ -43,6 +52,7 @@ export function ItemActions({
   permissions,
   editValues,
   formOptions,
+  hasRevisions = false,
 }: Props) {
   const notify = useToast();
   const noun = KIND_NOUN[kind];
@@ -50,6 +60,8 @@ export function ItemActions({
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [history, setHistory] = useState<HistoryEntry[] | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [revisions, setRevisions] = useState<RevisionEntry[] | null>(null);
+  const [revisionsOpen, setRevisionsOpen] = useState(false);
   const [busy, startTransition] = useTransition();
 
   function run(action: "archive" | "restore" | "delete" | "duplicate" | "propose") {
@@ -61,6 +73,12 @@ export function ItemActions({
         result.ok ? (result.message ?? "Done.") : result.error,
       );
     });
+  }
+
+  function openRevisions() {
+    setRevisionsOpen(true);
+    setRevisions(null);
+    startTransition(async () => setRevisions(await templateRevisions(id)));
   }
 
   function openHistory() {
@@ -112,6 +130,11 @@ export function ItemActions({
             {permissions.canPropose && (
               <Menu.Item className={styles.menuItem} onSelect={() => setConfirm("propose")}>
                 Propose as Official
+              </Menu.Item>
+            )}
+            {hasRevisions && (
+              <Menu.Item className={styles.menuItem} onSelect={openRevisions}>
+                Earlier wordings
               </Menu.Item>
             )}
             <Menu.Item className={styles.menuItem} onSelect={openHistory}>
@@ -185,6 +208,32 @@ export function ItemActions({
                   <strong>{h.action}</strong> by {h.who} · {h.when}
                 </p>
                 <ChangeDetails changes={h.changes} />
+              </li>
+            ))}
+          </ol>
+        )}
+      </Dialog>
+
+      <Dialog
+        open={revisionsOpen}
+        onOpenChange={setRevisionsOpen}
+        size="lg"
+        title={`Earlier wordings: ${name}`}
+        description="Each time the wording was changed, the previous version was kept here."
+      >
+        {revisions === null ? (
+          <StatusMessage title="Loading…" />
+        ) : revisions.length === 0 ? (
+          <p className={styles.empty}>No earlier wordings.</p>
+        ) : (
+          <ol className={styles.history}>
+            {revisions.map((r) => (
+              <li key={r.revision}>
+                <p className={styles.revisionMeta}>
+                  <strong>Revision {r.revision}</strong> · replaced by {r.replacedBy} ·{" "}
+                  {r.replacedAt}
+                </p>
+                <TemplateBody body={r.body} />
               </li>
             ))}
           </ol>

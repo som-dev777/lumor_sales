@@ -87,3 +87,16 @@ export const rejectNoteSchema = optionalText(500);
 export function placeholdersIn(body: string): string[] {
   return [...new Set([...body.matchAll(/\{([^{}\n]{1,40})\}/g)].map((m) => m[1]))];
 }
+
+/** A template body cut into plain text and {Placeholder} pieces, for highlighting. */
+export function splitPlaceholders(body: string): { text: string; placeholder: boolean }[] {
+  const parts: { text: string; placeholder: boolean }[] = [];
+  let last = 0;
+  for (const m of body.matchAll(/\{[^{}\n]{1,40}\}/g)) {
+    if (m.index > last) parts.push({ text: body.slice(last, m.index), placeholder: false });
+    parts.push({ text: m[0], placeholder: true });
+    last = m.index + m[0].length;
+  }
+  if (last < body.length) parts.push({ text: body.slice(last), placeholder: false });
+  return parts;
+}

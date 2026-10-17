@@ -21,8 +21,8 @@ apply. Plus:
    can be A and B.
 3. **Editing the body creates a new revision** (PRD: "creates a new version and keeps the
    old one"). The old body is saved in `template_revision` with its revision number; the
-   template's revision goes up by one. A "Revisions" view lists every past body with who
-   changed it and when. Editing other fields (name, persona…) doesn't create a revision.
+   template's revision goes up by one. An "Earlier wordings" view lists every past body with who
+   replaced it and when. Editing other fields (name, persona…) doesn't create a revision.
    (A/B/C variant ≠ revision; see D-007.)
 4. **Placeholders** such as `{Name}`, `{Company}`, `{topic}` are highlighted in the body.
    The editor lists the placeholders found. They're filled in by Draft message (F10, R6).
@@ -65,9 +65,10 @@ interested / not now / competitor. Openers link to their persona and level. Load
 
 ## Change history
 
-| Date       | Version    | Change                                                                                  |
-| ---------- | ---------- | --------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                |
-| 2026-10-16 | Unreleased | Full doc written (R2).                                                                  |
-| 2026-10-16 | Unreleased | Template rules (revisions on wording edits, usage stats) built, with tests.             |
-| 2026-10-17 | Unreleased | Seed: 12 Official version-A templates, openers linked to persona and level, with tests. |
+| Date       | Version    | Change                                                                                                                                                               |
+| ---------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                                                             |
+| 2026-10-16 | Unreleased | Full doc written (R2).                                                                                                                                               |
+| 2026-10-16 | Unreleased | Template rules (revisions on wording edits, usage stats) built, with tests.                                                                                          |
+| 2026-10-17 | Unreleased | Seed: 12 Official version-A templates, openers linked to persona and level, with tests.                                                                              |
+| 2026-10-17 | Unreleased | Templates page built: sections by purpose, version badges, highlighted placeholders, live placeholder list in the form, Earlier wordings, times used and reply rate. |

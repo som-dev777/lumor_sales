@@ -31,3 +31,4 @@ R1 Foundation: login and team management, the Audit Log, the About page, and the
 - Persona form: Function and Seniority have an "Add another" box; a new option is offered to everyone afterwards (D-018).
 - Fixed a console warning caused by browser extensions (such as ColorZilla) adding attributes to the page.
 - Account Filters page (F05): the same tabs, cards and actions as Personas, sorted by code, with each filter's industries ("Any" when empty), headcount, HQ, key filters, keywords, exclusions and why it matters. Official codes must be unique; Personal filters may reuse one; copies get a "-copy" code.
+- Templates page (F06): templates grouped by purpose in the PRD's order, each with its version (A/B/C), persona, level and revision number, the wording with {placeholders} highlighted, times used and reply rate. The form lists placeholders as you type. Changing the wording keeps the old one under "Earlier wordings"; renaming doesn't create a revision.

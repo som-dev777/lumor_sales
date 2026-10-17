@@ -292,3 +292,58 @@
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
 }
+
+// Templates
+.row3 {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: var(--space-3);
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.body {
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-page);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.placeholder {
+  padding: 0 2px;
+  border-radius: 4px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: var(--weight-medium);
+}
+
+.statsSmall {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.section + .section {
+  margin-top: var(--space-8);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.revisionMeta {
+  margin-bottom: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}

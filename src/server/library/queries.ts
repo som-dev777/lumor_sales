@@ -2,7 +2,14 @@
 import { and, asc, desc, eq, getTableColumns, inArray, ne, sql, type SQL } from "drizzle-orm";
 import { PERSONA_FUNCTIONS, SENIORITIES } from "@/lib/db/enums";
 import type { DbOrTx } from "@/lib/db/client";
-import { accountFilter, persona, proposal, template, user } from "@/lib/db/schema";
+import {
+  accountFilter,
+  persona,
+  proposal,
+  template,
+  templateRevision,
+  user,
+} from "@/lib/db/schema";
 import { KIND_LABEL, type LibraryKind } from "./items";
 
 export type LibraryTab = "official" | "personal";
@@ -117,4 +124,19 @@ export async function personaOptions(db: DbOrTx): Promise<PersonaOptions> {
     functions: merge(PERSONA_FUNCTIONS, functions),
     seniority: merge(SENIORITIES, seniority),
   };
+}
+
+/** A template's earlier wordings, newest first, with who replaced each and when (F06). */
+export async function templateRevisionsFor(db: DbOrTx, templateId: string) {
+  return db
+    .select({
+      revision: templateRevision.revision,
+      body: templateRevision.body,
+      replacedAt: templateRevision.createdAt,
+      replacedBy: user.name,
+    })
+    .from(templateRevision)
+    .leftJoin(user, eq(user.id, templateRevision.createdBy))
+    .where(eq(templateRevision.templateId, templateId))
+    .orderBy(desc(templateRevision.revision));
 }

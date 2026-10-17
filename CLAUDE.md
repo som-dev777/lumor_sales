@@ -72,5 +72,9 @@ All dates are stored in UTC and shown in IST. Weeks run Monday to Sunday.
 
 ## Working pace
 
-Build one step at a time. After each step, stop, say what changed and what to
-check, and wait for the owner's go-ahead.
+Work in phases: one phase = one release (R2, R3…). Build a phase's steps one after
+another without waiting for a go-ahead, committing and pushing after each working step.
+Stop at the end of each phase (the release) with a plain-language summary and the
+browser checklist for its exit check, because the PRD says the next release starts only
+after the previous one passes its exit check. Stop earlier only for a decision that
+genuinely needs the owner.

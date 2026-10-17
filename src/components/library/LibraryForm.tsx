@@ -4,6 +4,7 @@ import type { LibraryKind } from "@/server/library/kinds";
 import type { PersonaOptions } from "@/server/library/queries";
 import { AccountFilterForm, EMPTY_ACCOUNT_FILTER } from "./AccountFilterForm";
 import { EMPTY_PERSONA, PersonaForm } from "./PersonaForm";
+import { EMPTY_TEMPLATE, TemplateForm, type PersonaChoice } from "./TemplateForm";
 
 export type FormTarget =
   { mode: "edit"; id: string } | { mode: "create"; type: "Official" | "Personal" };
@@ -40,7 +41,14 @@ export function LibraryForm({ kind, target, values, formOptions, onDone }: Props
           onDone={onDone}
         />
       );
-    default:
-      return null;
+    case "template":
+      return (
+        <TemplateForm
+          target={target}
+          defaultValues={(values as typeof EMPTY_TEMPLATE | undefined) ?? EMPTY_TEMPLATE}
+          personas={(formOptions as PersonaChoice[] | undefined) ?? []}
+          onDone={onDone}
+        />
+      );
   }
 }

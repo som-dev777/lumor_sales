@@ -433,3 +433,34 @@ describe("persona options (D-018)", () => {
     expect(opts.seniority).toHaveLength(9);
   });
 });
+
+describe("template helpers (F06)", () => {
+  it("split a body into text and {placeholders}", async () => {
+    const { splitPlaceholders } = await import("@/lib/validation/library");
+    expect(splitPlaceholders("Hi {Name}, at {Company}.")).toEqual([
+      { text: "Hi ", placeholder: false },
+      { text: "{Name}", placeholder: true },
+      { text: ", at ", placeholder: false },
+      { text: "{Company}", placeholder: true },
+      { text: ".", placeholder: false },
+    ]);
+    expect(splitPlaceholders("No placeholders")).toEqual([
+      { text: "No placeholders", placeholder: false },
+    ]);
+  });
+
+  it("list earlier wordings newest first, with who replaced them", async () => {
+    const { templateRevisionsFor } = await import("./queries");
+    const tpl = await createItem(t.db, rep, "Personal", {
+      kind: "template",
+      data: templateData("One {Name}"),
+    });
+    await updateItem(t.db, rep, tpl.id, { kind: "template", data: templateData("Two {Name}") });
+    await updateItem(t.db, rep, tpl.id, { kind: "template", data: templateData("Three {Name}") });
+    const revisions = await templateRevisionsFor(t.db, tpl.id);
+    expect(revisions.map((r) => [r.revision, r.body, r.replacedBy])).toEqual([
+      [2, "Two {Name}", "Asha"],
+      [1, "One {Name}", "Asha"],
+    ]);
+  });
+});
