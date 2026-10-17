@@ -114,7 +114,7 @@ describe("Mark as sent and Confirm", () => {
     });
     await expect(
       markSent(t.db, rep, personId, { suggestion: "Hi {Name}", text: "Hi {Name}" }),
-    ).rejects.toThrow(/placeholders/);
+    ).rejects.toThrow("Fill in {Name} first.");
   });
 
   it("a drafted template is logged with its A/B/C version", async () => {

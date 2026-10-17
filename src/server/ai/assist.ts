@@ -12,7 +12,7 @@ import { addDaysIst, formatIst, isIstDate, todayIst } from "@/lib/time";
 import { placeholdersIn } from "@/lib/validation/library";
 import { LeadError } from "../leads/companies";
 import { loadPerson } from "../leads/people";
-import { quickLog } from "../leads/quicklog";
+import { logWithPlan } from "../plans/enrolment";
 import { factsMissing, getProductFacts } from "../settings";
 import { AiError, runPrompt } from "./client";
 
@@ -121,16 +121,23 @@ export const replyResultSchema = z.object({
 export type ReplyResult = z.infer<typeof replyResultSchema>;
 
 /** Step 1: the pasted reply is saved straight away, before any AI call (F09). */
-export async function savePastedReply(db: Db, actor: Actor, personId: string, text: string) {
+export async function savePastedReply(
+  db: Db,
+  actor: Actor,
+  personId: string,
+  text: string,
+  now = new Date(),
+) {
   await loadOwnLead(db, actor, personId);
-  const { activity: saved } = await quickLog(
+  // Through the plan layer, so a reply pauses the person's plan (F17).
+  const { activity: saved } = await logWithPlan(
     db,
     actor,
     personId,
     { action: "gotReply", replyType: null },
-    { note: text },
+    { note: text, now },
   );
-  return saved;
+  return saved!;
 }
 
 /** Step 2: P02 suggests replies for a saved "Reply received" activity. */
@@ -219,7 +226,7 @@ export async function markSent(db: Db, actor: Actor, personId: string, msg: Sent
   const text = msg.text.trim();
   if (!text) throw new LeadError("The message is empty.");
   if (placeholdersIn(text).length > 0) {
-    throw new LeadError("The message still has {placeholders}. Fill them in first.");
+    throw new LeadError(`Fill in {${placeholdersIn(text)[0]}} first.`);
   }
   return db.transaction(async (tx) => {
     const p = await loadOwnLead(tx, actor, personId);

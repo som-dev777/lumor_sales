@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import type { Stage } from "@/lib/db/enums";
 import { reassign } from "@/server/actions/leads";
+import { enrol } from "@/server/actions/plans";
 import { StageBadge } from "./StageBadge";
 import styles from "./leads.module.scss";
 
@@ -34,18 +35,21 @@ const column = createColumnHelper<typeof features, PersonRow>();
 
 type Props = {
   rows: PersonRow[];
-  /** Admins can select rows and reassign their owner. */
+  /** Admins can reassign selected rows' owner. */
   canReassign: boolean;
   owners: { id: string; label: string }[];
+  /** Plans the viewer can enrol people in (F17); anyone can select rows to enrol. */
+  plans: { id: string; label: string }[];
 };
 
-export function PeopleTable({ rows, canReassign, owners }: Props) {
+export function PeopleTable({ rows, canReassign, owners, plans }: Props) {
   const notify = useToast();
   const [newOwner, setNewOwner] = useState("");
+  const [planId, setPlanId] = useState("");
   const [busy, startTransition] = useTransition();
 
   const columns = column.columns([
-    ...(canReassign
+    ...(canReassign || plans.length > 0
       ? [
           column.display({
             id: "select",
@@ -121,6 +125,17 @@ export function PeopleTable({ rows, canReassign, owners }: Props) {
     });
   }
 
+  function doEnrol() {
+    startTransition(async () => {
+      const result = await enrol(selected, planId);
+      notify(
+        result.ok ? "success" : "error",
+        result.ok ? (result.message ?? "Done.") : result.error,
+      );
+      if (result.ok) table.resetRowSelection();
+    });
+  }
+
   return (
     <>
       <div className={styles.tableWrap}>
@@ -150,28 +165,55 @@ export function PeopleTable({ rows, canReassign, owners }: Props) {
         </table>
       </div>
 
-      {canReassign && selected.length > 0 && (
-        <div className={styles.bulkBar} role="region" aria-label="Reassign selected leads">
+      {selected.length > 0 && (
+        <div className={styles.bulkBar} role="region" aria-label="Selected leads">
           <strong>{selected.length} selected</strong>
-          <label className={styles.srOnly} htmlFor="new-owner">
-            New owner
-          </label>
-          <select
-            id="new-owner"
-            className={styles.control}
-            value={newOwner}
-            onChange={(e) => setNewOwner(e.target.value)}
-          >
-            <option value="">Choose new owner…</option>
-            {owners.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <Button disabled={!newOwner} loading={busy} onClick={doReassign}>
-            Reassign owner
-          </Button>
+          {plans.length > 0 && (
+            <>
+              <label className={styles.srOnly} htmlFor="enrol-plan">
+                Plan
+              </label>
+              <select
+                id="enrol-plan"
+                className={styles.control}
+                value={planId}
+                onChange={(e) => setPlanId(e.target.value)}
+              >
+                <option value="">Choose a plan…</option>
+                {plans.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <Button disabled={!planId} loading={busy} onClick={doEnrol}>
+                Enrol in plan
+              </Button>
+            </>
+          )}
+          {canReassign && (
+            <>
+              <label className={styles.srOnly} htmlFor="new-owner">
+                New owner
+              </label>
+              <select
+                id="new-owner"
+                className={styles.control}
+                value={newOwner}
+                onChange={(e) => setNewOwner(e.target.value)}
+              >
+                <option value="">Choose new owner…</option>
+                {owners.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <Button disabled={!newOwner} loading={busy} onClick={doReassign}>
+                Reassign owner
+              </Button>
+            </>
+          )}
           <Button variant="ghost" onClick={() => table.resetRowSelection()}>
             Clear
           </Button>

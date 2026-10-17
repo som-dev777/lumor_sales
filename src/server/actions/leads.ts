@@ -5,6 +5,7 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { errorMessage, fieldErrorsFrom, type ActionResult } from "@/lib/action-result";
+import { appNow } from "@/lib/clock";
 import { getDb } from "@/lib/db/client";
 import { PermissionError } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
@@ -17,7 +18,8 @@ import {
 } from "@/lib/validation/leads";
 import { createCompany, LeadError, markAsCustomer, updateCompany } from "../leads/companies";
 import { addNote, createPerson, reassignPeople, updatePerson } from "../leads/people";
-import { quickLog } from "../leads/quicklog";
+import { GuardrailWarning, logWithPlan } from "../plans/enrolment";
+import { PlanError } from "../plans/plans";
 
 const idSchema = z.uuid();
 
@@ -26,6 +28,7 @@ async function run(work: () => Promise<ActionResult>): Promise<ActionResult> {
     return await work();
   } catch (e) {
     if (e instanceof LeadError) return { ok: false, error: e.message, link: e.link };
+    if (e instanceof PlanError) return { ok: false, error: e.message };
     if (e instanceof PermissionError) return { ok: false, error: e.message };
     console.error(e);
     return { ok: false, error: errorMessage(e, "Something went wrong. Please try again.") };
@@ -75,18 +78,39 @@ export async function logActivity(
   personId: string,
   input: unknown,
   note?: string,
-  _opts: { asStep?: boolean; override?: boolean } = {},
+  opts: { asStep?: boolean; override?: boolean } = {},
 ): Promise<LogResult> {
   const viewer = await requireUser();
   const parsed = quickLogSchema.safeParse(input);
   if (!idSchema.safeParse(personId).success) return { ok: false, error: "Unknown person." };
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const cleanNote = typeof note === "string" ? note.trim().slice(0, 5000) : null;
-  return run(async () => {
-    const { person } = await quickLog(getDb(), viewer, personId, parsed.data, { note: cleanNote });
+  try {
+    const { person } = await logWithPlan(getDb(), viewer, personId, parsed.data, {
+      note: cleanNote,
+      now: await appNow(),
+      asStep: Boolean(opts.asStep),
+      override: Boolean(opts.override),
+    });
     refresh();
-    return { ok: true, message: `Logged. ${person.fullName} is now ${person.stage}.` };
-  });
+    return {
+      ok: true,
+      message: opts.asStep
+        ? `Logged as their plan step. ${person.fullName} is now ${person.stage}.`
+        : `Logged. ${person.fullName} is now ${person.stage}.`,
+    };
+  } catch (e) {
+    if (e instanceof GuardrailWarning) {
+      return {
+        ok: false,
+        error: e.message,
+        warnings: e.findings.map((f) => ({ rule: f.rule, message: f.message })),
+      };
+    }
+    return run(async () => {
+      throw e;
+    });
+  }
 }
 
 export async function reassign(personIds: string[], ownerId: string): Promise<ActionResult> {

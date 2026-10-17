@@ -5,6 +5,8 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { Badge } from "@/components/ui/Badge";
 import { getDb } from "@/lib/db/client";
 import { requireUser } from "@/lib/session";
+import { testDate, testDateAllowed } from "@/lib/clock";
+import { TestDateSwitch } from "@/components/shell/TestDateSwitch";
 import { formatIstDate } from "@/lib/time";
 import { APP_VERSION } from "@/lib/version";
 import { latestReleases } from "@/server/releases";
@@ -27,8 +29,18 @@ export default function AboutPage() {
       <Suspense fallback={<StatusMessage title="Loading releases…" />}>
         <Releases />
       </Suspense>
+      <Suspense fallback={null}>
+        <TestDate />
+      </Suspense>
     </>
   );
+}
+
+/** Local testing only (D-033 F10); never shown online. */
+async function TestDate() {
+  await requireUser();
+  if (!testDateAllowed()) return null;
+  return <TestDateSwitch current={await testDate()} />;
 }
 
 async function Releases() {

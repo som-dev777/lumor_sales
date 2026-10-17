@@ -31,6 +31,7 @@ import {
   user,
 } from "@/lib/db/schema";
 import { normaliseLinkedInUrl } from "@/lib/linkedin";
+import { stopPlanTx } from "../plans/enrolment";
 import { assertCan, can, type Actor } from "@/lib/permissions";
 import { addDaysIst, istWeekRange, toIstDate, todayIst } from "@/lib/time";
 import type { PersonData } from "@/lib/validation/leads";
@@ -187,6 +188,10 @@ export async function updatePerson(db: Db, actor: Actor, id: string, data: Perso
 
     // PRD: changing the stage manually logs a "Stage change" activity.
     if (after.stage !== before.stage) await logStageChange(tx, actor, after, before.stage);
+    // Do not contact overrides everything: it stops the person's plan (F17, guardrail 8).
+    if (after.doNotContact && !before.doNotContact) {
+      await stopPlanTx(tx, actor, id, "Do not contact", new Date());
+    }
 
     await writeAudit(tx, {
       userId: actor.id,

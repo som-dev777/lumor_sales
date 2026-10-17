@@ -20,6 +20,10 @@ R7 Plans (v2.0.0), in progress.
 - Seed plans: the Official Outreach plan (5 steps), plus Meeting follow-up, Trial and Onboarding drafts waiting for Admin approval.
 - Cadence guardrails and plan scheduling rules (weekends skipped, late steps shift later ones, the weekly touch limit, call retries, pausing), with tests for every rule.
 - New **Plans** page (sidebar): Official and Personal plans, a step-by-step builder that checks the guardrails as you type, versions (people keep the version they started), Duplicate, Propose as Official and Archive. Plan proposals show in Approvals.
+- Enrol people in a plan from People (select rows) or the person page. The person page's Plan panel shows the current step with the message filled in (or the call script) and Done, call outcomes, Snooze, Pause/Resume, Switch and Stop. Done is refused while a {placeholder} is unfilled.
+- Replies (logged or pasted into the Reply Assistant) pause the plan; Do not contact stops it; unaccepted invites are withdrawn after 14 days and finished plans end in Nurture or Lost.
+- Quick-log checks the cadence guardrails and asks "Is this step N of their plan?" when it matches the current step.
+- About page (local test database only): a test date switch to check late steps and weekends without waiting.
 - AI prompts P01–P04 updated to version 1.1 (v2 stage names; every follow-up must add something new).
 
 ## [1.5.0] - 2026-10-17

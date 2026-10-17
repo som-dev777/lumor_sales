@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { ExternalLink } from "lucide-react";
 import { ChangeHistory } from "@/components/audit/ChangeHistory";
 import { AiPanel } from "@/components/ai/AiPanel";
+import { PlanPanel } from "@/components/plans/PlanPanel";
 import { MarkCustomerButton } from "@/components/leads/MarkCustomerButton";
 import { NoteForm } from "@/components/leads/NoteForm";
 import { PersonDialogButton } from "@/components/leads/PersonDialogButton";
@@ -23,6 +24,9 @@ import { formatIstDate, todayIst } from "@/lib/time";
 import { leadFormOptions } from "@/server/leads/options";
 import { canLogOutreach, getPerson, personTimeline } from "@/server/leads/people";
 import { aiMode } from "@/server/ai/client";
+import { planState } from "@/server/plans/enrolment";
+import { usablePlans } from "@/server/plans/plans";
+import { appNow } from "@/lib/clock";
 import { factsMissing, getProductFacts } from "@/server/settings";
 
 export const metadata: Metadata = { title: "Person" };
@@ -43,11 +47,36 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
   const db = getDb();
   const p = await getPerson(db, id);
   if (!p) notFound();
-  const [events, options, facts] = await Promise.all([
+  const today = todayIst(await appNow());
+  const [events, options, facts, state, plans] = await Promise.all([
     personTimeline(db, id),
     leadFormOptions(db),
     getProductFacts(db),
+    planState(db, id, today),
+    usablePlans(db, viewer),
   ]);
+  const SUGGESTED: Partial<Record<string, string>> = {
+    "Meeting done": "Meeting follow-up",
+    Trial: "Trial",
+    Paid: "Onboarding",
+  };
+  const activeStep =
+    state &&
+    state.enrolment.status === "Active" &&
+    !state.enrolment.waitingForAcceptance &&
+    !state.finished
+      ? state.channel
+      : null;
+  const currentStep =
+    state && activeStep
+      ? activeStep === "LinkedIn connection request"
+        ? { order: state.enrolment.currentStep, action: "requestSent" as const }
+        : activeStep === "Call"
+          ? { order: state.enrolment.currentStep, action: "callLogged" as const }
+          : ["LinkedIn message", "InMail", "Email", "WhatsApp"].includes(activeStep)
+            ? { order: state.enrolment.currentStep, action: "messageSent" as const }
+            : null
+      : null;
   const mayEdit = canLogOutreach(viewer, p.ownerId);
 
   const fact = (label: string, value: React.ReactNode) => (
@@ -173,7 +202,57 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
         </div>
       )}
 
-      {mayEdit && <QuickLogBar personId={p.id} templates={options.templates} today={todayIst()} />}
+      {mayEdit && (
+        <PlanPanel
+          key={
+            state
+              ? `${state.enrolment.id}-${state.enrolment.currentStep}-${state.enrolment.status}-${state.enrolment.nextDueDate}`
+              : "none"
+          }
+          personId={p.id}
+          personName={p.fullName}
+          email={p.email}
+          usablePlans={plans}
+          suggestedType={SUGGESTED[p.stage] ?? null}
+          nurtureUntil={p.nurtureUntil}
+          nurtureEnded={p.nurtureUntil !== null && p.nurtureUntil <= today}
+          today={today}
+          plan={
+            state
+              ? {
+                  planName: state.plan.name,
+                  planType: state.plan.planType,
+                  version: state.enrolment.version,
+                  status: state.enrolment.status as "Active" | "Paused",
+                  stepOrder: state.enrolment.currentStep,
+                  stepCount: state.steps.length,
+                  channel: state.channel,
+                  message: state.message,
+                  script: state.step?.script ?? null,
+                  nextDueDate: state.enrolment.nextDueDate,
+                  nextDueLabel: state.enrolment.nextDueDate
+                    ? formatIstDate(state.enrolment.nextDueDate)
+                    : null,
+                  overdue: state.overdue,
+                  dueToday: state.dueToday,
+                  waiting: state.enrolment.waitingForAcceptance,
+                  withdrawDue: state.withdrawDue,
+                  finished: state.finished,
+                  timeUp: Boolean(state.step) && state.finished,
+                }
+              : null
+          }
+        />
+      )}
+
+      {mayEdit && (
+        <QuickLogBar
+          personId={p.id}
+          templates={options.templates}
+          today={today}
+          currentStep={currentStep}
+        />
+      )}
 
       {mayEdit && (
         <AiPanel

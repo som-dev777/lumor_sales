@@ -12,6 +12,7 @@ import { getDb } from "@/lib/db/client";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { formatIstDate, todayIst } from "@/lib/time";
+import { usablePlans } from "@/server/plans/plans";
 import { leadFormOptions } from "@/server/leads/options";
 import {
   listPeople,
@@ -45,10 +46,11 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
   const filters = parsePeopleFilters(params, viewer);
   const page = Math.max(1, Number.parseInt(String(params.page ?? "1"), 10) || 1);
   const db = getDb();
-  const [{ rows, total }, options, markets] = await Promise.all([
+  const [{ rows, total }, options, markets, plans] = await Promise.all([
     listPeople(db, filters, { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
     leadFormOptions(db),
     marketChoices(db),
+    usablePlans(db, viewer),
   ]);
   const isAdmin = can(viewer, "lead.reassign");
   const today = todayIst();
@@ -119,6 +121,7 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
           <PeopleTable
             canReassign={isAdmin}
             owners={options.owners}
+            plans={plans}
             rows={rows.map((r) => ({
               id: r.id,
               fullName: r.fullName,

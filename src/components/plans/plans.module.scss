@@ -250,3 +250,17 @@
   font-size: var(--text-sm);
   white-space: pre-wrap;
 }
+
+.more {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+
+  summary {
+    cursor: pointer;
+    color: var(--color-text-secondary);
+  }
+
+  > * + * {
+    margin-top: var(--space-3);
+  }
+}
