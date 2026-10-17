@@ -8,9 +8,16 @@ import { errorMessage, fieldErrorsFrom, type ActionResult } from "@/lib/action-r
 import { getDb } from "@/lib/db/client";
 import { PermissionError } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
-import { companySchema, customerSchema, noteSchema, personSchema } from "@/lib/validation/leads";
+import {
+  companySchema,
+  customerSchema,
+  noteSchema,
+  personSchema,
+  quickLogSchema,
+} from "@/lib/validation/leads";
 import { createCompany, LeadError, markAsCustomer, updateCompany } from "../leads/companies";
 import { addNote, createPerson, reassignPeople, updatePerson } from "../leads/people";
+import { quickLog } from "../leads/quicklog";
 
 const idSchema = z.uuid();
 
@@ -59,6 +66,23 @@ export async function addPersonNote(personId: string, text: string): Promise<Act
     await addNote(getDb(), viewer, personId, parsed.data);
     refresh();
     return { ok: true, message: "Note added." };
+  });
+}
+
+export async function logActivity(
+  personId: string,
+  input: unknown,
+  note?: string,
+): Promise<ActionResult> {
+  const viewer = await requireUser();
+  const parsed = quickLogSchema.safeParse(input);
+  if (!idSchema.safeParse(personId).success) return { ok: false, error: "Unknown person." };
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  const cleanNote = typeof note === "string" ? note.trim().slice(0, 5000) : null;
+  return run(async () => {
+    const { person } = await quickLog(getDb(), viewer, personId, parsed.data, { note: cleanNote });
+    refresh();
+    return { ok: true, message: `Logged. ${person.fullName} is now ${person.stage}.` };
   });
 }
 

@@ -302,6 +302,7 @@ function peopleQuery(db: DbOrTx) {
       salesNavUrl: person.salesNavUrl,
       companyId: person.companyId,
       companyName: company.name,
+      companyStatus: company.status,
       personaId: person.personaId,
       personaName: persona.name,
       level: person.level,

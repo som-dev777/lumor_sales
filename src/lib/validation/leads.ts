@@ -1,6 +1,6 @@
 // Form rules for people (F02) and companies (F03). Used in the browser and again on the server.
 import { z } from "zod";
-import { COMPANY_STATUSES, LEVELS, LOST_REASONS, STAGES } from "../db/enums";
+import { COMPANY_STATUSES, LEVELS, LOST_REASONS, REPLY_TYPES, STAGES } from "../db/enums";
 import { checkSalesNavUrl, normaliseLinkedInUrl } from "../linkedin";
 import { isIstDate } from "../time";
 
@@ -107,3 +107,26 @@ export const customerSchema = z.object({
 });
 export type CustomerInput = z.input<typeof customerSchema>;
 export type CustomerData = z.output<typeof customerSchema>;
+
+/** One quick-log click (F15). Reply type, demo date and lost reason are required where used. */
+export const quickLogSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("requestSent") }),
+  z.object({ action: z.literal("accepted") }),
+  z.object({ action: z.literal("message1Sent"), templateId: optionalId }),
+  z.object({ action: z.literal("followUpSent") }),
+  z.object({
+    action: z.literal("gotReply"),
+    replyType: z.enum(REPLY_TYPES, { error: "Choose the reply type." }),
+  }),
+  z.object({
+    action: z.literal("demoBooked"),
+    demoDate: z.string().refine((v) => isIstDate(v), "Pick the demo date."),
+  }),
+  z.object({ action: z.literal("demoHeld") }),
+  z.object({ action: z.literal("markConverted") }),
+  z.object({
+    action: z.literal("markLost"),
+    lostReason: z.enum(LOST_REASONS, { error: "Choose a reason." }),
+  }),
+]);
+export type QuickLogData = z.output<typeof quickLogSchema>;

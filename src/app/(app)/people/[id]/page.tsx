@@ -1,22 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { ExternalLink } from "lucide-react";
 import { ChangeHistory } from "@/components/audit/ChangeHistory";
+import { MarkCustomerButton } from "@/components/leads/MarkCustomerButton";
 import { NoteForm } from "@/components/leads/NoteForm";
 import { PersonDialogButton } from "@/components/leads/PersonDialogButton";
+import { QuickLogBar } from "@/components/leads/QuickLogBar";
 import { StageBadge } from "@/components/leads/StageBadge";
 import { Timeline } from "@/components/leads/Timeline";
 import styles from "@/components/leads/leads.module.scss";
+import { Alert } from "@/components/ui/Alert";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { getDb } from "@/lib/db/client";
 import { profileHref } from "@/lib/linkedin";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
-import { formatIstDate } from "@/lib/time";
+import { formatIstDate, todayIst } from "@/lib/time";
 import { leadFormOptions } from "@/server/leads/options";
 import { canLogOutreach, getPerson, personTimeline } from "@/server/leads/people";
+import { nextFollowUp } from "@/server/leads/quicklog";
 
 export const metadata: Metadata = { title: "Person" };
 
@@ -30,6 +35,7 @@ export default function PersonPage({ params }: PageProps<"/people/[id]">) {
 
 async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
   const viewer = await requireUser();
+  await connection();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const db = getDb();
@@ -130,6 +136,29 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
           )}
         </div>
       </section>
+
+      {mayEdit && p.converted && p.companyId && p.companyStatus !== "Customer" && (
+        <div className={styles.customerPrompt}>
+          <Alert tone="info">
+            {p.fullName} is converted. Mark {p.companyName} as a customer too?
+          </Alert>
+          <MarkCustomerButton
+            companyId={p.companyId}
+            companyName={p.companyName ?? "the company"}
+            today={todayIst()}
+          />
+        </div>
+      )}
+
+      {mayEdit && (
+        <QuickLogBar
+          personId={p.id}
+          followUpLabel={nextFollowUp(p.sequenceStep)?.label ?? null}
+          templates={options.templates}
+          defaultTemplateId={p.openerTemplateId}
+          today={todayIst()}
+        />
+      )}
 
       <div className={styles.columns}>
         <section className={styles.panel} aria-label="Timeline">
