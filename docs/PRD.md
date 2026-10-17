@@ -68,7 +68,7 @@ The app has two roles, Admin and User. Everyone can read everything, but each pe
 
 ## Features
 
-The app has 16 features across six releases (R1–R6). F16 (About and releases) is new since the Base44 spec. P0 means required for the team to start using the app; P1 means needed within the first month.
+The app has 16 features across six releases (R1–R6), all built as of v1.5.0. Version 2 adds F17 Plans, F18 Conversation thread and F19 Reports, and changes F02, F08, F11 and F15 (see Version 2 scope). F16 (About and releases) is new since the Base44 spec. P0 means required for the team to start using the app; P1 means needed within the first month.
 
 | ID | Feature | Priority | Release |
 | --- | --- | --- | --- |
@@ -110,7 +110,7 @@ There are 12 entities. Every entity also has `id`, `created_at`, `created_by` an
 
 **Enumerations**
 
-- **Stage**, in order: Prospect, Request sent, Connected, Messaged, Replied, Demo booked, Demo done, Trial/Pilot, Paid, Lost.
+- **Stage (v1; replaced in v2)**, in order: Prospect, Request sent, Connected, Messaged, Replied, Demo booked, Demo done, Trial/Pilot, Paid, Lost.
 - **Lost reason** (required when the stage is Lost): No budget, Using competitor, Not a priority, No response, Wrong person, Other.
 - **Sequence step**: Not started, Warm-up, Request sent, Message 1, Follow-up 1, Follow-up 2, Break-up, Nurture, Stopped (replied).
 - **Activity type**: Profile viewed, Post engaged, Request sent, Request accepted, Request withdrawn, Message sent, Reply received, InMail sent, Demo booked, Demo held, Meeting note, Stage change, Deal update.
@@ -348,13 +348,177 @@ The app ships in six releases. Each ends with something testable in the browser,
 
 The team starts using the app after R4. Deploy to Netlify with Turso at R4.
 
+## Version 2 scope (R7–R9)
+
+Version 1 (v1.0.0–v1.5.0) is built. Version 2 turns the app from a record of what happened into a system that tells each rep what to do next. It adds Plans, a conversation thread with AI-set reply deadlines, more stages and channels, a plan-driven Today and Reports. **Where this section conflicts with earlier sections, this section wins.**
+
+### Stages (replace the v1 list)
+
+Prospect → Contacted → Connected → Replied → Meeting scheduled → Meeting done → Proposal sent → Trial → Paid → Active customer. **Lost** (with a reason) can be set from any stage.
+
+| v1 stage | Migrates to |
+| --- | --- |
+| Prospect | Prospect |
+| Request sent | Contacted |
+| Connected, Messaged | Connected |
+| Replied | Replied |
+| Demo booked | Meeting scheduled |
+| Demo done | Meeting done |
+| Trial/Pilot | Trial |
+| Paid | Paid |
+| Lost | Lost |
+
+Funnel benchmarks carry over to the matching stages: Contacted → Connected 30%, Connected → Replied 10%, Interested → Meeting scheduled 50%, Meeting scheduled → Meeting done 70%, Meeting done → Trial 30%. Proposal sent and Active customer get benchmarks after 60 days of real data.
+
+### Channels and person fields
+
+Channels: LinkedIn (connection request and message), InMail, Email, Call, WhatsApp.
+
+- **New person fields:** phone, email, and **Do not contact** (with reason and date). Do not contact stops every plan and blocks logging outreach.
+- **Calls:** the step shows the call script. After the call, the rep picks an outcome: Connected, No answer, Call back later, Wrong number, Not interested. No answer retries the next business day, up to 2 retries, then moves to the next step.
+- **Email:** the app drafts it and opens it in the rep's own mail app with the text filled in. The rep sends it, then clicks Done. The app never sends sales email itself.
+- **WhatsApp:** mainly after the sale. "Create WhatsApp group" is a plan step, and key messages and meeting minutes are logged as notes in the thread.
+
+### F17 Plans (new sidebar page)
+
+A plan is the agreed way to pitch a person: an ordered list of steps, each with a channel, a message or call script, and a wait. Plans replace F15's fixed sequence and the follow-up delays in Playbook Settings.
+
+- **Plan fields:** name, type (Outreach, Meeting follow-up, Trial, Onboarding), persona (optional), Official or Personal, owner, status (Active / Archived), version.
+- **Step fields:** order, channel (LinkedIn connection request, LinkedIn message, InMail, Email, Call, WhatsApp, Manual task), template or call script, and wait in days after the previous step is done. A plan-level setting skips weekends (on by default).
+- **Ownership:** Admins create Official plans, visible to everyone as the standard procedure. Reps create Personal plans; Admins can see all of them. Propose as official works as in F07.
+- **Enrolment:** a person is on at most one active plan, enforced in the database. Admins and lead owners can enrol one person or many from People, and pause, resume, switch or stop a plan.
+- **Versions:** editing a plan creates a new version. People already enrolled finish the version they started, so plan reports stay accurate.
+- **Scheduling:** each step is due on the date the previous step was actually done, plus its wait. Doing a step late shifts everything after it.
+- **Replies:** any logged reply pauses the plan automatically and the person moves into conversation mode (F18). The rep can resume or switch the plan later.
+- **Stage changes** suggest the matching plan type: Meeting done → Meeting follow-up plan; Trial → Trial plan; Paid → Onboarding plan.
+- **Plan finished with no reply:** Today shows a task to choose Nurture (check again in 60 days) or Lost (reason "No response").
+- **Analytics:** reply rate per plan and per step, and conversion per plan, appear on the Dashboard and in Reports.
+
+### Cadence guardrails (research-based)
+
+Follow-ups must feel genuine, not like spam. The data says patience pays: the median first reply on LinkedIn arrives 5 days after the invite, 60% arrive in week one, and C-level and VP contacts average 13–14 days ([Belkins, 152,636 contacts, 2025–26](https://belkins.io/blog/linkedin-response-time-study)). Follow-ups still matter: steps after the first message produced 58.6% of replies, with 3–5 steps as the practical limit and little gained past step 6 ([Belkins, 7.5M emails, 2025](https://belkins.io/blog/sales-follow-up-statistics)).
+
+The app enforces these rules. The plan builder blocks a plan that breaks them, and Today warns before a rep breaks them by hand.
+
+1. **Message after connecting:** within 1–3 days of the connection being accepted, not instantly.
+2. **Growing gaps:** at least 3 days between outreach touches before a reply, and each gap longer than the last (for example 4, then 7, then 10 days).
+3. **Touch limit:** at most 4 follow-ups after the first message in an Outreach plan, across all channels.
+4. **Weekly limit:** at most 2 outreach touches per person in any 7 days.
+5. **Change channel instead of repeating:** a follow-up should move to email or a call where possible.
+6. **Every follow-up adds something new:** a resource, a question or an example. The AI never drafts "just following up" or "bumping this", and templates containing those phrases show a warning.
+7. **Stop on time:** withdraw an unaccepted invite at day 14. An Outreach plan ends by day 30 (day 45 for CXO and VP contacts), then the person moves to Nurture with no touches for 60 days.
+8. **Do not contact** overrides everything.
+
+**Seed Official Outreach plan:** connection request (day 0) → Message 1, 1–2 days after acceptance → Follow-up 1 with a short video or example, +4 days → Follow-up 2 by email (LinkedIn if no email), +7 days → Break-up message, +10 days. A Call step is added after Follow-up 1 when a phone number is known. Seed Meeting follow-up, Trial and Onboarding plans are drafted by Claude Code and approved by Admin before use.
+
+### F18 Conversation thread and AI reply guidance (person page)
+
+A chat-style thread replaces the activity timeline on each person's page. The data underneath stays the same.
+
+- **Outbound:** added automatically when a plan step is marked Done, with the exact text sent and the channel.
+- **Inbound:** replies the rep pastes in, each with its reply type.
+- **Calls:** outcome and notes.
+- **Notes:** meeting minutes and WhatsApp summaries.
+- **System events:** stage and plan changes, collapsed by default.
+
+When a reply is pasted, the AI (P02, extended) reads the whole thread, the persona, stage, current plan and step, and Product Facts. It returns:
+
+1. The reply type.
+2. 2–3 suggested responses, each labelled with its direction toward a meeting or conversion.
+3. **An expected-reply deadline** with a one-line reason, between 1 and 10 days.
+4. A suggested stage change.
+
+**The rep confirms or edits the deadline; the AI never sets it alone.** The confirmed date is saved on the person. If it passes with no reply, Today shows a nudge task with an AI draft. The AI allows at most 2 nudges per open question; after that it suggests a polite close-the-loop message.
+
+**Deadline guidance given to the AI** (the rep can always change it):
+
+| Situation | Suggested deadline |
+| --- | --- |
+| Interested or asked for details | 2 business days |
+| Meeting agreed, time not confirmed | 1–2 business days |
+| Proposal or rates sent | 3 business days, then a call |
+| CXO or VP contact | Add 2 days to the above |
+| "Not now" | No deadline. Use the date they gave, or move to Nurture with a 30-day check |
+
+The bounds (1 and 10 days) are editable in Playbook Settings.
+
+### F08 Today (revised)
+
+Today is driven by plans and deadlines, in this order:
+
+1. Replies waiting
+2. Meetings today
+3. Expired reply deadlines
+4. Plan steps due today
+5. Overdue steps
+6. Trial check-ins
+7. Plans finished with no reply (choose Nurture or Lost)
+
+Each task shows the exact message or call script. **Done** logs it to the thread and schedules the next step. **Snooze** moves it to tomorrow, still within the cadence guardrails.
+
+Admins get a **Team** tab with, per rep: tasks due today, overdue tasks, tasks done today, people in active plans, and replies waiting more than 1 day.
+
+### F19 Reports (new sidebar page)
+
+**On-demand reports.** Reps can generate reports on their own work. Admins can generate them for the whole team or any one person, Admin or rep.
+
+- **Period:** today, this week, this month, quarter, half-year, year, or a custom From–To range.
+- **Contents:**
+  - activity per person: connection requests, messages, calls, emails;
+  - replies and outcomes: replies, meetings, proposals, trials, conversions, deal value;
+  - plan adherence: steps done on time vs. overdue;
+  - plan performance: reply rate per plan and per step;
+  - the funnel;
+  - a short AI-written summary (P05, optional).
+- **Export:** PDF and CSV.
+
+**Scheduled reports (Admin).** Admins create schedules, each with:
+
+- a name;
+- a frequency: daily, weekly, monthly, quarterly, half-yearly or yearly;
+- the time and day, chosen by the Admin, in IST;
+- a scope: whole team, one person, or "each rep gets their own";
+- recipients: a list of email addresses, or each rep for personal reports;
+- an on/off switch.
+
+| Default schedule | When | Scope | Sent to |
+| --- | --- | --- | --- |
+| Daily team report | Every day, 19:00 IST | Whole team | Admins |
+| Weekly team report | Monday, 09:00 IST | Whole team | Admins |
+| Daily personal summary | Every day, 19:00 IST | Each rep | That rep (Admin can switch off) |
+
+Every report generated is saved in a Report history list. The email carries a short summary and a link to the saved copy. Scheduled reports need email turned on (the Resend key) and run as Netlify scheduled functions. Creating or changing a schedule writes an audit entry.
+
+### Data changes for v2
+
+| Entity | Change |
+| --- | --- |
+| Person | Add phone, email, do not contact (with reason and date), awaiting reply until; stage uses the v2 list |
+| Activity | Add call outcome and plan enrolment link with step number; channel adds WhatsApp |
+| Plan (new) | name, type, persona, Official/Personal, owner, status, current version |
+| PlanStep (new) | plan, version, order, channel, template or script, wait days |
+| PlanEnrolment (new) | person, plan, version, status (Active / Paused / Completed / Stopped), current step, next due date, started, ended, end reason; at most one Active or Paused per person |
+| ReportSchedule (new) | name, frequency, time and day, scope, recipients, on/off, created by |
+| ReportRun (new) | parameters, generated at, generated by (user or schedule), stored file, emailed to |
+| PlaybookSettings | Remove follow-up delays (now in plans). Add the cadence guardrail values and the AI deadline bounds (1 and 10 days) |
+
+### Version 2 release plan
+
+Before R7, complete `docs/qa-checklist.md` for v1.5.0 and fix what it finds (v1.5.x).
+
+1. **R7 Plans (v2.0.0):** new stages with data migration, channels and person fields, F17 Plans with guardrails and the seed Outreach plan, and the plan-driven Today. Exit check: enrol a person in the seed plan, complete steps on time and late, and confirm weekends are skipped and dates shift; a pasted reply pauses the plan; the builder blocks a sixth touch.
+2. **R8 Conversations (v2.1.0):** F18 thread, AI reply guidance with confirmed deadlines, and the Team tab. Exit check: paste a reply, accept a suggestion and a 2-day deadline, then see the nudge task on Today after it expires.
+3. **R9 Reports (v2.2.0):** F19 on-demand and scheduled reports. Exit check: generate a team report and a personal report for a custom range, export both, and receive a scheduled test report by email with a working link.
+
 ## Open questions
 
-- [ ] Are follow-up delays counted from Message 1 (day 4, 7, 10) or from the previous step? This PRD assumes Message 1.
-- [ ] Should the funnel count events in the period (this PRD) or follow a cohort of requests sent in the period?
-- [ ] Is Trial/Pilot used in practice, or should Demo done go straight to Paid?
+- [x] Follow-up timing: now set per plan step, within the cadence guardrails (v2).
+- [x] Trial is used: it's a stage with its own plan type (v2).
+- [x] Channels: LinkedIn, InMail, email, calls and WhatsApp (v2).
+- [x] One plan per person; reps can create Personal plans (v2).
+- [ ] Should the funnel count events in the period (current) or follow a cohort of people contacted in the period?
 - [ ] Deal value currency: INR only, or INR and USD (pricing is published in USD)?
-- [ ] Should the SMB QR plan get its own persona and account filter in the seed data?
+- [ ] Should the SMB QR plan get its own persona, account filter and Outreach plan?
 - [ ] Who besides Somnath is Admin at launch?
 
 ## Appendix: seed data
