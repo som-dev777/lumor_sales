@@ -14,9 +14,11 @@ type Props = {
   role: Role | null;
   /** Shown at the bottom of the sidebar (the signed-in user and Log out, from R1 Step 7). */
   footer?: ReactNode;
+  /** Small numbers next to menu items, by link, e.g. { "/approvals": 2 } waiting proposals. */
+  counts?: Record<string, number>;
 };
 
-export function Sidebar({ role, footer }: Props) {
+export function Sidebar({ role, footer, counts = {} }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || role === "Admin");
@@ -84,6 +86,11 @@ export function Sidebar({ role, footer }: Props) {
                   >
                     <Icon size={18} aria-hidden />
                     <span>{item.label}</span>
+                    {(counts[item.href] ?? 0) > 0 && (
+                      <span className={styles.count} aria-label={`${counts[item.href]} waiting`}>
+                        {counts[item.href]}
+                      </span>
+                    )}
                   </Link>
                 </li>
               );

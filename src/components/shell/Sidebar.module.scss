@@ -133,3 +133,15 @@
     display: none;
   }
 }
+
+.count {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  font-size: var(--text-xs);
+  line-height: 20px;
+  text-align: center;
+}
