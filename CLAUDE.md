@@ -77,7 +77,6 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Current instruction (2026-10-17): the owner asked to run all remaining releases (R3–R6)
-back-to-back without stopping, then hand over one manual QA checklist
-(docs/qa-checklist.md) once the platform is ready. Stop earlier only for a decision that
-genuinely needs the owner, or for anything only they can do (accounts, API keys, deploying).
+Done (2026-10-17): all six releases (R1–R6, v1.5.0) are built, and the manual QA checklist
+is docs/qa-checklist.md. Next work comes from the owner's QA findings; fixes are PATCH
+releases (1.5.1, …).

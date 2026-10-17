@@ -1,6 +1,6 @@
 # F10: Conversation summary and draft message
 
-- **Priority:** P1 · **Release:** R6 (v1.5.0) · **Status:** In progress
+- **Priority:** P1 · **Release:** R6 (v1.5.0) · **Status:** Done (v1.5.0)
 - **PRD:** [AI features → Summarise conversation (P03), Draft message (P04)](../PRD.md#ai-features)
 
 ## What it does
@@ -31,8 +31,9 @@ Two more tools in the person page's AI panel (owner or Admin).
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                   |
-| ---------- | ---------- | -------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                 |
-| 2026-10-17 | Unreleased | Full doc written (R6).                                                                                   |
-| 2026-10-17 | Unreleased | Summarise (Save as note, Confirm) and Draft (Mark as sent with template version) built; R6 browser test. |
+| Date       | Version | Change                                                                                                   |
+| ---------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.5.0   | Placeholder doc created.                                                                                 |
+| 2026-10-17 | 1.5.0   | Full doc written (R6).                                                                                   |
+| 2026-10-17 | 1.5.0   | Summarise (Save as note, Confirm) and Draft (Mark as sent with template version) built; R6 browser test. |
+| 2026-10-17 | 1.5.0   | Released in v1.5.0 (R6 AI).                                                                              |

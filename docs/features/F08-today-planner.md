@@ -1,6 +1,6 @@
 # F08: Today planner
 
-- **Priority:** P1 · **Release:** R6 (v1.5.0) · **Status:** In progress
+- **Priority:** P1 · **Release:** R6 (v1.5.0) · **Status:** Done (v1.5.0)
 - **PRD:** [Screens → Today](../PRD.md#screens-and-functional-requirements), [AI features → Today planner (P01)](../PRD.md#ai-features)
 
 ## What it does
@@ -59,8 +59,9 @@ the snooze date.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                   |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                 |
-| 2026-10-17 | Unreleased | Full doc written (R6).                                                                                                   |
-| 2026-10-17 | Unreleased | Today page built: sections, target bar, Done, Snooze (snoozed_until), Rank with AI (P01) with fallback; R6 browser test. |
+| Date       | Version | Change                                                                                                                   |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-16 | 1.5.0   | Placeholder doc created.                                                                                                 |
+| 2026-10-17 | 1.5.0   | Full doc written (R6).                                                                                                   |
+| 2026-10-17 | 1.5.0   | Today page built: sections, target bar, Done, Snooze (snoozed_until), Rank with AI (P01) with fallback; R6 browser test. |
+| 2026-10-17 | 1.5.0   | Released in v1.5.0 (R6 AI).                                                                                              |

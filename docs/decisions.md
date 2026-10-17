@@ -296,3 +296,26 @@ replaces it.
 
 - **Date:** 2026-10-17 · **Status:** Accepted. Confirms D-024.
 - **Decision:** Same 9 build-time warnings. No packages added in R5. Recheck at v1.5.0.
+
+## D-026: How the AI features run (R6)
+
+- **Date:** 2026-10-17 · **Status:** Accepted
+- **Decision:**
+  - Claude Opus 5.5 (`claude-opus-5-5`) through the official Anthropic SDK, server-side only,
+    with structured outputs (a fixed JSON shape checked by Zod), effort `low` for speed, a
+    30-second timeout with no automatic retry (the screen offers Try again), and the
+    server-side refusal fallback (`fallbacks: "default"`).
+  - Today's AI ranking runs only when the rep clicks **Rank with AI**, not on every page load
+    (PRD: AI runs only on a click). The rule-based list always shows first.
+  - The pasted reply is saved before the AI call, so nothing is lost if the AI fails.
+  - The AI refuses to run until Product Facts has "What Lumor does" and "Live features".
+  - Browser tests use a stand-in AI (`AI_FAKE=1`), which only works with a local database file,
+    so it can never switch on in production.
+- **Why:** PRD AI rules (click-only, Product Facts only, 30 s timeout, degrade without
+  blocking), plus predictable, free automated tests.
+
+## D-027: Dependency warnings rechecked at v1.5.0
+
+- **Date:** 2026-10-17 · **Status:** Accepted. Confirms D-025.
+- **Decision:** Same 9 build-time warnings. R6 added `@anthropic-ai/sdk`, which brings no new
+  warnings. None reach the live app.

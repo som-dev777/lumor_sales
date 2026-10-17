@@ -1,6 +1,6 @@
 # F09: Reply Assistant
 
-- **Priority:** P1 · **Release:** R6 (v1.5.0) · **Status:** In progress
+- **Priority:** P1 · **Release:** R6 (v1.5.0) · **Status:** Done (v1.5.0)
 - **PRD:** [AI features → Reply Assistant (P02); Guardrails; Edit level](../PRD.md#ai-features)
 
 ## What it does
@@ -42,8 +42,9 @@ On the person page (owner or Admin), the rep pastes the prospect's message and c
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                                           |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                                         |
-| 2026-10-17 | Unreleased | Full doc written (R6).                                                                                                                           |
-| 2026-10-17 | Unreleased | Reply Assistant built in the person page AI panel: saved reply, reply type, suggestions, Mark as sent with edit level, Confirm; R6 browser test. |
+| Date       | Version | Change                                                                                                                                           |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-16 | 1.5.0   | Placeholder doc created.                                                                                                                         |
+| 2026-10-17 | 1.5.0   | Full doc written (R6).                                                                                                                           |
+| 2026-10-17 | 1.5.0   | Reply Assistant built in the person page AI panel: saved reply, reply type, suggestions, Mark as sent with edit level, Confirm; R6 browser test. |
+| 2026-10-17 | 1.5.0   | Released in v1.5.0 (R6 AI).                                                                                                                      |

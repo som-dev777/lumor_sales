@@ -10,12 +10,17 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-R6 AI, in progress.
+Nothing yet. All six planned releases are done.
+
+## [1.5.0] - 2026-10-17
+
+R6 AI: the Today planner as the home page, the Reply Assistant, conversation summaries and drafted messages, plus the manual QA checklist.
 
 - Feature docs written for Today (F08), Reply Assistant (F09) and Summary/Draft (F10); the four AI prompts recorded word for word in docs/ai-prompts.md.
 - Today is the home page: replies waiting, demos and recaps, follow-ups due, requests to withdraw and stale leads, plus today's connection target with a suggested persona and account filter. Done logs the matching activity; Snooze hides a lead until tomorrow. Rank with AI orders the list with a reason for each task and a 2-sentence summary of the week (F08).
 - Person page AI assistant (owner or Admin): Reply Assistant (paste a reply → reply type, 2–3 suggested replies, a suggested next step, and flags for anything Product Facts doesn't cover), Summarise conversation and Draft message from a template. Mark as sent logs the message with the approach and how much it was edited (F09, F10).
 - AI runs only when a button is clicked, uses only Product Facts for claims about Lumor, times out after 30 seconds with Try again, and works once ANTHROPIC_API_KEY is added. Without it, everything else works and the app says AI isn't set up.
+- docs/qa-checklist.md: a step-by-step manual check of the whole app, and the launch steps only the owner can do.
 
 ## [1.4.0] - 2026-10-17
 
