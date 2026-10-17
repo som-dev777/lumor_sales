@@ -5,11 +5,16 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 **Format** (`npm run releases:sync` reads this file into the About page, so keep it exact):
 
-- Work in progress goes under `## [Unreleased]
+- Work in progress goes under `## [Unreleased]` (skipped by the sync).
+- Each release: a `## [X.Y.Z] - YYYY-MM-DD` heading, one summary sentence, then `- ` bullets.
+
+## [Unreleased]
 
 R4 Daily work, in progress.
 
 - Feature docs written for Quick-log (F15) and Dashboard (F11); D-023 (getting ready to go online).
+- Quick-log rules on the server: each action logs the activity and moves the stage, sequence step and next action, with follow-up dates counted from Message 1 (F15).
+- Dashboard counting on the server: funnel stages for a week or month in IST, conversions against benchmarks (amber only with 10+ in the earlier stage), and breakdowns (F11).
 
 ## [1.2.0] - 2026-10-17
 

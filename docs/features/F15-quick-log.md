@@ -58,7 +58,8 @@ has a company that isn't a customer yet, the app offers Mark as customer straigh
 
 ## Change history
 
-| Date       | Version    | Change                   |
-| ---------- | ---------- | ------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created. |
-| 2026-10-17 | Unreleased | Full doc written (R4).   |
+| Date       | Version    | Change                                          |
+| ---------- | ---------- | ----------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                        |
+| 2026-10-17 | Unreleased | Full doc written (R4).                          |
+| 2026-10-17 | Unreleased | Quick-log rules built and tested on the server. |

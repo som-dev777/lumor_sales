@@ -60,7 +60,8 @@ version, market and rep.
 
 ## Change history
 
-| Date       | Version    | Change                   |
-| ---------- | ---------- | ------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created. |
-| 2026-10-17 | Unreleased | Full doc written (R4).   |
+| Date       | Version    | Change                                                                      |
+| ---------- | ---------- | --------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                    |
+| 2026-10-17 | Unreleased | Full doc written (R4).                                                      |
+| 2026-10-17 | Unreleased | Funnel counting, conversions and breakdowns built and tested on the server. |
