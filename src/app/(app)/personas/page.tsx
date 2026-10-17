@@ -14,6 +14,7 @@ import { myProposals } from "@/server/library/approvals";
 import {
   latestDecisions,
   listPersonas,
+  personaOptions,
   tabCounts,
   type LibraryTab,
 } from "@/server/library/queries";
@@ -42,13 +43,14 @@ async function Personas({ searchParams }: Pick<PageProps<"/personas">, "searchPa
   const archived = params.archived === "1";
   const mine = params.mine === "1";
   const db = getDb();
-  const options = { includeArchived: archived, mineOnly: mine, viewerId: viewer.id };
+  const listOptions = { includeArchived: archived, mineOnly: mine, viewerId: viewer.id };
 
-  const [rows, counts, stats, proposals] = await Promise.all([
-    listPersonas(db, { ...options, tab }),
-    tabCounts(db, "persona", options),
+  const [rows, counts, stats, proposals, options] = await Promise.all([
+    listPersonas(db, { ...listOptions, tab }),
+    tabCounts(db, "persona", listOptions),
     leadStats(db, "persona"),
     myProposals(db, viewer.id, "persona"),
+    personaOptions(db),
   ]);
   const decisions = await latestDecisions(
     db,
@@ -67,7 +69,11 @@ async function Personas({ searchParams }: Pick<PageProps<"/personas">, "searchPa
         counts={counts}
         archived={archived}
         mine={mine}
-        action={canAdd ? <AddItemButton kind="persona" type={createType} /> : undefined}
+        action={
+          canAdd ? (
+            <AddItemButton kind="persona" type={createType} formOptions={options} />
+          ) : undefined
+        }
       />
       {rows.length === 0 ? (
         <StatusMessage
@@ -88,6 +94,7 @@ async function Personas({ searchParams }: Pick<PageProps<"/personas">, "searchPa
               stats={stats.get(row.id) ?? EMPTY_STATS}
               viewer={viewer}
               decision={decisions.get(row.id)}
+              options={options}
             />
           ))}
         </div>

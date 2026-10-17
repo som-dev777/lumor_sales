@@ -12,6 +12,7 @@ import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { PERSONA_FUNCTIONS, SENIORITIES } from "@/lib/db/enums";
+import type { PersonaOptions } from "@/server/library/queries";
 import { personaSchema, type PersonaData, type PersonaInput } from "@/lib/validation/library";
 import { createLibraryItem, updateLibraryItem } from "@/server/actions/library";
 import styles from "./library.module.scss";
@@ -39,10 +40,12 @@ type Props = {
   /** Editing an existing persona (its id), or creating a new one of this type. */
   target: { mode: "edit"; id: string } | { mode: "create"; type: "Official" | "Personal" };
   defaultValues: PersonaInput;
+  /** Tick-box choices, including options the team has added (D-018). */
+  options?: PersonaOptions;
   onDone: () => void;
 };
 
-export function PersonaForm({ target, defaultValues, onDone }: Props) {
+export function PersonaForm({ target, defaultValues, options, onDone }: Props) {
   const notify = useToast();
   const {
     register,
@@ -86,7 +89,8 @@ export function PersonaForm({ target, defaultValues, onDone }: Props) {
         render={({ field, fieldState }) => (
           <CheckboxGroup
             label="Function"
-            options={PERSONA_FUNCTIONS}
+            options={options?.functions ?? PERSONA_FUNCTIONS}
+            allowCustom
             value={field.value}
             onChange={field.onChange}
             error={fieldState.error?.message}
@@ -99,7 +103,8 @@ export function PersonaForm({ target, defaultValues, onDone }: Props) {
         render={({ field, fieldState }) => (
           <CheckboxGroup
             label="Seniority"
-            options={SENIORITIES}
+            options={options?.seniority ?? SENIORITIES}
+            allowCustom
             value={field.value}
             onChange={field.onChange}
             error={fieldState.error?.message}

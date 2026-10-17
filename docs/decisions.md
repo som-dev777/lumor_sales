@@ -215,3 +215,15 @@ replaces it.
     it's renamed.
 - **Why:** These keep ownership simple and make stats comparable with the dashboard
   benchmarks (R4).
+
+## D-018: Teams can add their own persona function and seniority options
+
+- **Date:** 2026-10-17 · **Status:** Accepted. Extends D-015.
+- **Decision:**
+  - In the persona form, Function and Seniority still offer the built-in lists as tick-boxes,
+    plus an "Add another" box.
+  - A new option is saved on that persona and offered to everyone as a tick-box from then on.
+  - Options are up to 40 characters, at most 20 per persona.
+  - The database stores them as plain text lists, so no schema change was needed.
+- **Why:** The owner asked for a way to add functions and seniority. The PRD's seniority
+  list (8 levels) stays as the default set.

@@ -26,6 +26,7 @@ import {
   setArchived,
   updateItem,
 } from "./items";
+import { personaOptions } from "./queries";
 import { leadStats, templateStats } from "./stats";
 
 let t: Awaited<ReturnType<typeof createTestDb>>;
@@ -105,10 +106,22 @@ describe("form rules", () => {
     expect(d.jobTitles).toEqual(["Head of Research"]);
     expect(d.whoItCovers).toBeNull();
   });
-  it("refuse a bad tier, function or account filter code", () => {
+  it("refuse a bad tier or account filter code", () => {
     expect(personaSchema.safeParse({ ...personaData(), tier: 4 }).success).toBe(false);
-    expect(personaSchema.safeParse({ ...personaData(), functions: ["Sales"] }).success).toBe(false);
     expect(accountFilterSchema.safeParse({ ...filterData(), code: "A 1" }).success).toBe(false);
+  });
+  it("accept new function and seniority options, within limits (D-018)", () => {
+    const d = personaSchema.parse({
+      ...personaData(),
+      functions: ["Operations", " Operations "],
+      seniority: ["Founder's office"],
+    });
+    expect(d.functions).toEqual(["Operations"]);
+    expect(d.seniority).toEqual(["Founder's office"]);
+    expect(personaSchema.safeParse({ ...personaData(), functions: ["x".repeat(41)] }).success).toBe(
+      false,
+    );
+    expect(personaSchema.safeParse({ ...personaData(), functions: [""] }).success).toBe(false);
   });
   it("find template placeholders", () => {
     expect(placeholdersIn("Hi {Name}, {Company} and {Name} again, {slot 1}")).toEqual([
@@ -390,5 +403,33 @@ describe("live stats", () => {
       replied: 1,
       replyRate: 0.5,
     });
+  });
+});
+
+describe("persona options (D-018)", () => {
+  it("offer the built-in lists, then options the team added, A–Z", async () => {
+    await createItem(t.db, rep, "Personal", {
+      kind: "persona",
+      data: personaSchema.parse({
+        ...personaData(),
+        functions: ["Research", "Operations", "Finance"],
+        seniority: ["Founder's office"],
+      }),
+    });
+    const opts = await personaOptions(t.db);
+    expect(opts.functions.slice(0, 9)).toEqual([
+      "Research",
+      "Insights",
+      "Product",
+      "Design",
+      "CX",
+      "Brand",
+      "Marketing",
+      "Leadership",
+      "Consulting",
+    ]);
+    expect(opts.functions.slice(9)).toEqual(["Finance", "Operations"]);
+    expect(opts.seniority.at(-1)).toBe("Founder's office");
+    expect(opts.seniority).toHaveLength(9);
   });
 });

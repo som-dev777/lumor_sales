@@ -28,12 +28,22 @@ type Props = {
   permissions: ItemPermissions;
   /** Current values for the edit form. */
   editValues: unknown;
+  /** Extra choices the edit form needs (e.g. persona options). */
+  formOptions?: unknown;
 };
 
 type Confirm = "archive" | "delete" | "propose" | null;
 
 /** The ⋯ menu on a library card. What's offered depends on the server's permission check. */
-export function ItemActions({ kind, id, name, archived, permissions, editValues }: Props) {
+export function ItemActions({
+  kind,
+  id,
+  name,
+  archived,
+  permissions,
+  editValues,
+  formOptions,
+}: Props) {
   const notify = useToast();
   const noun = KIND_NOUN[kind];
   const [editing, setEditing] = useState(false);
@@ -151,6 +161,7 @@ export function ItemActions({ kind, id, name, archived, permissions, editValues 
             kind={kind}
             target={{ mode: "edit", id }}
             values={editValues}
+            formOptions={formOptions}
             onDone={() => setEditing(false)}
           />
         )}

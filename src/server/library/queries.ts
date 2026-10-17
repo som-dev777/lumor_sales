@@ -1,5 +1,6 @@
 // Reading the library for the Personas, Account Filters and Templates pages.
-import { and, asc, desc, eq, getTableColumns, inArray, ne, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, inArray, ne, sql, type SQL } from "drizzle-orm";
+import { PERSONA_FUNCTIONS, SENIORITIES } from "@/lib/db/enums";
 import type { DbOrTx } from "@/lib/db/client";
 import { accountFilter, persona, proposal, template, user } from "@/lib/db/schema";
 import { KIND_LABEL, type LibraryKind } from "./items";
@@ -92,4 +93,28 @@ export async function personaChoices(db: DbOrTx) {
     .from(persona)
     .where(eq(persona.status, "Active"))
     .orderBy(desc(persona.type), asc(persona.name));
+}
+
+export type PersonaOptions = { functions: string[]; seniority: string[] };
+
+/**
+ * Tick-box choices for the persona form: the built-in lists first (in their usual order),
+ * then any option the team has added on a persona, A–Z (D-018).
+ */
+export async function personaOptions(db: DbOrTx): Promise<PersonaOptions> {
+  const used = async (column: "functions" | "seniority") =>
+    (
+      await db.all<{ value: string }>(
+        sql`select distinct j.value as value from persona p, json_each(p.${sql.raw(column)}) j order by j.value`,
+      )
+    ).map((r) => r.value);
+  const merge = (builtIn: readonly string[], extra: string[]) => [
+    ...builtIn,
+    ...extra.filter((v) => !builtIn.includes(v)).sort((a, b) => a.localeCompare(b)),
+  ];
+  const [functions, seniority] = await Promise.all([used("functions"), used("seniority")]);
+  return {
+    functions: merge(PERSONA_FUNCTIONS, functions),
+    seniority: merge(SENIORITIES, seniority),
+  };
 }

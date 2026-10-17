@@ -11,9 +11,11 @@ import { LibraryForm } from "./LibraryForm";
 export function AddItemButton({
   kind,
   type,
+  formOptions,
 }: {
   kind: LibraryKind;
   type: "Official" | "Personal";
+  formOptions?: unknown;
 }) {
   const [open, setOpen] = useState(false);
   const noun = KIND_NOUN[kind];
@@ -38,6 +40,7 @@ export function AddItemButton({
           <LibraryForm
             kind={kind}
             target={{ mode: "create", type }}
+            formOptions={formOptions}
             onDone={() => setOpen(false)}
           />
         )}

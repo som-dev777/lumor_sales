@@ -2,6 +2,7 @@ import { Lock } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import type { persona } from "@/lib/db/schema";
 import type { Actor } from "@/lib/permissions";
+import type { PersonaOptions } from "@/server/library/queries";
 import type { ItemStats } from "@/server/library/stats";
 import { CardBadges } from "./CardBadges";
 import { ItemActions } from "./ItemActions";
@@ -19,11 +20,13 @@ export function PersonaCard({
   stats,
   viewer,
   decision,
+  options,
 }: {
   row: Row;
   stats: ItemStats;
   viewer: Actor;
   decision?: { decision: string; note: string | null };
+  options: PersonaOptions;
 }) {
   const permissions = itemPermissions(viewer, row);
   const locked = row.type === "Official" && !permissions.canEdit;
@@ -69,6 +72,7 @@ export function PersonaCard({
           archived={row.status === "Archived"}
           permissions={permissions}
           editValues={editValues}
+          formOptions={options}
         />
       </div>
       <CardBadges status={row.status} proposalStatus={row.proposalStatus} decision={decision} />

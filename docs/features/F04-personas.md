@@ -47,18 +47,18 @@ Admins. Anyone can keep Personal personas to try ideas, and propose a good one a
 
 ## Persona fields
 
-| Field            | Rules                                                                                                                       |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Name             | required, up to 100 characters                                                                                              |
-| Tier             | 1, 2 or 3 (1 = highest priority)                                                                                            |
-| Function         | multi-select: Research, Insights, Product, Design, CX, Brand, Marketing, Leadership, Consulting (D-015)                     |
-| Seniority        | multi-select: Entry Level, Senior, Entry Level Manager, Experienced Manager, Director, Vice President, CXO, Owner / Partner |
-| Job titles       | list                                                                                                                        |
-| Geography        | list, default "India"                                                                                                       |
-| Who it covers    | text                                                                                                                        |
-| Tools used today | text                                                                                                                        |
-| Lead-with angle  | text                                                                                                                        |
-| Notes            | text                                                                                                                        |
+| Field            | Rules                                                                                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Name             | required, up to 100 characters                                                                                                                               |
+| Tier             | 1, 2 or 3 (1 = highest priority)                                                                                                                             |
+| Function         | multi-select: Research, Insights, Product, Design, CX, Brand, Marketing, Leadership, Consulting (D-015), plus team-added options (D-018)                     |
+| Seniority        | multi-select: Entry Level, Senior, Entry Level Manager, Experienced Manager, Director, Vice President, CXO, Owner / Partner, plus team-added options (D-018) |
+| Job titles       | list                                                                                                                                                         |
+| Geography        | list, default "India"                                                                                                                                        |
+| Who it covers    | text                                                                                                                                                         |
+| Tools used today | text                                                                                                                                                         |
+| Lead-with angle  | text                                                                                                                                                         |
+| Notes            | text                                                                                                                                                         |
 
 ## Screen: `/personas`
 
@@ -93,3 +93,4 @@ again changes nothing.
 | 2026-10-16 | Unreleased | Library rules built on the server (`src/server/library/`), with tests.                                                                         |
 | 2026-10-17 | Unreleased | Seed: 5 Official personas from the PRD (`npm run seed:library`), with tests.                                                                   |
 | 2026-10-17 | Unreleased | Personas page built: tabs, cards with stats, add/edit form, duplicate, propose, archive/restore, delete, change history, Your proposals strip. |
+| 2026-10-17 | Unreleased | Function and seniority accept new options ("Add another"), offered to everyone afterwards (D-018).                                             |

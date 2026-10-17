@@ -1,13 +1,7 @@
 // Form rules for personas, account filters and templates (F04–F06). Used in the browser and
 // again on the server.
 import { z } from "zod";
-import {
-  PERSONA_FUNCTIONS,
-  SENIORITIES,
-  TEMPLATE_LEVELS,
-  TEMPLATE_PURPOSES,
-  TEMPLATE_VERSIONS,
-} from "../db/enums";
+import { TEMPLATE_LEVELS, TEMPLATE_PURPOSES, TEMPLATE_VERSIONS } from "../db/enums";
 
 /** Optional text: trimmed; an empty box is stored as "nothing" (null). */
 const optionalText = (max = 2000) =>
@@ -26,6 +20,12 @@ const textList = (maxItems = 50) =>
     .max(maxItems, `At most ${maxItems} entries.`)
     .transform((list) => [...new Set(list.filter(Boolean))]);
 
+/** Tick-box choices that also accept new options: short, trimmed, no repeats. */
+const optionList = z
+  .array(z.string().trim().min(1).max(40, "Each option can be at most 40 characters."))
+  .max(20, "At most 20 options.")
+  .transform((list) => [...new Set(list)]);
+
 const name = z.string().trim().min(2, "Enter a name.").max(100, "Use at most 100 characters.");
 
 export const personaSchema = z.object({
@@ -34,8 +34,9 @@ export const personaSchema = z.object({
     .number()
     .int()
     .pipe(z.union([z.literal(1), z.literal(2), z.literal(3)])),
-  functions: z.array(z.enum(PERSONA_FUNCTIONS)).transform((l) => [...new Set(l)]),
-  seniority: z.array(z.enum(SENIORITIES)).transform((l) => [...new Set(l)]),
+  // The built-in lists are suggestions; the team can add its own options (D-018).
+  functions: optionList,
+  seniority: optionList,
   jobTitles: textList(),
   geography: textList(20),
   whoItCovers: optionalText(),

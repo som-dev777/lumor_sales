@@ -37,3 +37,55 @@
   background: var(--color-primary-soft);
   color: var(--color-primary);
 }
+
+.addRow {
+  display: flex;
+  gap: var(--space-2);
+  max-width: 360px;
+}
+
+.addInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  padding: var(--space-1) var(--space-3);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-card);
+  font-size: var(--text-sm);
+
+  &:focus-visible {
+    border-style: solid;
+    border-color: var(--color-primary);
+  }
+}
+
+.addButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-card);
+  font-size: var(--text-sm);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

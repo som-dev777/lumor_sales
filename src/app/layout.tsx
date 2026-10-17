@@ -23,8 +23,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} ${bricolage.variable}`}>
-      <body>{children}</body>
+    // suppressHydrationWarning: browser extensions (e.g. ColorZilla's cz-shortcut-listen) add
+    // attributes to <html>/<body> before React loads. This ignores attribute differences on
+    // these two tags only; mismatches inside the page are still reported.
+    <html lang="en" className={`${inter.variable} ${bricolage.variable}`} suppressHydrationWarning>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }
