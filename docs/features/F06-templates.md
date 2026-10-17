@@ -65,8 +65,9 @@ interested / not now / competitor. Openers link to their persona and level. Load
 
 ## Change history
 
-| Date       | Version    | Change                                                                      |
-| ---------- | ---------- | --------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                    |
-| 2026-10-16 | Unreleased | Full doc written (R2).                                                      |
-| 2026-10-16 | Unreleased | Template rules (revisions on wording edits, usage stats) built, with tests. |
+| Date       | Version    | Change                                                                                  |
+| ---------- | ---------- | --------------------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                |
+| 2026-10-16 | Unreleased | Full doc written (R2).                                                                  |
+| 2026-10-16 | Unreleased | Template rules (revisions on wording edits, usage stats) built, with tests.             |
+| 2026-10-17 | Unreleased | Seed: 12 Official version-A templates, openers linked to persona and level, with tests. |

@@ -18,7 +18,8 @@
     "seed:admin": "tsx scripts/seed-admin.ts",
     "audit:check-lock": "tsx scripts/check-audit-lock.ts",
     "releases:sync": "tsx scripts/sync-releases.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "seed:library": "tsx scripts/seed-library.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

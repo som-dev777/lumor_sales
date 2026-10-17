@@ -8,6 +8,7 @@ const run = (script: string) =>
   execFileSync("npm", ["run", script], { stdio: "inherit", env: process.env });
 run("db:migrate");
 run("seed:admin");
+run("seed:library");
 
 const server = spawn("npx", ["next", "start", "-p", "3100"], {
   stdio: "inherit",

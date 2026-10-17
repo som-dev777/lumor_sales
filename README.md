@@ -14,6 +14,7 @@ First time only: copy `.env.example` to `.env.local` and fill in the values.
 npm install          # install packages
 npm run db:migrate   # create or update the database (data/app.db)
 npm run seed:admin   # first time only: create the default Admins (password from .env.local)
+npm run seed:library # first time only: load the starting personas, account filters and templates
 npm run dev          # start the app
 ```
 
