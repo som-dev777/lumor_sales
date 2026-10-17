@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { activity, persona } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { activity, persona, plan } from "@/lib/db/schema";
 import { createTestDb, insertTestUser } from "@/lib/db/test-db";
 import type { Actor } from "@/lib/permissions";
 import { personSchema } from "@/lib/validation/leads";
 import { conversions, dashboard, periodFor, type Counts } from "./dashboard";
 import { createPerson, updatePerson } from "./leads/people";
 import { quickLog } from "./leads/quicklog";
+import { completeStep, enrolPeople, logWithPlan } from "./plans/enrolment";
+import { seedPlans } from "./plans/seed";
 
 let t: Awaited<ReturnType<typeof createTestDb>>;
 let rep: Actor;
@@ -76,12 +79,12 @@ describe("funnel counts", () => {
     const d = await dashboard(t.db, periodFor("week", "2026-10-14"), "rep");
     // Trial was set "now" (outside this past week) by updatePerson; count it in its own week.
     expect(d.totals).toMatchObject({
-      requests: 1,
-      accepted: 1,
+      contacted: 1,
+      connected: 1,
       replied: 1,
       interested: 1,
-      demoBooked: 1,
-      demoHeld: 1,
+      meetingScheduled: 1,
+      meetingDone: 1,
       paid: 1,
     });
   });
@@ -96,7 +99,16 @@ describe("funnel counts", () => {
     expect((await dashboard(t.db, periodFor("week", "2026-10-05"), "rep")).totals.replied).toBe(1);
   });
 
-  it("Trial counts stage changes to Trial/Pilot", async () => {
+  it("Contacted counts each person's first touch of any kind, once", async () => {
+    const p = await lead(rep);
+    await ql(rep, p.id, { action: "callLogged", outcome: "No answer" }, at(12)); // not a touch
+    await ql(rep, p.id, { action: "messageSent", channel: "Email" }, at(13));
+    await ql(rep, p.id, { action: "requestSent" }, at(14));
+    const d = await dashboard(t.db, periodFor("week", "2026-10-14"), "rep");
+    expect(d.totals.contacted).toBe(1);
+  });
+
+  it("Trial and Proposal sent count stage changes to them", async () => {
     const p = await lead(rep);
     await updatePerson(
       t.db,
@@ -110,6 +122,8 @@ describe("funnel counts", () => {
     );
     const d = await dashboard(t.db, periodFor("week"), "rep");
     expect(d.totals.trial).toBe(1);
+    await ql(rep, p.id, { action: "proposalSent" }, new Date());
+    expect((await dashboard(t.db, periodFor("week"), "rep")).totals.proposal).toBe(1);
   });
 
   it("an activity at 11pm IST Sunday belongs to that week, not the next", async () => {
@@ -121,30 +135,36 @@ describe("funnel counts", () => {
       occurredAt: new Date(Date.UTC(2026, 9, 18, 17, 30)),
       type: "Request sent",
     });
-    expect((await dashboard(t.db, periodFor("week", "2026-10-18"), "rep")).totals.requests).toBe(1);
-    expect((await dashboard(t.db, periodFor("week", "2026-10-19"), "rep")).totals.requests).toBe(0);
+    expect((await dashboard(t.db, periodFor("week", "2026-10-18"), "rep")).totals.contacted).toBe(
+      1,
+    );
+    expect((await dashboard(t.db, periodFor("week", "2026-10-19"), "rep")).totals.contacted).toBe(
+      0,
+    );
   });
 });
 
 describe("conversions and benchmarks", () => {
   const counts = (over: Partial<Counts>): Counts => ({
-    requests: 0,
-    accepted: 0,
+    contacted: 0,
+    connected: 0,
     replied: 0,
     interested: 0,
-    demoBooked: 0,
-    demoHeld: 0,
+    meetingScheduled: 0,
+    meetingDone: 0,
+    proposal: 0,
     trial: 0,
     paid: 0,
+    active: 0,
     ...over,
   });
 
   it("amber below benchmark only with 10+ in the earlier stage; otherwise low sample", () => {
-    const [ra] = conversions(counts({ requests: 10, accepted: 2 }));
+    const [ra] = conversions(counts({ contacted: 10, connected: 2 }));
     expect(ra).toMatchObject({ rate: 0.2, status: "below", benchmark: 0.3 });
-    const [ok] = conversions(counts({ requests: 10, accepted: 3 }));
+    const [ok] = conversions(counts({ contacted: 10, connected: 3 }));
     expect(ok.status).toBe("ok");
-    const [low] = conversions(counts({ requests: 2, accepted: 0 }));
+    const [low] = conversions(counts({ contacted: 2, connected: 0 }));
     expect(low).toMatchObject({ status: "low", rate: 0 });
     const [none] = conversions(counts({}));
     expect(none).toMatchObject({ status: "low", rate: null });
@@ -164,11 +184,43 @@ describe("breakdowns", () => {
     await ql(rep2, b.id, { action: "accepted" }, at(14));
 
     const byRep = await dashboard(t.db, periodFor("week", "2026-10-14"), "rep");
-    expect(byRep.breakdown.map((g) => [g.label, g.counts.requests, g.counts.accepted])).toEqual([
+    expect(byRep.breakdown.map((g) => [g.label, g.counts.contacted, g.counts.connected])).toEqual([
       ["Asha", 1, 0],
       ["Ravi", 1, 1],
     ]);
     const byPersona = await dashboard(t.db, periodFor("week", "2026-10-14"), "persona");
     expect(byPersona.breakdown.map((g) => g.label)).toEqual(["Research & Insights", "Not set"]);
+  });
+});
+
+describe("plan reply rates (F17)", () => {
+  it("per plan: enrolled, replied and converted; per step: touches and the replies after them", async () => {
+    const admin = await insertTestUser(t.db, { name: "Somnath", role: "Admin" });
+    await seedPlans(t.db, admin.id);
+    const [outreach] = await t.db.select().from(plan).where(eq(plan.name, "Official Outreach"));
+    const a = await lead(rep);
+    const b = await lead(rep);
+    await enrolPeople(t.db, rep, [a.id, b.id], outreach.id, at(12));
+    await completeStep(t.db, rep, a.id, {}, at(12));
+    await completeStep(t.db, rep, b.id, {}, at(12));
+    await logWithPlan(
+      t.db,
+      rep,
+      a.id,
+      { action: "gotReply", replyType: "Interested" },
+      { now: at(14) },
+    );
+    const d = await dashboard(t.db, periodFor("week", "2026-10-14"), "rep");
+    expect(d.plans).toEqual([
+      {
+        planId: outreach.id,
+        name: "Official Outreach",
+        enrolled: 2,
+        replied: 1,
+        converted: 0,
+        replyRate: 0.5,
+        steps: [{ order: 1, done: 2, replies: 1, rate: 0.5 }],
+      },
+    ]);
   });
 });

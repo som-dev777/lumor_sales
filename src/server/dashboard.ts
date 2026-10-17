@@ -1,8 +1,17 @@
-// Dashboard funnel (F11): stages counted from activities dated inside the period (PRD,
-// D-020), conversions against benchmarks, and breakdowns.
+// Dashboard funnel (F11, v2 stages): stages counted from activities dated inside the period
+// (PRD, D-020), conversions against benchmarks, breakdowns, and plan reply rates (F17).
 import { and, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import type { DbOrTx } from "@/lib/db/client";
-import { accountFilter, activity, person, persona, template, user } from "@/lib/db/schema";
+import {
+  accountFilter,
+  activity,
+  person,
+  persona,
+  plan,
+  planEnrolment,
+  template,
+  user,
+} from "@/lib/db/schema";
 import {
   addDaysIst,
   isIstDate,
@@ -14,25 +23,37 @@ import {
 } from "@/lib/time";
 
 export const FUNNEL_STAGES = [
-  { key: "requests", label: "Requests sent" },
-  { key: "accepted", label: "Accepted" },
+  { key: "contacted", label: "Contacted" },
+  { key: "connected", label: "Connected" },
   { key: "replied", label: "Replied" },
   { key: "interested", label: "Interested" },
-  { key: "demoBooked", label: "Demo booked" },
-  { key: "demoHeld", label: "Demo held" },
+  { key: "meetingScheduled", label: "Meeting scheduled" },
+  { key: "meetingDone", label: "Meeting done" },
+  { key: "proposal", label: "Proposal sent" },
   { key: "trial", label: "Trial" },
   { key: "paid", label: "Paid" },
+  { key: "active", label: "Active customer" },
 ] as const;
 export type StageKey = (typeof FUNNEL_STAGES)[number]["key"];
 export type Counts = Record<StageKey, number>;
 
-/** PRD benchmarks. */
+/** PRD benchmarks, carried over to the v2 stages (Proposal sent and Active customer get theirs later). */
 export const CONVERSIONS = [
-  { from: "requests", to: "accepted", label: "Requests → Accepted", benchmark: 0.3 },
-  { from: "accepted", to: "replied", label: "Accepted → Replied", benchmark: 0.1 },
-  { from: "interested", to: "demoBooked", label: "Interested → Demo booked", benchmark: 0.5 },
-  { from: "demoBooked", to: "demoHeld", label: "Demo booked → Demo held", benchmark: 0.7 },
-  { from: "demoHeld", to: "trial", label: "Demo held → Trial", benchmark: 0.3 },
+  { from: "contacted", to: "connected", label: "Contacted → Connected", benchmark: 0.3 },
+  { from: "connected", to: "replied", label: "Connected → Replied", benchmark: 0.1 },
+  {
+    from: "interested",
+    to: "meetingScheduled",
+    label: "Interested → Meeting scheduled",
+    benchmark: 0.5,
+  },
+  {
+    from: "meetingScheduled",
+    to: "meetingDone",
+    label: "Meeting scheduled → Meeting done",
+    benchmark: 0.7,
+  },
+  { from: "meetingDone", to: "trial", label: "Meeting done → Trial", benchmark: 0.3 },
 ] as const satisfies readonly { from: StageKey; to: StageKey; label: string; benchmark: number }[];
 
 /** Fewer than this many in the earlier stage = "low sample" (PRD). */
@@ -104,14 +125,16 @@ export const DIMENSIONS: { key: Dimension; label: string }[] = [
 ];
 
 const empty = (): Counts => ({
-  requests: 0,
-  accepted: 0,
+  contacted: 0,
+  connected: 0,
   replied: 0,
   interested: 0,
-  demoBooked: 0,
-  demoHeld: 0,
+  meetingScheduled: 0,
+  meetingDone: 0,
+  proposal: 0,
   trial: 0,
   paid: 0,
+  active: 0,
 });
 
 type Event = {
@@ -143,6 +166,7 @@ async function funnelEvents(db: DbOrTx, period: Range): Promise<Event[]> {
       replyType: activity.replyType,
       content: activity.content,
       toStage: activity.toStage,
+      callOutcome: activity.callOutcome,
       personId: activity.personId,
       occurredAt: activity.occurredAt,
       repId: activity.userId,
@@ -155,6 +179,9 @@ async function funnelEvents(db: DbOrTx, period: Range): Promise<Event[]> {
         inPeriod,
         inArray(activity.type, [
           "Request sent",
+          "Message sent",
+          "InMail sent",
+          "Call",
           "Request accepted",
           "Reply received",
           "Meeting booked",
@@ -171,6 +198,17 @@ async function funnelEvents(db: DbOrTx, period: Range): Promise<Event[]> {
     .where(eq(activity.type, "Reply received"))
     .groupBy(activity.personId);
   const firstAt = new Map(firstReplies.map((r) => [r.personId, Number(r.first)]));
+
+  // "Contacted" = each person's first outreach touch of any kind, if it falls in the period
+  // (D-033 F15). Calls count when they connected.
+  const firstTouches = await db
+    .select({ personId: activity.personId, first: sql<number>`min(${activity.occurredAt})` })
+    .from(activity)
+    .where(
+      sql`${activity.type} IN ('Request sent', 'Message sent', 'InMail sent') OR (${activity.type} = 'Call' AND ${activity.callOutcome} = 'Connected')`,
+    )
+    .groupBy(activity.personId);
+  const firstTouchAt = new Map(firstTouches.map((r) => [r.personId, Number(r.first)]));
 
   const firstDay = toIstDate(period.start);
   const afterLast = toIstDate(period.end);
@@ -207,12 +245,23 @@ async function funnelEvents(db: DbOrTx, period: Range): Promise<Event[]> {
   const events: Event[] = [];
   for (const r of rows) {
     const b = base(r);
-    if (r.type === "Request sent") events.push({ stage: "requests", ...b });
-    else if (r.type === "Request accepted") events.push({ stage: "accepted", ...b });
-    else if (r.type === "Meeting booked") events.push({ stage: "demoBooked", ...b });
-    else if (r.type === "Meeting held") events.push({ stage: "demoHeld", ...b });
+    const isTouch =
+      r.type === "Request sent" ||
+      r.type === "Message sent" ||
+      r.type === "InMail sent" ||
+      (r.type === "Call" && r.callOutcome === "Connected");
+    if (isTouch) {
+      if (firstTouchAt.get(r.personId) === r.occurredAt.getTime())
+        events.push({ stage: "contacted", ...b });
+    } else if (r.type === "Request accepted") events.push({ stage: "connected", ...b });
+    else if (r.type === "Meeting booked") events.push({ stage: "meetingScheduled", ...b });
+    else if (r.type === "Meeting held") events.push({ stage: "meetingDone", ...b });
     else if (r.type === "Stage change" && r.toStage === "Trial")
       events.push({ stage: "trial", ...b });
+    else if (r.type === "Stage change" && r.toStage === "Proposal sent")
+      events.push({ stage: "proposal", ...b });
+    else if (r.type === "Stage change" && r.toStage === "Active customer")
+      events.push({ stage: "active", ...b });
     else if (r.type === "Reply received") {
       if (r.replyType === "Interested") events.push({ stage: "interested", ...b });
       if (firstAt.get(r.personId) === r.occurredAt.getTime())
@@ -283,6 +332,7 @@ export type DashboardData = {
   totals: Counts;
   conversions: Conversion[];
   breakdown: { key: string; label: string; counts: Counts; conversions: Conversion[] }[];
+  plans: PlanPerformance[];
 };
 
 export async function dashboard(
@@ -316,7 +366,104 @@ export async function dashboard(
         ? 1
         : b.key === NOT_SET
           ? -1
-          : b.counts.requests - a.counts.requests || a.label.localeCompare(b.label),
+          : b.counts.contacted - a.counts.contacted || a.label.localeCompare(b.label),
     );
-  return { period, totals, conversions: conversions(totals), breakdown };
+  return {
+    period,
+    totals,
+    conversions: conversions(totals),
+    breakdown,
+    plans: await planPerformance(db, period),
+  };
+}
+
+export type PlanPerformance = {
+  planId: string;
+  name: string;
+  enrolled: number;
+  replied: number;
+  converted: number;
+  replyRate: number | null;
+  steps: { order: number; done: number; replies: number; rate: number | null }[];
+};
+
+/**
+ * Plan reply rates (F17, D-033 F13): people enrolled in the period and how many replied or
+ * converted; per step, the touches done in the period and the replies that followed them.
+ */
+export async function planPerformance(db: DbOrTx, period: Range): Promise<PlanPerformance[]> {
+  const enrolments = await db
+    .select({
+      id: planEnrolment.id,
+      planId: planEnrolment.planId,
+      personId: planEnrolment.personId,
+      startedAt: planEnrolment.startedAt,
+      name: plan.name,
+      converted: person.converted,
+      convertedDate: person.convertedDate,
+    })
+    .from(planEnrolment)
+    .innerJoin(plan, eq(plan.id, planEnrolment.planId))
+    .innerJoin(person, eq(person.id, planEnrolment.personId))
+    .where(
+      and(gte(planEnrolment.startedAt, period.start), lt(planEnrolment.startedAt, period.end)),
+    );
+  const linked = await db
+    .select({
+      enrolmentId: activity.planEnrolmentId,
+      order: activity.planStepOrder,
+      type: activity.type,
+      outcome: activity.callOutcome,
+      at: activity.occurredAt,
+      planId: planEnrolment.planId,
+    })
+    .from(activity)
+    .innerJoin(planEnrolment, eq(planEnrolment.id, activity.planEnrolmentId))
+    .where(sql`${activity.planEnrolmentId} IS NOT NULL`);
+  const repliedIds = new Set(
+    linked.filter((a) => a.type === "Reply received").map((a) => a.enrolmentId),
+  );
+  const inPeriod = (d: Date) => d >= period.start && d < period.end;
+  const touch = (t: string, outcome: string | null) =>
+    t === "Request sent" ||
+    t === "Message sent" ||
+    t === "InMail sent" ||
+    t === "Task done" ||
+    (t === "Call" && outcome !== null);
+
+  const planIds = [
+    ...new Set([
+      ...enrolments.map((e) => e.planId),
+      ...linked.filter((a) => inPeriod(a.at)).map((a) => a.planId),
+    ]),
+  ];
+  const names = planIds.length
+    ? await db.select({ id: plan.id, name: plan.name }).from(plan).where(inArray(plan.id, planIds))
+    : [];
+  return planIds
+    .map((planId) => {
+      const mine = enrolments.filter((e) => e.planId === planId);
+      const replied = mine.filter((e) => repliedIds.has(e.id)).length;
+      const converted = mine.filter(
+        (e) => e.converted && e.convertedDate && e.convertedDate >= toIstDate(e.startedAt),
+      ).length;
+      const acts = linked.filter((a) => a.planId === planId && inPeriod(a.at) && a.order !== null);
+      const orders = [...new Set(acts.map((a) => a.order!))].sort((a, b) => a - b);
+      return {
+        planId,
+        name: names.find((n) => n.id === planId)?.name ?? "Plan",
+        enrolled: mine.length,
+        replied,
+        converted,
+        replyRate: mine.length ? replied / mine.length : null,
+        steps: orders.map((order) => {
+          const done = acts.filter((a) => a.order === order && touch(a.type, a.outcome)).length;
+          const replies = acts.filter(
+            (a) => a.order === order && a.type === "Reply received",
+          ).length;
+          return { order, done, replies, rate: done ? replies / done : null };
+        }),
+      };
+    })
+    .sort((a, b) => b.enrolled - a.enrolled || a.name.localeCompare(b.name));
 }

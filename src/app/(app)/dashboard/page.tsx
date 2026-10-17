@@ -206,7 +206,61 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/dashboard">, "search
         <p className={styles.note}>
           Counted from activities dated in this period. A conversion turns amber when it is below
           its benchmark and the earlier stage has 10 or more; with fewer, it shows &ldquo;low
-          sample&rdquo;.
+          sample&rdquo;. Contacted is each person&rsquo;s first touch of any kind.
+        </p>
+      </section>
+
+      <section className={styles.card} aria-label="Plans">
+        <h2 className={styles.cardTitle}>Plans</h2>
+        {data.plans.length === 0 ? (
+          <p className={styles.empty}>No plan activity in this {kind}.</p>
+        ) : (
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th scope="col">Plan</th>
+                  <th scope="col" className={styles.num}>
+                    Enrolled
+                  </th>
+                  <th scope="col" className={styles.num}>
+                    Replied
+                  </th>
+                  <th scope="col" className={styles.num}>
+                    Reply rate
+                  </th>
+                  <th scope="col" className={styles.num}>
+                    Converted
+                  </th>
+                  <th scope="col">Reply rate per step (touches → replies)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.plans.map((p) => (
+                  <tr key={p.planId}>
+                    <th scope="row">{p.name}</th>
+                    <td className={styles.num}>{p.enrolled}</td>
+                    <td className={styles.num}>{p.replied}</td>
+                    <td className={styles.num}>{pct(p.replyRate)}</td>
+                    <td className={styles.num}>{p.converted}</td>
+                    <td>
+                      {p.steps.length === 0
+                        ? "—"
+                        : p.steps
+                            .map(
+                              (s) => `Step ${s.order}: ${s.done} → ${s.replies} (${pct(s.rate)})`,
+                            )
+                            .join(" · ")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className={styles.note}>
+          Enrolled = people who started the plan in this period. Replies are counted against the
+          step that came just before them.
         </p>
       </section>
     </>
