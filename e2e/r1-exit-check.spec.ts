@@ -2,7 +2,7 @@
 // blocked, and confirm Audit Log entries can't be edited, not even by an Admin. Plus the
 // other R1 rules: sign-up, roles, Not allowed pages, reset links, About.
 import { createClient } from "@libsql/client";
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 
 const ADMIN = { email: "somnath@lumor.tech", password: "e2e-admin-password" };
 const REP = { name: "Asha Rep", email: "asha@lumor.tech", password: "rep-password-12" };
@@ -30,6 +30,9 @@ async function rowAction(name: string, item: string, confirm: string) {
   await expect(admin.getByRole("alertdialog")).toBeHidden();
 }
 
+/** Only the visible match: streamed pages briefly hold a hidden copy of new content. */
+const shown = (locator: Locator) => locator.filter({ visible: true }).first();
+
 const menuItems = (page: Page) => page.getByRole("navigation", { name: "Main" }).getByRole("link");
 
 test.beforeAll(async ({ browser }) => {
@@ -44,7 +47,7 @@ test("signed-out visitors are sent to the login page", async () => {
 
 test("a wrong password is refused", async () => {
   await logIn(admin, ADMIN.email, "not-the-password");
-  await expect(admin.getByText("Wrong email or password.")).toBeVisible();
+  await expect(shown(admin.getByText("Wrong email or password."))).toBeVisible();
 });
 
 test("a default Admin logs in and sees all 11 menu items", async () => {
@@ -63,9 +66,9 @@ test("sign-up: only @lumor.tech, never a default Admin email", async () => {
     await rep.getByRole("button", { name: "Create account" }).click();
   };
   await fill("asha@gmail.com");
-  await expect(rep.getByText("Use your @lumor.tech email.", { exact: true })).toBeVisible();
+  await expect(shown(rep.getByText("Use your @lumor.tech email.", { exact: true }))).toBeVisible();
   await fill("prince@lumor.tech");
-  await expect(rep.getByText(/already set up/)).toBeVisible();
+  await expect(shown(rep.getByText(/already set up/))).toBeVisible();
   await fill(REP.email);
   await expect(rep).toHaveURL("/");
 });
@@ -75,7 +78,7 @@ test("a User sees 9 menu items and is refused Admin pages", async () => {
   await expect(menuItems(rep).filter({ hasText: "Audit Log" })).toHaveCount(0);
   for (const path of ["/audit-log", "/approvals", "/settings/users"]) {
     await rep.goto(path);
-    await expect(rep.getByText("Not allowed", { exact: true })).toBeVisible();
+    await expect(shown(rep.getByText("Not allowed", { exact: true }))).toBeVisible();
   }
   const exportRes = await rep.request.get("/audit-log/export");
   expect(exportRes.status()).toBe(403);
@@ -98,7 +101,7 @@ test("exit check: an Admin invites a user, who registers through the link", asyn
   await partner.getByRole("button", { name: "Create account" }).click();
   await expect(partner).toHaveURL(/\/login\?registered=1/);
   await partner.goto(link);
-  await expect(partner.getByText(/already been used/)).toBeVisible();
+  await expect(shown(partner.getByText(/already been used/))).toBeVisible();
 });
 
 test("you can't change your own role or deactivate yourself", async () => {
@@ -113,15 +116,15 @@ test("you can't change your own role or deactivate yourself", async () => {
 
 test("exit check: deactivating a user blocks them at once", async () => {
   await rowAction(REP.name, "Deactivate", "Deactivate");
-  await expect(admin.getByText(`${REP.name} deactivated.`)).toBeVisible();
+  await expect(shown(admin.getByText(`${REP.name} deactivated.`))).toBeVisible();
 
   await rep.goto("/people");
   await expect(rep).toHaveURL(/\/disabled/);
-  await expect(rep.getByText("Access disabled, contact your admin").first()).toBeVisible();
+  await expect(shown(rep.getByText("Access disabled, contact your admin"))).toBeVisible();
 
   await rep.getByRole("button", { name: "Log out" }).click();
   await logIn(rep, REP.email, REP.password);
-  await expect(rep.getByText("Access disabled, contact your admin").first()).toBeVisible();
+  await expect(shown(rep.getByText("Access disabled, contact your admin"))).toBeVisible();
 });
 
 test("reactivating lets them back in; a reset link sets a new password", async () => {
@@ -167,8 +170,8 @@ test("exit check: audit entries can't be edited or deleted, even directly in the
 
 test("About shows the current version", async () => {
   await rep.goto("/about");
-  await expect(rep.getByText("Current version")).toBeVisible();
-  await expect(rep.getByText(/^v\d+\.\d+\.\d+$/).first()).toBeVisible();
+  await expect(shown(rep.getByText("Current version"))).toBeVisible();
+  await expect(shown(rep.getByText(/^v\d+\.\d+\.\d+$/))).toBeVisible();
 });
 
 test("logging out ends the session", async () => {
