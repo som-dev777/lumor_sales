@@ -291,3 +291,8 @@ replaces it.
 - **Date:** 2026-10-17 · **Status:** Accepted. Confirms D-019 and D-022.
 - **Decision:** Same 9 build-time warnings (ESLint's `braces`, drizzle-kit's esbuild). R4
   added Recharts, which brings no new warnings. None reach the live app. Recheck at v1.4.0.
+
+## D-025: Dependency warnings rechecked at v1.4.0
+
+- **Date:** 2026-10-17 · **Status:** Accepted. Confirms D-024.
+- **Decision:** Same 9 build-time warnings. No packages added in R5. Recheck at v1.5.0.

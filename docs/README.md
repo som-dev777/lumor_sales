@@ -3,7 +3,7 @@
 Lumor Sales Hub is the internal web app where Lumor's sales team manages LinkedIn
 prospecting, from finding a lead in Sales Navigator to a paying customer.
 
-**Current version:** 1.3.0 (R4 Daily work, released 17 Oct 2026). Next: R5 Settings (1.4.0).
+**Current version:** 1.4.0 (R5 Settings, released 17 Oct 2026). Next: R6 AI (1.5.0).
 
 ## Documents
 
@@ -34,8 +34,8 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F03 | [Companies](features/F03-companies.md)                          | P0       | R3      | Done (1.2.0) |
 | F15 | [Quick-log and sequence automation](features/F15-quick-log.md)  | P0       | R4      | Done (1.3.0) |
 | F11 | [Dashboard](features/F11-dashboard.md)                          | P0       | R4      | Done (1.3.0) |
-| F12 | [Product Facts](features/F12-product-facts.md)                  | P0       | R5      | In progress  |
-| F13 | [Playbook Settings](features/F13-playbook-settings.md)          | P0       | R5      | In progress  |
+| F12 | [Product Facts](features/F12-product-facts.md)                  | P0       | R5      | Done (1.4.0) |
+| F13 | [Playbook Settings](features/F13-playbook-settings.md)          | P0       | R5      | Done (1.4.0) |
 | F08 | [Today planner](features/F08-today-planner.md)                  | P1       | R6      | Planned      |
 | F09 | [Reply Assistant](features/F09-reply-assistant.md)              | P1       | R6      | Planned      |
 | F10 | [Conversation summary and draft](features/F10-summary-draft.md) | P1       | R6      | Planned      |
@@ -48,7 +48,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | R2 Library    | 1.1.0   | F04, F05, F06, F07 | Released 2026-10-17 |
 | R3 Leads      | 1.2.0   | F02, F03           | Released 2026-10-17 |
 | R4 Daily work | 1.3.0   | F15, F11           | Released 2026-10-17 |
-| R5 Settings   | 1.4.0   | F12, F13           | In progress         |
+| R5 Settings   | 1.4.0   | F12, F13           | Released 2026-10-17 |
 | R6 AI         | 1.5.0   | F08, F09, F10      | Planned             |
 
 ## Running the app locally

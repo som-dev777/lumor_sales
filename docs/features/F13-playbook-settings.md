@@ -1,6 +1,6 @@
 # F13: Playbook Settings
 
-- **Priority:** P0 · **Release:** R5 (v1.4.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R5 (v1.4.0) · **Status:** Done (v1.4.0)
 - **PRD:** [Data model → PlaybookSettings](../PRD.md#data-model), [Business rules → Product Facts and Playbook Settings](../PRD.md#business-rules)
 
 ## What it does
@@ -46,8 +46,9 @@ Everyone can read it; only Admins can edit it.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                  |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                |
-| 2026-10-17 | Unreleased | Full doc written (R5).                                                                                  |
-| 2026-10-17 | Unreleased | Rules, page and edit form built (limits, delays in order, audited); used by quick-log; R5 browser test. |
+| Date       | Version | Change                                                                                                  |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.4.0   | Placeholder doc created.                                                                                |
+| 2026-10-17 | 1.4.0   | Full doc written (R5).                                                                                  |
+| 2026-10-17 | 1.4.0   | Rules, page and edit form built (limits, delays in order, audited); used by quick-log; R5 browser test. |
+| 2026-10-17 | 1.4.0   | Released in v1.4.0 (R5 Settings).                                                                       |

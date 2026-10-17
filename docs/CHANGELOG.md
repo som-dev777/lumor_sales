@@ -10,7 +10,11 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-R5 Settings, in progress.
+Nothing yet. R6 (AI: Today planner, Reply Assistant, summaries and drafts) starts next.
+
+## [1.4.0] - 2026-10-17
+
+R5 Settings: Product Facts and Playbook Settings, readable by everyone and edited by Admins.
 
 - Feature docs written for Product Facts (F12) and Playbook Settings (F13).
 - Product Facts page: what Lumor does, live features, features not live yet, pricing guidance, positioning rules and the calendar link. Everyone reads; Admins edit. Shows who edited last and warns while the facts the AI needs are empty (F12).
