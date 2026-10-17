@@ -18,6 +18,7 @@ R7 Plans (v2.0.0), in progress.
 - Quick-log buttons for v2: Message sent on any channel, Call with its outcome, Meeting booked and held, Proposal sent. Follow-up dates now come from plans.
 - Playbook Settings: the follow-up delays are replaced by the cadence guardrail values.
 - Seed plans: the Official Outreach plan (5 steps), plus Meeting follow-up, Trial and Onboarding drafts waiting for Admin approval.
+- Cadence guardrails and plan scheduling rules (weekends skipped, late steps shift later ones, the weekly touch limit, call retries, pausing), with tests for every rule.
 - AI prompts P01–P04 updated to version 1.1 (v2 stage names; every follow-up must add something new).
 
 ## [1.5.0] - 2026-10-17

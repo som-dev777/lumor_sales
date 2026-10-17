@@ -442,6 +442,10 @@ replaces it.
     Contacted; acceptance → Connected.
   - **Replies are linked to the plan and step** that came just before them, for the
     per-step reply rate.
+  - **"Sixth touch" in the exit check:** after D-033 merged the call into step 4, the seed
+    plan has 3 follow-ups after Message 1. Adding one more step is refused by guardrail 7 (the
+    plan would run longer than 30 days). Adding two is also refused by guardrail 3 (a 5th
+    follow-up). The exit check shows both.
   - **The test date switch** lives on the About page, as a cookie. It shows only when the
     database is a local file, and the server refuses it otherwise.
 - **Why:** Gaps the PRD doesn't cover; none changes what the PRD or D-033 says.
