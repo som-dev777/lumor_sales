@@ -10,7 +10,11 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-R7 Plans (v2.0.0), in progress.
+Nothing yet. R8 (Conversations: the thread, AI reply deadlines and the Team tab) comes next.
+
+## [2.0.0] - 2026-10-18
+
+R7 Plans: version 2 starts. New stages, Plans with cadence guardrails and the seed Official Outreach plan, and a Today driven by plans.
 
 - PRD Version 2 scope added. Feature docs written for Plans (F17) and the plan-driven Today (F08 v2), with placeholders for F18 and F19; decisions D-028 to D-034.
 - Stages renamed for v2 (Contacted, Meeting scheduled, Meeting done, Trial; new Proposal sent and Active customer). Existing people and activities are migrated automatically, with a backup of the database file made first.

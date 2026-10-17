@@ -1,10 +1,10 @@
-# Manual QA checklist (v1.5.0)
+# Manual QA checklist (v2.0.0)
 
 This is for Somnath, to check the whole app by hand before the team uses it. Each step
 says what to click and what you should see. Tick the box when it works; if something doesn't,
 note the step number and what you saw instead.
 
-The automated tests already cover every rule here (221 checks plus 43 browser walkthroughs).
+The automated tests already cover every rule here (273 checks plus 48 browser walkthroughs).
 This list makes sure it also _feels_ right to a person.
 
 **Time needed:** about 1.5 hours for everything. Sections can be done on different days.
@@ -20,6 +20,7 @@ npm install
 npm run db:migrate
 npm run seed:admin
 npm run seed:library
+npm run seed:plans
 npm run releases:sync
 npm run dev
 ```
@@ -40,6 +41,9 @@ real AI. To try the real AI, put your key in `.env.local` as `ANTHROPIC_API_KEY=
 
 ## 1. Logging in and the team (F01)
 
+- [ ] 1.0 `npm run db:migrate` printed "Backup saved: data/backups/…" and the number of people per
+      stage before and after. Your old leads now show v2 stages (Request sent → Contacted, Demo
+      booked → Meeting scheduled, Demo done → Meeting done, Trial/Pilot → Trial).
 - [ ] 1.1 Log in as Admin. You land on **Today**. The left menu shows Today, People, Companies,
       Personas, Account Filters, Templates, Dashboard, Approvals, Audit Log, Settings, About.
 - [ ] 1.2 Bottom left shows your name, "Admin", **Change password** and **Log out**.
@@ -92,16 +96,17 @@ real AI. To try the real AI, put your key in `.env.local` as `ANTHROPIC_API_KEY=
 
 ## 4. Daily work: quick-log and Dashboard (F15, F11)
 
-- [ ] 4.1 On a person, use **Log what happened** in order: Request sent → Accepted → Message 1
-      sent → Follow-up 1 sent → Got a reply (choose a reply type) → Demo booked (pick a date) →
-      Demo held. After each click, Stage, Sequence step and **Next action** with its date update
-      (follow-ups count from the Message 1 date: +4, +7, +10 days).
-- [ ] 4.2 **Edit** → stage Trial/Pilot → Save. Then **Mark converted**: stage Paid, and the page
-      offers to mark the company as a customer.
-- [ ] 4.3 **Mark lost** asks for a reason.
-- [ ] 4.4 **Dashboard**: this week's funnel counts the lead once at every stage. Tiles show
-      "low sample" (fewer than 10). Switch to **Month**, use the arrows, and try each **Break down
-      by** option.
+- [ ] 4.1 On a person (not on a plan), use **Log what happened**: Request sent (tick "with a note"
+      or not) → Accepted → Message sent. Because it's the same day as Accepted, a **"This breaks a
+      cadence guardrail"** box appears; click **Log anyway**. Then Got a reply (choose a type) →
+      Meeting booked (pick a date) → Meeting held → Proposal sent. The stage moves each time:
+      Contacted, Connected, Replied, Meeting scheduled, Meeting done, Proposal sent.
+- [ ] 4.2 **Call**: pick an outcome (for example No answer). It shows in the timeline.
+- [ ] 4.3 **Edit** → stage Trial → Save. Then **Mark converted**: stage Paid, and the page offers
+      to mark the company as a customer. **Mark lost** asks for a reason.
+- [ ] 4.4 **Dashboard**: this week's funnel counts the lead once at every stage (Contacted is
+      their first touch). Tiles show "low sample". Switch to **Month**, use the arrows, try each
+      **Break down by** option, and see the **Plans** table at the bottom.
 
 ## 5. Settings (F12, F13)
 
@@ -109,9 +114,10 @@ real AI. To try the real AI, put your key in `.env.local` as `ANTHROPIC_API_KEY=
       fill in What Lumor does and Live features, and add a calendar link (it must start with
       `https://`). Save: the warning goes, and "Last edited by" shows you.
 - [ ] 5.2 As the rep, Product Facts is readable with no Edit button.
-- [ ] 5.3 **Settings → Playbook Settings**: as Admin, set Follow-up 1 to 3 days. Setting Follow-up 2
-      lower than Follow-up 1 is refused. Log a Message 1 on a lead: Follow-up 1 is due in 3 days.
-      Set it back to 4.
+- [ ] 5.3 **Settings → Playbook Settings**: the follow-up delays are gone; the cadence guardrail
+      values are there (message 1–3 days after accepting, 3-day gaps, 4 follow-ups, 2 touches a
+      week, 30/45-day plans, 60-day Nurture). As Admin, try setting "Message after accepting: at
+      most" below "at least": refused.
 
 ## 6. Today and the AI (F08, F09, F10)
 
@@ -145,11 +151,43 @@ Needs Product Facts filled in (5.1), and either a real key or `AI_FAKE=1` (see s
       and **Export CSV** work. There's no edit or delete anywhere.
 - [ ] 7.2 Each detail page (person, company, persona, template, settings) has a readable **Change
       history** (names, not codes).
-- [ ] 7.3 **About** shows version 1.5.0 and the latest releases.
+- [ ] 7.3 **About** shows version 2.0.0 and the latest releases.
 
-## 8. Phone check
+## 8. Plans (F17) and the plan-driven Today (F08)
 
-- [ ] 8.1 On your phone (or Chrome's device toolbar), Today and People work: the menu collapses
+Tip: on the **About** page there's a **Test date** box (only on your own Mac). It lets you
+pretend today is another date, so you can check late steps and weekends without waiting.
+Set it back to today when you're done.
+
+- [ ] 8.1 **Plans → Official Outreach**: 5 steps. Step 4 says "Call if a phone is known →
+      otherwise Email if an email is known → otherwise LinkedIn message". Waits 2, 4, 7, 10; "Skip
+      weekends: on"; "This plan follows every guardrail".
+- [ ] 8.2 **Approvals** lists 3 draft plans (Meeting follow-up, Trial, Onboarding). Open each,
+      read the steps, and **Approve** the ones you're happy with (or edit them first).
+- [ ] 8.3 **Builder**: open Official Outreach → **Duplicate** → **Edit steps**. **Add step** (wait 14)
+      → Save: refused, because the plan would run past 30 days. Add one more → Save: refused, "At
+      most 4 follow-ups after Message 1". Remove them, set step 4's wait to 3 → refused, "each gap
+      must be longer than the last". The guardrail box updates as you type.
+- [ ] 8.4 Test date: a Monday. **People** → tick a test lead → **Enrol in plan** → Official
+      Outreach: "1 enrolled". **Today** shows it under **Plan steps due today**; click **Done**.
+- [ ] 8.5 On the person page the Plan panel says "Waiting for … to accept". Test date: Thursday;
+      click **Accepted**. Message 1 is due Monday (Saturday moved to Monday).
+- [ ] 8.6 Test date: the next Thursday (3 days late). Today shows it under **Overdue steps** with
+      the message filled in. Leave a `{topic}` in the text and click Done: refused, "Fill in {topic}
+      first". Fix the text and click Done. The next step is due 4 days after **this** date.
+- [ ] 8.7 Paste a reply into the **Reply Assistant**: the Plan panel shows **Paused** and the step
+      leaves Today (the reply shows under Replies waiting). **Resume**: the step is due again.
+- [ ] 8.8 With a phone number on the person, step 4 is a **Call**: try **No answer** (due again the
+      next working day) and the other outcomes.
+- [ ] 8.9 **Quick-log on a plan**: when a button matches the current step, the app asks "Is this
+      step N of their plan?" **Yes** moves the plan on; **No** logs an extra touch.
+- [ ] 8.10 **Edit → Do not contact** with a reason: the plan stops and outreach is refused.
+- [ ] 8.11 Finished plans and Nurture: when all steps are done, Today offers **Nurture** or
+      **Lost**; when Nurture ends, a **Nurture check** offers **Enrol again** or **Lost**.
+
+## 9. Phone check
+
+- [ ] 9.1 On your phone (or Chrome's device toolbar), Today and People work: the menu collapses
       to a button, nothing runs off the side of the screen.
 
 ---

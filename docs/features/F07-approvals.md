@@ -51,11 +51,12 @@ sees the outcome.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                                                                   |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-10-16 | 1.1.0      | Placeholder doc created.                                                                                                                                                 |
-| 2026-10-16 | 1.1.0      | Full doc written (R2).                                                                                                                                                   |
-| 2026-10-16 | 1.1.0      | Propose, approve, reject, withdraw and queue rules built, with tests.                                                                                                    |
-| 2026-10-17 | 1.1.0      | Approvals page built: queue with item preview, Approve (confirm) and Reject (optional note), Recently decided, waiting count in the sidebar; R2 exit-check browser test. |
-| 2026-10-17 | 1.1.0      | Released in v1.1.0 (R2 Library).                                                                                                                                         |
-| 2026-10-18 | Unreleased | v2 (R7): plan proposals are listed in Approvals and decided on the plan page (F17).                                                                                      |
+| Date       | Version | Change                                                                                                                                                                   |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-16 | 1.1.0   | Placeholder doc created.                                                                                                                                                 |
+| 2026-10-16 | 1.1.0   | Full doc written (R2).                                                                                                                                                   |
+| 2026-10-16 | 1.1.0   | Propose, approve, reject, withdraw and queue rules built, with tests.                                                                                                    |
+| 2026-10-17 | 1.1.0   | Approvals page built: queue with item preview, Approve (confirm) and Reject (optional note), Recently decided, waiting count in the sidebar; R2 exit-check browser test. |
+| 2026-10-17 | 1.1.0   | Released in v1.1.0 (R2 Library).                                                                                                                                         |
+| 2026-10-18 | 2.0.0   | v2 (R7): plan proposals are listed in Approvals and decided on the plan page (F17).                                                                                      |
+| 2026-10-18 | 2.0.0   | Released in v2.0.0 (R7 Plans).                                                                                                                                           |

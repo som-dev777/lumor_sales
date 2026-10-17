@@ -64,11 +64,12 @@ version, market and rep.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                                         |
-| ---------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | 1.3.0      | Placeholder doc created.                                                                                                                       |
-| 2026-10-17 | 1.3.0      | Full doc written (R4).                                                                                                                         |
-| 2026-10-17 | 1.3.0      | Funnel counting, conversions and breakdowns built and tested on the server.                                                                    |
-| 2026-10-17 | 1.3.0      | Dashboard page: period switch, funnel chart, conversion tiles, breakdown table; browser test.                                                  |
-| 2026-10-17 | 1.3.0      | Released in v1.3.0 (R4 Daily work).                                                                                                            |
-| 2026-10-18 | Unreleased | v2 (R7): v2 stages and benchmarks, Contacted = first touch of any kind, Proposal sent and Active customer, plan reply rates per plan and step. |
+| Date       | Version | Change                                                                                                                                         |
+| ---------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.3.0   | Placeholder doc created.                                                                                                                       |
+| 2026-10-17 | 1.3.0   | Full doc written (R4).                                                                                                                         |
+| 2026-10-17 | 1.3.0   | Funnel counting, conversions and breakdowns built and tested on the server.                                                                    |
+| 2026-10-17 | 1.3.0   | Dashboard page: period switch, funnel chart, conversion tiles, breakdown table; browser test.                                                  |
+| 2026-10-17 | 1.3.0   | Released in v1.3.0 (R4 Daily work).                                                                                                            |
+| 2026-10-18 | 2.0.0   | v2 (R7): v2 stages and benchmarks, Contacted = first touch of any kind, Proposal sent and Active customer, plan reply rates per plan and step. |
+| 2026-10-18 | 2.0.0   | Released in v2.0.0 (R7 Plans).                                                                                                                 |

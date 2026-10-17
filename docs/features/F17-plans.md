@@ -1,6 +1,6 @@
 # F17: Plans
 
-- **Priority:** P0 · **Release:** R7 (v2.0.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R7 (v2.0.0) · **Status:** Done (v2.0.0)
 - **PRD:** [Version 2 scope → F17 Plans; Cadence guardrails](../PRD.md#version-2-scope-r7r9)
 - **Decisions:** D-030 (guardrails), D-031 (scheduling), D-033 (owner's answers), D-034 (build choices)
 
@@ -150,10 +150,11 @@ missing seed plans and never changes existing ones.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                                                                                                                                                                          |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-18 | Unreleased | Feature doc written (R7), before code.                                                                                                                                                                                                                                          |
-| 2026-10-18 | Unreleased | Guardrails (checkPlan, checkTouch) and scheduling rules built with tests, including acceptance on day 13.                                                                                                                                                                       |
-| 2026-10-18 | Unreleased | Plans page, plan page and builder (live guardrail checks), versions, duplicate, propose, archive; plan proposals in Approvals; plan permissions.                                                                                                                                |
-| 2026-10-18 | Unreleased | Enrolment: enrol from People or the person page; Plan panel (Done, call outcomes, Snooze, Pause/Resume, Switch, Stop, Withdraw, Nurture/Lost); quick-log "Is this step N?"; replies pause plans; Do not contact stops them; placeholder block; local test date switch on About. |
-| 2026-10-18 | Unreleased | R7 browser exit check added (e2e/r7-exit-check.spec.ts).                                                                                                                                                                                                                        |
+| Date       | Version | Change                                                                                                                                                                                                                                                                          |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-18 | 2.0.0   | Feature doc written (R7), before code.                                                                                                                                                                                                                                          |
+| 2026-10-18 | 2.0.0   | Guardrails (checkPlan, checkTouch) and scheduling rules built with tests, including acceptance on day 13.                                                                                                                                                                       |
+| 2026-10-18 | 2.0.0   | Plans page, plan page and builder (live guardrail checks), versions, duplicate, propose, archive; plan proposals in Approvals; plan permissions.                                                                                                                                |
+| 2026-10-18 | 2.0.0   | Enrolment: enrol from People or the person page; Plan panel (Done, call outcomes, Snooze, Pause/Resume, Switch, Stop, Withdraw, Nurture/Lost); quick-log "Is this step N?"; replies pause plans; Do not contact stops them; placeholder block; local test date switch on About. |
+| 2026-10-18 | 2.0.0   | R7 browser exit check added (e2e/r7-exit-check.spec.ts).                                                                                                                                                                                                                        |
+| 2026-10-18 | 2.0.0   | Released in v2.0.0 (R7 Plans).                                                                                                                                                                                                                                                  |

@@ -449,3 +449,9 @@ replaces it.
   - **The test date switch** lives on the About page, as a cookie. It shows only when the
     database is a local file, and the server refuses it otherwise.
 - **Why:** Gaps the PRD doesn't cover; none changes what the PRD or D-033 says.
+
+## D-035: Dependency warnings rechecked at v2.0.0
+
+- **Date:** 2026-10-18 · **Status:** Accepted. Confirms D-027.
+- **Decision:** Same 9 build-time warnings (ESLint's `braces`, drizzle-kit's esbuild). R7 added no
+  packages. None reach the live app. Recheck at v2.1.0.

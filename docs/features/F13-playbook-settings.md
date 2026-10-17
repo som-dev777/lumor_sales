@@ -49,10 +49,11 @@ The v1 follow-up delays (4/7/10 days) were removed: each plan step has its own w
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                  |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | 1.4.0      | Placeholder doc created.                                                                                |
-| 2026-10-17 | 1.4.0      | Full doc written (R5).                                                                                  |
-| 2026-10-17 | 1.4.0      | Rules, page and edit form built (limits, delays in order, audited); used by quick-log; R5 browser test. |
-| 2026-10-17 | 1.4.0      | Released in v1.4.0 (R5 Settings).                                                                       |
-| 2026-10-18 | Unreleased | v2 (R7): follow-up delays removed; cadence guardrail values and AI reply-deadline bounds added.         |
+| Date       | Version | Change                                                                                                  |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.4.0   | Placeholder doc created.                                                                                |
+| 2026-10-17 | 1.4.0   | Full doc written (R5).                                                                                  |
+| 2026-10-17 | 1.4.0   | Rules, page and edit form built (limits, delays in order, audited); used by quick-log; R5 browser test. |
+| 2026-10-17 | 1.4.0   | Released in v1.4.0 (R5 Settings).                                                                       |
+| 2026-10-18 | 2.0.0   | v2 (R7): follow-up delays removed; cadence guardrail values and AI reply-deadline bounds added.         |
+| 2026-10-18 | 2.0.0   | Released in v2.0.0 (R7 Plans).                                                                          |

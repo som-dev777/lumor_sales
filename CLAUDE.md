@@ -78,7 +78,6 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Current instruction (2026-10-18): build all of R7 (steps 1–8 of the approved plan) in one
-go: full checks, commit and push after every step, fix failing checks yourself. Stop only if a
-decision would change the PRD or D-033, if existing data could be lost or damaged, or if
-blocked. At v2.0.0 give one summary (built, own choices, tests, exit check and QA steps).
+Done (2026-10-18): R7 (v2.0.0) is built and released. The owner now runs R7's exit check and
+the QA checklist (docs/qa-checklist.md). Fixes are PATCH releases (2.0.1, …); R8 starts on
+the owner's go-ahead.
