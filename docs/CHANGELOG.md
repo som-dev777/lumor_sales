@@ -10,7 +10,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-Nothing yet. R6 (AI: Today planner, Reply Assistant, summaries and drafts) starts next.
+R6 AI, in progress.
+
+- Feature docs written for Today (F08), Reply Assistant (F09) and Summary/Draft (F10); the four AI prompts recorded word for word in docs/ai-prompts.md.
 
 ## [1.4.0] - 2026-10-17
 

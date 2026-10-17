@@ -13,7 +13,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | [CHANGELOG.md](CHANGELOG.md)                 | Every change, grouped by release.                                |
 | [data-model.md](data-model.md)               | Every database table, column, rule and trigger.                  |
 | [roles-permissions.md](roles-permissions.md) | Who can do what, and how the server enforces it.                 |
-| [ai-prompts.md](ai-prompts.md)               | The AI prompts, word for word, with versions (filled in R6).     |
+| [ai-prompts.md](ai-prompts.md)               | The AI prompts, word for word, with versions.                    |
 | [decisions.md](decisions.md)                 | Significant choices and why they were made.                      |
 | [deploy.md](deploy.md)                       | Putting the app online (Turso + Netlify), step by step.          |
 | [features/](features/)                       | One file per feature (F01–F16): requirements, tests, change log. |
@@ -36,9 +36,9 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F11 | [Dashboard](features/F11-dashboard.md)                          | P0       | R4      | Done (1.3.0) |
 | F12 | [Product Facts](features/F12-product-facts.md)                  | P0       | R5      | Done (1.4.0) |
 | F13 | [Playbook Settings](features/F13-playbook-settings.md)          | P0       | R5      | Done (1.4.0) |
-| F08 | [Today planner](features/F08-today-planner.md)                  | P1       | R6      | Planned      |
-| F09 | [Reply Assistant](features/F09-reply-assistant.md)              | P1       | R6      | Planned      |
-| F10 | [Conversation summary and draft](features/F10-summary-draft.md) | P1       | R6      | Planned      |
+| F08 | [Today planner](features/F08-today-planner.md)                  | P1       | R6      | In progress  |
+| F09 | [Reply Assistant](features/F09-reply-assistant.md)              | P1       | R6      | In progress  |
+| F10 | [Conversation summary and draft](features/F10-summary-draft.md) | P1       | R6      | In progress  |
 
 ## Releases
 
@@ -49,7 +49,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | R3 Leads      | 1.2.0   | F02, F03           | Released 2026-10-17 |
 | R4 Daily work | 1.3.0   | F15, F11           | Released 2026-10-17 |
 | R5 Settings   | 1.4.0   | F12, F13           | Released 2026-10-17 |
-| R6 AI         | 1.5.0   | F08, F09, F10      | Planned             |
+| R6 AI         | 1.5.0   | F08, F09, F10      | In progress         |
 
 ## Running the app locally
 
