@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/shell/PageHeader";
 import { TodayList } from "@/components/today/TodayList";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { getDb } from "@/lib/db/client";
+import { appNow } from "@/lib/clock";
 import { requireUser } from "@/lib/session";
 import { formatIstDate } from "@/lib/time";
 import { aiMode } from "@/server/ai/client";
@@ -30,7 +31,7 @@ export default function TodayPage() {
 async function Today() {
   const viewer = await requireUser();
   await connection();
-  const plan = await buildToday(getDb(), viewer);
+  const plan = await buildToday(getDb(), viewer, await appNow());
   return (
     <>
       <PageHeader

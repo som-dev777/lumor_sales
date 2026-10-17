@@ -23,6 +23,7 @@ R7 Plans (v2.0.0), in progress.
 - Enrol people in a plan from People (select rows) or the person page. The person page's Plan panel shows the current step with the message filled in (or the call script) and Done, call outcomes, Snooze, Pause/Resume, Switch and Stop. Done is refused while a {placeholder} is unfilled.
 - Replies (logged or pasted into the Reply Assistant) pause the plan; Do not contact stops it; unaccepted invites are withdrawn after 14 days and finished plans end in Nurture or Lost.
 - Quick-log checks the cadence guardrails and asks "Is this step N of their plan?" when it matches the current step.
+- **Today** is now driven by plans: replies waiting, meetings, expired reply deadlines, plan steps due and overdue, trial check-ins, finished plans (Nurture or Lost), Nurture checks, and stale leads not on a plan. Each step shows the exact message or call script, with Done right there.
 - About page (local test database only): a test date switch to check late steps and weekends without waiting.
 - AI prompts P01–P04 updated to version 1.1 (v2 stage names; every follow-up must add something new).
 

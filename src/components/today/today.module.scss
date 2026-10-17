@@ -159,3 +159,45 @@
   color: var(--color-text-muted);
   font-size: var(--text-sm);
 }
+
+.script {
+  margin-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+}
+
+.outcomes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+
+  &:hover {
+    text-decoration: none;
+    background: var(--color-page);
+  }
+}
+
+.dialogBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.warnList {
+  margin: 0;
+  padding-left: var(--space-5);
+}

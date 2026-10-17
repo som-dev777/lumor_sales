@@ -1,24 +1,34 @@
-// Today planner (F08): rules build the rep's task list; AI prompt P01 can then order and
-// explain it. Done logs the matching quick-log; Snooze hides a lead until tomorrow.
-import { and, asc, desc, eq, gte, inArray, isNull, lte, notInArray, or } from "drizzle-orm";
+// Today planner (F08 v2): driven by plans and deadlines. Rules build the rep's list; AI prompt
+// P01 can then order and explain it. Step tasks carry the exact message or call script.
+import { and, asc, desc, eq, gte, inArray, lte, ne } from "drizzle-orm";
 import { z } from "zod";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
 import { accountFilter, activity, company, person, persona } from "@/lib/db/schema";
 import { assertCan, type Actor } from "@/lib/permissions";
 import { addDaysIst, formatIstDate, toIstDate, todayIst } from "@/lib/time";
+import { SECTIONS, type SectionKey } from "@/lib/today-sections";
 import { runPrompt } from "./ai/client";
 import { LeadError } from "./leads/companies";
 import { loadPerson } from "./leads/people";
 import { getPlaybookSettings, quickLog, type QuickLog } from "./leads/quicklog";
-
-import { SECTIONS, type SectionKey } from "@/lib/today-sections";
+import { planState } from "./plans/enrolment";
 
 export { SECTIONS, type SectionKey };
+
+/** What a task's main button does. */
+export type TaskKind =
+  | "step" // do the plan step (message, call, task, connection request)
+  | "withdraw" // withdraw an unaccepted invite
+  | "finished" // Nurture or Lost
+  | "nurture" // Nurture ended: enrol again or Lost
+  | "quick" // a quick-log (Mark replied, Meeting held, Recap sent)
+  | "open"; // nothing to log here: open the lead
 
 export type Task = {
   id: string;
   section: SectionKey;
+  kind: TaskKind;
   personId: string;
   name: string;
   title: string | null;
@@ -26,48 +36,21 @@ export type Task = {
   persona: string | null;
   tier: number | null;
   detail: string;
-  /** What Done logs, or null when there's no Done (stale leads). */
+  /** Label of the quick-log for "quick" tasks. */
   doneLabel: string | null;
+  // Plan step details (kind "step").
+  planName?: string;
+  channel?: string | null;
+  message?: string | null;
+  script?: string | null;
+  email?: string | null;
   reason?: string;
 };
 
-const FOLLOW_UP_ACTIONS = [
-  "Send Message 1",
-  "Send Follow-up 1",
-  "Send Follow-up 2",
-  "Send Break-up",
-];
-
-/** Which quick-log a task's Done runs (F08 table). */
-function doneFor(section: SectionKey, nextAction: string | null): QuickLog | null {
-  switch (section) {
-    case "reply":
-      return { action: "responded" };
-    case "demo":
-      return nextAction === "Send recap" ? { action: "recapSent" } : { action: "meetingHeld" };
-    case "followUp":
-      return { action: "messageSent" };
-    case "withdraw":
-      return { action: "requestWithdrawn" };
-    case "stale":
-      return null;
-  }
-}
-
-const DONE_LABELS: Record<QuickLog["action"], string> = {
-  responded: "Mark replied",
-  recapSent: "Recap sent",
-  meetingHeld: "Meeting held",
-  messageSent: "Sent",
-  requestWithdrawn: "Withdrawn",
-  requestSent: "Done",
-  accepted: "Done",
-  gotReply: "Done",
-  meetingBooked: "Done",
-  callLogged: "Done",
-  proposalSent: "Done",
-  markConverted: "Done",
-  markLost: "Done",
+const QUICK_DONE: Record<string, { log: QuickLog; label: string }> = {
+  reply: { log: { action: "responded" }, label: "Mark replied" },
+  meeting: { log: { action: "meetingHeld" }, label: "Meeting held" },
+  recap: { log: { action: "recapSent" }, label: "Recap sent" },
 };
 
 export type TodayPlan = {
@@ -83,7 +66,9 @@ export type TodayPlan = {
   week: Record<string, number>;
 };
 
-/** The rule-based list for one rep's own leads (F08 sections, in order). */
+const CLOSED = ["Lost", "Paid", "Active customer"] as const;
+
+/** The rep's list for today (F08 v2), one task per lead, in section order. */
 export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): Promise<TodayPlan> {
   const today = todayIst(now);
   const settings = await getPlaybookSettings(db);
@@ -93,11 +78,7 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
     .leftJoin(company, eq(company.id, person.companyId))
     .leftJoin(persona, eq(persona.id, person.personaId))
     .where(
-      and(
-        eq(person.ownerId, viewer.id),
-        notInArray(person.stage, ["Lost", "Paid"]),
-        or(isNull(person.snoozedUntil), lte(person.snoozedUntil, today)),
-      ),
+      and(eq(person.ownerId, viewer.id), ne(person.stage, "Lost"), eq(person.doNotContact, false)),
     );
 
   const ids = leads.map((l) => l.p.id);
@@ -109,65 +90,114 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
         .orderBy(desc(activity.occurredAt))
     : [];
   const latest = new Map<string, { type: string; at: Date }>();
-  const lastRequest = new Map<string, Date>();
   for (const e of events) {
-    if (!e.personId) continue;
-    if (!latest.has(e.personId)) latest.set(e.personId, e);
-    if (e.type === "Request sent" && !lastRequest.has(e.personId))
-      lastRequest.set(e.personId, e.at);
+    if (e.personId && !latest.has(e.personId)) latest.set(e.personId, e);
   }
-
-  const withdrawBefore = addDaysIst(today, -settings.withdrawAfterDays);
   const staleBefore = addDaysIst(today, -settings.staleLeadDays);
   const due = (d: string | null) => d !== null && d <= today;
-  const when = (d: string | null) => (d ? ` · due ${formatIstDate(d)}` : "");
 
   const tasks: Task[] = [];
   for (const { p, companyName, personaName, tier } of leads) {
-    const last = latest.get(p.id);
-    let section: SectionKey | null = null;
-    let detail = "";
-    if (last?.type === "Reply received") {
-      section = "reply";
-      detail = `Replied ${formatIstDate(toIstDate(last.at))}`;
-    } else if (
-      (p.nextAction === "Hold meeting" && due(p.nextActionDate)) ||
-      (p.stage === "Meeting done" && p.nextAction === "Send recap" && due(p.nextActionDate))
-    ) {
-      section = "demo";
-      detail = `${p.nextAction}${when(p.nextActionDate)}`;
-    } else if (FOLLOW_UP_ACTIONS.includes(p.nextAction ?? "") && due(p.nextActionDate)) {
-      section = "followUp";
-      detail = `${p.nextAction}${when(p.nextActionDate)}`;
-    } else if (p.stage === "Contacted" && lastRequest.has(p.id)) {
-      const sent = toIstDate(lastRequest.get(p.id)!);
-      if (sent < withdrawBefore) {
-        section = "withdraw";
-        detail = `Request sent ${formatIstDate(sent)}, not accepted`;
-      }
-    }
-    if (!section) {
-      const lastDay = toIstDate(last?.at ?? p.createdAt);
-      if (lastDay < staleBefore) {
-        section = "stale";
-        detail = last ? `No activity since ${formatIstDate(lastDay)}` : "Nothing logged yet";
-      }
-    }
-    if (!section) continue;
-    const done = doneFor(section, p.nextAction);
-    tasks.push({
-      id: `${section}:${p.id}`,
-      section,
+    const base = {
       personId: p.id,
       name: p.fullName,
       title: p.title,
       company: companyName,
       persona: personaName,
       tier,
-      detail,
-      doneLabel: done ? DONE_LABELS[done.action] : null,
-    });
+      doneLabel: null,
+    };
+    const snoozed = p.snoozedUntil !== null && p.snoozedUntil > today;
+    const last = latest.get(p.id);
+    const push = (section: SectionKey, kind: TaskKind, detail: string, extra: Partial<Task> = {}) =>
+      tasks.push({ ...base, id: `${section}:${p.id}`, section, kind, detail, ...extra });
+
+    // 1. Replies waiting.
+    if (last?.type === "Reply received" && !snoozed) {
+      push("reply", "quick", `Replied ${formatIstDate(toIstDate(last.at))}`, {
+        doneLabel: QUICK_DONE.reply.label,
+      });
+      continue;
+    }
+    // 2. Meetings today (and recaps after them).
+    if (
+      !snoozed &&
+      due(p.nextActionDate) &&
+      (p.nextAction === "Hold meeting" || p.nextAction === "Send recap")
+    ) {
+      const recap = p.nextAction === "Send recap";
+      push("meeting", "quick", `${p.nextAction} · ${formatIstDate(p.nextActionDate!)}`, {
+        doneLabel: recap ? QUICK_DONE.recap.label : QUICK_DONE.meeting.label,
+      });
+      continue;
+    }
+    // 3. Expired reply deadlines (dates are set from R8, F18).
+    if (!snoozed && p.awaitingReplyUntil && p.awaitingReplyUntil < today) {
+      push("deadline", "open", `Expected a reply by ${formatIstDate(p.awaitingReplyUntil)}`);
+      continue;
+    }
+    // 4–7. Plans.
+    const state = await planState(db, p.id, today);
+    if (state) {
+      const e = state.enrolment;
+      if (state.finished && e.status === "Active") {
+        push(
+          "finished",
+          "finished",
+          state.step ? "The plan's time limit has passed" : `All ${state.steps.length} steps done`,
+          { planName: state.plan.name },
+        );
+        continue;
+      }
+      if (e.status !== "Active") continue; // paused: they're in a conversation
+      if (state.withdrawDue) {
+        push(
+          "due",
+          "withdraw",
+          `No acceptance since ${formatIstDate(e.requestSentDate ?? today)}. Withdraw the invite.`,
+          { planName: state.plan.name },
+        );
+        continue;
+      }
+      if (!e.waitingForAcceptance && e.nextDueDate && e.nextDueDate <= today) {
+        const late = e.nextDueDate < today;
+        const section: SectionKey =
+          state.plan.planType === "Trial" ? "trial" : late ? "overdue" : "due";
+        push(
+          section,
+          "step",
+          `Step ${e.currentStep} of ${state.steps.length}: ${state.channel}${late ? ` · due ${formatIstDate(e.nextDueDate)}` : ""}`,
+          {
+            planName: state.plan.name,
+            channel: state.channel,
+            message: state.message,
+            script: state.step?.script ?? null,
+            email: p.email,
+          },
+        );
+      }
+      continue;
+    }
+    // 8. Nurture checks.
+    if (p.nurtureUntil) {
+      if (p.nurtureUntil <= today && !snoozed) {
+        push("nurture", "nurture", `Nurture ended ${formatIstDate(p.nurtureUntil)}`);
+      }
+      continue;
+    }
+    // 9. Stale leads not on any plan.
+    if (!snoozed && !(CLOSED as readonly string[]).includes(p.stage)) {
+      const lastDay = toIstDate(last?.at ?? p.createdAt);
+      if (lastDay < staleBefore) {
+        push(
+          "stale",
+          "open",
+          last ? `No activity since ${formatIstDate(lastDay)}` : "Nothing logged yet",
+        );
+      }
+    }
   }
+
   const order = SECTIONS.map((s) => s.key);
   tasks.sort(
     (a, b) =>
@@ -185,6 +215,7 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
       and(
         eq(activity.userId, viewer.id),
         gte(activity.occurredAt, new Date(startOfDay.getTime() - 6 * 86_400_000)),
+        lte(activity.occurredAt, new Date(startOfDay.getTime() + 86_400_000)),
       ),
     );
   const sent = mine.filter((a) => a.type === "Request sent" && a.at >= startOfDay).length;
@@ -215,29 +246,37 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
     week: {
       requestsSent: count("Request sent"),
       requestsAccepted: count("Request accepted"),
-      messagesSent: count("Message sent"),
+      messagesSent: count("Message sent") + count("InMail sent"),
+      callsMade: count("Call"),
       repliesReceived: count("Reply received"),
-      demosBooked: count("Demo booked"),
-      demosHeld: count("Demo held"),
+      meetingsBooked: count("Meeting booked"),
+      meetingsHeld: count("Meeting held"),
       dailyConnectionTarget: settings.dailyConnectionTarget,
       dailyMessageTarget: settings.dailyMessageTarget,
     },
   };
 }
 
-// --- Done and Snooze -------------------------------------------------------------------------
+// --- Quick tasks and Snooze (non-plan tasks) ------------------------------------------------
 
-/** Done on a task: runs the matching quick-log (F08 table). */
+/** Done on a reply or meeting task: runs the matching quick-log. */
 export async function completeTask(db: Db, actor: Actor, taskId: string, now = new Date()) {
   const [section, personId] = taskId.split(":") as [SectionKey, string];
   if (!SECTIONS.some((s) => s.key === section) || !personId) throw new LeadError("Unknown task.");
   const p = await loadPerson(db, personId);
-  const done = doneFor(section, p.nextAction);
+  const done =
+    section === "reply"
+      ? QUICK_DONE.reply.log
+      : section === "meeting"
+        ? p.nextAction === "Send recap"
+          ? QUICK_DONE.recap.log
+          : QUICK_DONE.meeting.log
+        : null;
   if (!done) throw new LeadError("Open the lead to work on it.");
   return quickLog(db, actor, personId, done, { now });
 }
 
-/** Snooze to tomorrow: hidden from Today until then. Audited. */
+/** Snooze a non-plan task to tomorrow: the lead is hidden from those sections until then. */
 export async function snoozeLead(db: Db, actor: Actor, personId: string, now = new Date()) {
   return db.transaction(async (tx) => {
     const before = await loadPerson(tx, personId);
@@ -297,6 +336,7 @@ export async function rankToday(db: Db, viewer: Actor, now = new Date()) {
         company: t.company,
         persona: t.persona,
         personaTier: t.tier,
+        plan: t.planName ?? null,
         detail: t.detail,
       })),
       ACTIVITY: plan.week,

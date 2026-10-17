@@ -5,6 +5,7 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { errorMessage } from "@/lib/action-result";
+import { appNow } from "@/lib/clock";
 import { getDb } from "@/lib/db/client";
 import { REPLY_TYPES } from "@/lib/db/enums";
 import { PermissionError } from "@/lib/permissions";
@@ -51,7 +52,8 @@ export async function assistReply(
   const parsed = pasted.safeParse(text);
   if (!id.safeParse(personId).success) return bad("Unknown person.");
   if (!parsed.success) return bad(parsed.error.issues[0].message);
-  const saved = await run(() => savePastedReply(getDb(), viewer, personId, parsed.data));
+  const now = await appNow();
+  const saved = await run(() => savePastedReply(getDb(), viewer, personId, parsed.data, now));
   if (!saved.ok) return saved;
   refresh();
   const ai = await run(() => suggestReplies(getDb(), viewer, saved.data.id));
@@ -135,13 +137,15 @@ export async function draftMessage(personId: string, templateId: string) {
 
 export async function rankMyDay(): Promise<AiResult<{ tasks: Task[]; summary: string | null }>> {
   const viewer = await requireUser();
-  return run(() => rankToday(getDb(), viewer));
+  const now = await appNow();
+  return run(() => rankToday(getDb(), viewer, now));
 }
 
 export async function doneTask(taskId: string) {
   const viewer = await requireUser();
   if (typeof taskId !== "string" || taskId.length > 100) return bad("Unknown task.");
-  const r = await run(() => completeTask(getDb(), viewer, taskId));
+  const now = await appNow();
+  const r = await run(() => completeTask(getDb(), viewer, taskId, now));
   if (r.ok) refresh();
   return r.ok ? { ok: true as const, data: null } : r;
 }
@@ -149,7 +153,8 @@ export async function doneTask(taskId: string) {
 export async function snoozeTask(personId: string) {
   const viewer = await requireUser();
   if (!id.safeParse(personId).success) return bad("Unknown person.");
-  const r = await run(() => snoozeLead(getDb(), viewer, personId));
+  const now = await appNow();
+  const r = await run(() => snoozeLead(getDb(), viewer, personId, now));
   if (r.ok) refresh();
   return r.ok ? { ok: true as const, data: null } : r;
 }

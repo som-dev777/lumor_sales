@@ -58,10 +58,11 @@ is clicked. If AI isn't set up, fails, or takes over 30 seconds, the list stays 
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                   |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------ |
-| 2026-10-16 | 1.5.0      | Placeholder doc created.                                                                                                 |
-| 2026-10-17 | 1.5.0      | Full doc written (R6).                                                                                                   |
-| 2026-10-17 | 1.5.0      | Today page built: sections, target bar, Done, Snooze (snoozed_until), Rank with AI (P01) with fallback; R6 browser test. |
-| 2026-10-17 | 1.5.0      | Released in v1.5.0 (R6 AI).                                                                                              |
-| 2026-10-18 | Unreleased | Rewritten for v2 (R7): plan-driven sections, step tasks with message or script, Nurture checks.                          |
+| Date       | Version    | Change                                                                                                                                                           |
+| ---------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.5.0      | Placeholder doc created.                                                                                                                                         |
+| 2026-10-17 | 1.5.0      | Full doc written (R6).                                                                                                                                           |
+| 2026-10-17 | 1.5.0      | Today page built: sections, target bar, Done, Snooze (snoozed_until), Rank with AI (P01) with fallback; R6 browser test.                                         |
+| 2026-10-17 | 1.5.0      | Released in v1.5.0 (R6 AI).                                                                                                                                      |
+| 2026-10-18 | Unreleased | Rewritten for v2 (R7): plan-driven sections, step tasks with message or script, Nurture checks.                                                                  |
+| 2026-10-18 | Unreleased | Plan-driven Today built: v2 sections, step tasks with the message or call script, Done/outcomes, Withdraw, Nurture/Lost, Nurture checks, guardrail-aware Snooze. |
