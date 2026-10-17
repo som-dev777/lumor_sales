@@ -11,6 +11,7 @@ import { summariseChanges } from "@/lib/audit-format";
 import { getDb } from "@/lib/db/client";
 import { formatIst } from "@/lib/time";
 import { auditFilterOptions, parseAuditFilters, searchAuditLog } from "@/server/audit-query";
+import { auditNameMap } from "@/server/audit-names";
 
 export const metadata: Metadata = { title: "Audit Log" };
 
@@ -40,6 +41,10 @@ async function Results({ searchParams }: Pick<PageProps<"/audit-log">, "searchPa
     auditFilterOptions(db),
   ]);
 
+  const names = await auditNameMap(
+    db,
+    entries.map((e) => e.changes),
+  );
   const query = toQuery(filters);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const pageHref = (n: number) => `/audit-log${toQuery(filters, n)}`;
@@ -71,6 +76,7 @@ async function Results({ searchParams }: Pick<PageProps<"/audit-log">, "searchPa
             Showing {first}–{last} of {total} {total === 1 ? "entry" : "entries"}, newest first.
           </p>
           <AuditTable
+            names={names}
             rows={entries.map((e) => ({
               id: e.id,
               when: formatIst(e.occurredAt),
@@ -78,7 +84,7 @@ async function Results({ searchParams }: Pick<PageProps<"/audit-log">, "searchPa
               action: e.action,
               entityType: e.entityType,
               recordName: e.recordName,
-              summary: summariseChanges(e.changes),
+              summary: summariseChanges(e.changes, names),
               changes: e.changes,
             }))}
           />

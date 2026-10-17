@@ -18,8 +18,8 @@ async function newPage(browser: Browser) {
 
 async function logIn(page: Page, email: string, password: string) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await shown(page.getByLabel("Email")).fill(email);
+  await shown(page.getByLabel("Password")).fill(password);
   await page.getByRole("button", { name: "Log in" }).click();
 }
 
@@ -59,10 +59,10 @@ test("a default Admin logs in and sees all 11 menu items", async () => {
 test("sign-up: only @lumor.tech, never a default Admin email", async () => {
   await rep.goto("/signup");
   const fill = async (email: string) => {
-    await rep.getByLabel("Full name").fill(REP.name);
-    await rep.getByLabel("Work email").fill(email);
-    await rep.getByLabel("Password", { exact: true }).fill(REP.password);
-    await rep.getByLabel("Confirm password").fill(REP.password);
+    await shown(rep.getByLabel("Full name")).fill(REP.name);
+    await shown(rep.getByLabel("Work email")).fill(email);
+    await shown(rep.getByLabel("Password", { exact: true })).fill(REP.password);
+    await shown(rep.getByLabel("Confirm password")).fill(REP.password);
     await rep.getByRole("button", { name: "Create account" }).click();
   };
   await fill("asha@gmail.com");
@@ -87,7 +87,7 @@ test("a User sees 9 menu items and is refused Admin pages", async () => {
 test("exit check: an Admin invites a user, who registers through the link", async ({ browser }) => {
   await admin.goto("/settings/users");
   await admin.getByRole("button", { name: "Invite person" }).click();
-  await admin.getByLabel("Email").fill("partner@agency.com");
+  await shown(admin.getByLabel("Email")).fill("partner@agency.com");
   await admin.getByRole("button", { name: "Create invite link" }).click();
   const link = await admin.getByRole("textbox", { name: "Invite link" }).inputValue();
   await admin.getByRole("button", { name: "Done" }).click();
@@ -95,9 +95,9 @@ test("exit check: an Admin invites a user, who registers through the link", asyn
 
   const partner = await newPage(browser);
   await partner.goto(link);
-  await partner.getByLabel("Full name").fill("Agency Partner");
-  await partner.getByLabel("Password", { exact: true }).fill("partner-password-1");
-  await partner.getByLabel("Confirm password").fill("partner-password-1");
+  await shown(partner.getByLabel("Full name")).fill("Agency Partner");
+  await shown(partner.getByLabel("Password", { exact: true })).fill("partner-password-1");
+  await shown(partner.getByLabel("Confirm password")).fill("partner-password-1");
   await partner.getByRole("button", { name: "Create account" }).click();
   await expect(partner).toHaveURL(/\/login\?registered=1/);
   await partner.goto(link);
@@ -134,8 +134,8 @@ test("reactivating lets them back in; a reset link sets a new password", async (
   await admin.getByRole("button", { name: "Done" }).click();
 
   await rep.goto(resetLink);
-  await rep.getByLabel("New password", { exact: true }).fill("rep-new-password");
-  await rep.getByLabel("Confirm new password").fill("rep-new-password");
+  await shown(rep.getByLabel("New password", { exact: true })).fill("rep-new-password");
+  await shown(rep.getByLabel("Confirm new password")).fill("rep-new-password");
   await rep.getByRole("button", { name: "Save new password" }).click();
   await expect(rep).toHaveURL(/\/login\?reset=1/);
   await logIn(rep, REP.email, "rep-new-password");

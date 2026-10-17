@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { AppShell } from "@/components/shell/AppShell";
-import { Sidebar } from "@/components/shell/Sidebar";
+import { SidebarPlaceholder } from "@/components/shell/Sidebar";
 import { SignedInSidebar } from "@/components/shell/SignedInSidebar";
 import { ToastProvider } from "@/components/ui/Toast";
 
@@ -11,7 +11,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
     <ToastProvider>
       <AppShell
         sidebar={
-          <Suspense fallback={<Sidebar role={null} />}>
+          <Suspense fallback={<SidebarPlaceholder />}>
             <SignedInSidebar />
           </Suspense>
         }

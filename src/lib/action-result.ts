@@ -1,7 +1,7 @@
 /** What a Server Action sends back to its form when it doesn't redirect. */
 export type ActionResult =
   | { ok: true; message?: string; link?: string }
-  | { ok: false; error: string; fieldErrors?: Record<string, string> };
+  | { ok: false; error: string; fieldErrors?: Record<string, string>; link?: string };
 
 /** Turns Zod issues into one message per field, for showing under each input. */
 export function fieldErrorsFrom(issues: { path: PropertyKey[]; message: string }[]) {

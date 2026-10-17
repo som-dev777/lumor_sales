@@ -125,6 +125,8 @@ Better Auth's user table, with Lumor's fields added.
 | customer_start_date | plain date                     |
 | notes               | text                           |
 
+Unique: the company name, ignoring case and surrounding spaces (`lower(trim(name))`, D-021).
+
 ### person
 
 | Column                  | Rules                                                |

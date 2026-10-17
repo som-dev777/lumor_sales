@@ -207,7 +207,7 @@ export function ItemActions({
                 <p className={styles.historyMeta}>
                   <strong>{h.action}</strong> by {h.who} · {h.when}
                 </p>
-                <ChangeDetails changes={h.changes} />
+                <ChangeDetails changes={h.changes} names={h.names} />
               </li>
             ))}
           </ol>

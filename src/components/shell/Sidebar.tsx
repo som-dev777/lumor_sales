@@ -18,8 +18,21 @@ type Props = {
   counts?: Record<string, number>;
 };
 
-export function Sidebar({ role, footer, counts = {} }: Props) {
+/** The sidebar, highlighting the page you're on. */
+export function Sidebar(props: Props) {
   const pathname = usePathname();
+  return <SidebarView {...props} pathname={pathname} />;
+}
+
+/**
+ * The same sidebar without reading the address: used as the loading placeholder, because
+ * pages with an id in the address (e.g. /companies/[id]) can't know it while pre-building.
+ */
+export function SidebarPlaceholder() {
+  return <SidebarView role={null} pathname={null} />;
+}
+
+function SidebarView({ role, footer, counts = {}, pathname }: Props & { pathname: string | null }) {
   const [open, setOpen] = useState(false);
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || role === "Admin");
 
@@ -74,7 +87,7 @@ export function Sidebar({ role, footer, counts = {} }: Props) {
         <nav aria-label="Main" className={styles.nav}>
           <ul>
             {items.map((item) => {
-              const active = isActive(item, pathname);
+              const active = pathname !== null && isActive(item, pathname);
               const Icon = item.icon;
               return (
                 <li key={item.href}>

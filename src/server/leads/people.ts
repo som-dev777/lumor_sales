@@ -403,3 +403,46 @@ export async function peopleForExport(db: DbOrTx, f: PeopleFilters) {
 export function canLogOutreach(actor: Actor, ownerId: string) {
   return can(actor, "lead.edit", { ownerId });
 }
+
+/** Reads People filters from the page address. Users default to "My leads", Admins to "All". */
+export function parsePeopleFilters(
+  params: Record<string, string | string[] | undefined>,
+  viewer: { id: string; role: string },
+): PeopleFilters {
+  const one = (k: string) => {
+    const v = params[k];
+    const s = (Array.isArray(v) ? v[0] : v)?.trim();
+    return s ? s.slice(0, 200) : undefined;
+  };
+  const view = one("view") ?? (viewer.role === "Admin" ? "all" : "mine");
+  const next = one("next");
+  return {
+    mine: view === "mine",
+    viewerId: viewer.id,
+    q: one("q"),
+    ownerId: view === "mine" ? undefined : one("owner"),
+    personaId: one("persona"),
+    level: one("level"),
+    accountFilterId: one("filter"),
+    stage: one("stage"),
+    market: one("market"),
+    next: next === "overdue" || next === "today" || next === "week" ? next : undefined,
+  };
+}
+
+/** The filters back as an address query (for links, paging and export). */
+export function peopleQueryString(f: PeopleFilters, extra: Record<string, string> = {}) {
+  const p = new URLSearchParams();
+  p.set("view", f.mine ? "mine" : "all");
+  const set = (k: string, v?: string) => v && p.set(k, v);
+  set("q", f.q);
+  set("owner", f.ownerId);
+  set("persona", f.personaId);
+  set("level", f.level);
+  set("filter", f.accountFilterId);
+  set("stage", f.stage);
+  set("market", f.market);
+  set("next", f.next);
+  for (const [k, v] of Object.entries(extra)) p.set(k, v);
+  return `?${p.toString()}`;
+}

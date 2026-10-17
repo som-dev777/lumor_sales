@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/db/client";
 import { formatIst } from "@/lib/time";
 import { historyFor } from "@/server/audit-query";
+import { auditNameMap } from "@/server/audit-names";
 import { ChangeDetails } from "./ChangeDetails";
 import styles from "./audit.module.scss";
 
@@ -16,7 +17,12 @@ export async function ChangeHistory({
   entityType: string;
   recordId: string;
 }) {
-  const entries = await historyFor(getDb(), entityType, recordId);
+  const db = getDb();
+  const entries = await historyFor(db, entityType, recordId);
+  const names = await auditNameMap(
+    db,
+    entries.map((e) => e.changes),
+  );
   return (
     <section className={styles.history}>
       <h2 className={styles.historyTitle}>Change history</h2>
@@ -29,7 +35,7 @@ export async function ChangeHistory({
               <p className={styles.historyMeta}>
                 <strong>{e.action}</strong> by {e.userName ?? "System"} · {formatIst(e.occurredAt)}
               </p>
-              <ChangeDetails changes={e.changes} />
+              <ChangeDetails changes={e.changes} names={names} />
             </li>
           ))}
         </ol>

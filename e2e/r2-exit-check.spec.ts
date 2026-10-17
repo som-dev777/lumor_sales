@@ -34,17 +34,17 @@ async function confirm(page: Page, label: string) {
 test.beforeAll(async ({ browser }) => {
   admin = await newPage(browser);
   await admin.goto("/login");
-  await admin.getByLabel("Email").fill(ADMIN.email);
-  await admin.getByLabel("Password").fill(ADMIN.password);
+  await shown(admin.getByLabel("Email")).fill(ADMIN.email);
+  await shown(admin.getByLabel("Password")).fill(ADMIN.password);
   await admin.getByRole("button", { name: "Log in" }).click();
   await expect(admin).toHaveURL("/");
 
   rep = await newPage(browser);
   await rep.goto("/signup");
-  await rep.getByLabel("Full name").fill(REP.name);
-  await rep.getByLabel("Work email").fill(REP.email);
-  await rep.getByLabel("Password", { exact: true }).fill(REP.password);
-  await rep.getByLabel("Confirm password").fill(REP.password);
+  await shown(rep.getByLabel("Full name")).fill(REP.name);
+  await shown(rep.getByLabel("Work email")).fill(REP.email);
+  await shown(rep.getByLabel("Password", { exact: true })).fill(REP.password);
+  await shown(rep.getByLabel("Confirm password")).fill(REP.password);
   await rep.getByRole("button", { name: "Create account" }).click();
   await expect(rep).toHaveURL("/");
 });

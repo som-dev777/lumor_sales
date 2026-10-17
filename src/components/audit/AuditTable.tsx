@@ -9,6 +9,7 @@ import {
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { Fragment } from "react";
 import { Badge } from "@/components/ui/Badge";
+import type { NameMap } from "@/lib/audit-format";
 import type { AuditChanges } from "@/lib/db/schema";
 import { ChangeDetails } from "./ChangeDetails";
 import styles from "./audit.module.scss";
@@ -84,7 +85,7 @@ const columns = column.columns([
 ]);
 
 /** The audit entries, newest first. Click a row's arrow to see every field's before and after. */
-export function AuditTable({ rows }: { rows: AuditRow[] }) {
+export function AuditTable({ rows, names }: { rows: AuditRow[]; names: NameMap }) {
   const table = useTable({
     features,
     columns,
@@ -121,7 +122,7 @@ export function AuditTable({ rows }: { rows: AuditRow[] }) {
               {row.getIsExpanded() && (
                 <tr className={styles.detailRow}>
                   <td colSpan={columns.length}>
-                    <ChangeDetails changes={row.original.changes} />
+                    <ChangeDetails changes={row.original.changes} names={names} />
                   </td>
                 </tr>
               )}

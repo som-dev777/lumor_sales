@@ -7,6 +7,7 @@ import { can } from "@/lib/permissions";
 import { getViewer } from "@/lib/session";
 import { formatIst, todayIst } from "@/lib/time";
 import { allMatchingEntries, parseAuditFilters } from "@/server/audit-query";
+import { auditNameMap } from "@/server/audit-names";
 
 export async function GET(request: Request) {
   const viewer = await getViewer();
@@ -16,7 +17,12 @@ export async function GET(request: Request) {
   }
 
   const filters = parseAuditFilters(Object.fromEntries(new URL(request.url).searchParams));
-  const entries = await allMatchingEntries(getDb(), filters);
+  const db = getDb();
+  const entries = await allMatchingEntries(db, filters);
+  const names = await auditNameMap(
+    db,
+    entries.map((e) => e.changes),
+  );
   const csv = toCsv(
     ["When (IST)", "Who", "Action", "Type", "Record", "Record ID", "Changes", "Changes (JSON)"],
     entries.map((e) => [
@@ -26,7 +32,7 @@ export async function GET(request: Request) {
       e.entityType,
       e.recordName,
       e.recordId,
-      summariseChanges(e.changes),
+      summariseChanges(e.changes, names),
       JSON.stringify(e.changes),
     ]),
   );

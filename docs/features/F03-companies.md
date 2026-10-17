@@ -44,8 +44,9 @@ deal once they become a customer.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                          |
-| ---------- | ---------- | ----------------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                        |
-| 2026-10-17 | Unreleased | Full doc written (R3).                                                                          |
-| 2026-10-17 | Unreleased | Rules built: unique names, create/edit, mark as customer, lists, combined timeline; with tests. |
+| Date       | Version    | Change                                                                                              |
+| ---------- | ---------- | --------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                            |
+| 2026-10-17 | Unreleased | Full doc written (R3).                                                                              |
+| 2026-10-17 | Unreleased | Rules built: unique names, create/edit, mark as customer, lists, combined timeline; with tests.     |
+| 2026-10-17 | Unreleased | Companies list and company page (deal, people, combined timeline, mark as customer, history) built. |

@@ -74,10 +74,11 @@ before and after values. Nobody can edit or delete an entry, not even an Admin.
 
 ## Change history
 
-| Date       | Version | Change                                                                                                       |
-| ---------- | ------- | ------------------------------------------------------------------------------------------------------------ |
-| 2026-10-16 | 1.0.0   | Feature doc written (R1).                                                                                    |
-| 2026-10-16 | 1.0.0   | audit_log table and insert-only triggers added, with tests.                                                  |
-| 2026-10-16 | 1.0.0   | writeAudit() and diffChanges() added: changed fields only, secrets left out, saved together with the change. |
-| 2026-10-16 | 1.0.0   | Audit Log page, filters, CSV export, change history panel and lock-check command built.                      |
-| 2026-10-16 | 1.0.0   | Released in v1.0.0 (R1 Foundation).                                                                          |
+| Date       | Version    | Change                                                                                                                                |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.0.0      | Feature doc written (R1).                                                                                                             |
+| 2026-10-16 | 1.0.0      | audit_log table and insert-only triggers added, with tests.                                                                           |
+| 2026-10-16 | 1.0.0      | writeAudit() and diffChanges() added: changed fields only, secrets left out, saved together with the change.                          |
+| 2026-10-16 | 1.0.0      | Audit Log page, filters, CSV export, change history panel and lock-check command built.                                               |
+| 2026-10-16 | 1.0.0      | Released in v1.0.0 (R1 Foundation).                                                                                                   |
+| 2026-10-17 | Unreleased | Readable history: record ids shown as names (owner, company, persona…), plain labels ("Owner" not "Owner id"), empty fields left out. |

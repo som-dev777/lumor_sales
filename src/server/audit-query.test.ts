@@ -200,3 +200,31 @@ describe("readable changes", () => {
     ).toBe("Name: Asha; Role: User");
   });
 });
+
+describe("readable history (names instead of ids)", () => {
+  it("labels id fields plainly and shows names for ids", async () => {
+    const { admin } = await seed();
+    const { auditNameMap } = await import("./audit-names");
+    const changes = {
+      ownerId: { before: null, after: admin.id },
+      linkedinUrl: { before: null, after: "x" },
+    };
+    const names = await auditNameMap(t.db, [changes]);
+    expect(names[admin.id]).toBe("Somnath");
+    expect(fieldLabel("ownerId")).toBe("Owner");
+    expect(fieldLabel("companyId")).toBe("Company");
+    expect(fieldLabel("linkedinUrl")).toBe("LinkedIn link");
+    expect(formatChangeValue(admin.id, names)).toBe("Somnath");
+    expect(summariseChanges(changes, names)).toBe("Owner: Somnath; LinkedIn link: x");
+  });
+
+  it("leaves out fields that are empty before and after", () => {
+    expect(
+      summariseChanges({
+        name: { before: null, after: "Asha" },
+        title: { before: null, after: null },
+        tags: { before: [], after: [] },
+      }),
+    ).toBe("Name: Asha");
+  });
+});

@@ -12,6 +12,7 @@ import { requireUser } from "@/lib/session";
 import { formatIst } from "@/lib/time";
 import { accountFilterSchema, personaSchema, templateSchema } from "@/lib/validation/library";
 import { historyFor } from "../audit-query";
+import { auditNameMap } from "../audit-names";
 import { templateRevisionsFor } from "../library/queries";
 import {
   createItem,
@@ -147,14 +148,21 @@ export type HistoryEntry = {
   who: string;
   when: string;
   changes: Record<string, { before: unknown; after: unknown }>;
+  names: Record<string, string>;
 };
 
 /** An item's own change history (everyone signed in can see it). */
 export async function itemHistory(kind: LibraryKind, id: string): Promise<HistoryEntry[]> {
   await requireUser();
   if (!kindSchema.safeParse(kind).success || !idSchema.safeParse(id).success) return [];
-  const rows = await historyFor(getDb(), KIND_LABEL[kind], id);
+  const db = getDb();
+  const rows = await historyFor(db, KIND_LABEL[kind], id);
+  const names = await auditNameMap(
+    db,
+    rows.map((r) => r.changes),
+  );
   return rows.map((r) => ({
+    names,
     id: r.id,
     action: r.action,
     who: r.userName ?? "System",

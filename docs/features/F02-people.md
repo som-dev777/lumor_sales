@@ -73,8 +73,9 @@ same LinkedIn profile twice, so two reps never message the same person.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                          |
-| ---------- | ---------- | --------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                        |
-| 2026-10-17 | Unreleased | Full doc written (R3).                                                                                          |
-| 2026-10-17 | Unreleased | Rules built: link normalising, duplicates, ownership, notes, stage changes, bulk reassign, filters; with tests. |
+| Date       | Version    | Change                                                                                                                                        |
+| ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                                      |
+| 2026-10-17 | Unreleased | Full doc written (R3).                                                                                                                        |
+| 2026-10-17 | Unreleased | Rules built: link normalising, duplicates, ownership, notes, stage changes, bulk reassign, filters; with tests.                               |
+| 2026-10-17 | Unreleased | People list (filters, My/All, bulk reassign, CSV) and person page (header, claimed message, notes, timeline, history) built; R3 browser test. |
