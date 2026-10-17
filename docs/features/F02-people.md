@@ -1,6 +1,6 @@
 # F02: People
 
-- **Priority:** P0 · **Release:** R3 (v1.2.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R3 (v1.2.0) · **Status:** Done (v1.2.0)
 - **PRD:** [Screens → People, Person detail](../PRD.md#screens-and-functional-requirements), [Business rules → LinkedIn duplicate check](../PRD.md#business-rules)
 
 ## What it does
@@ -73,9 +73,10 @@ same LinkedIn profile twice, so two reps never message the same person.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                                        |
-| ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                                      |
-| 2026-10-17 | Unreleased | Full doc written (R3).                                                                                                                        |
-| 2026-10-17 | Unreleased | Rules built: link normalising, duplicates, ownership, notes, stage changes, bulk reassign, filters; with tests.                               |
-| 2026-10-17 | Unreleased | People list (filters, My/All, bulk reassign, CSV) and person page (header, claimed message, notes, timeline, history) built; R3 browser test. |
+| Date       | Version | Change                                                                                                                                        |
+| ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.2.0   | Placeholder doc created.                                                                                                                      |
+| 2026-10-17 | 1.2.0   | Full doc written (R3).                                                                                                                        |
+| 2026-10-17 | 1.2.0   | Rules built: link normalising, duplicates, ownership, notes, stage changes, bulk reassign, filters; with tests.                               |
+| 2026-10-17 | 1.2.0   | People list (filters, My/All, bulk reassign, CSV) and person page (header, claimed message, notes, timeline, history) built; R3 browser test. |
+| 2026-10-17 | 1.2.0   | Released in v1.2.0 (R3 Leads).                                                                                                                |

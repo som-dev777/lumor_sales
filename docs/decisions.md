@@ -260,3 +260,9 @@ replaces it.
     new one is created, owned by the lead's owner.
 - **Why:** Prevents "Acme" and "ACME" becoming two companies, the same way LinkedIn links
   prevent duplicate people, and keeps adding a lead to one form.
+
+## D-022: Dependency warnings rechecked at v1.2.0
+
+- **Date:** 2026-10-17 · **Status:** Accepted. Confirms D-019.
+- **Decision:** Same 9 build-time warnings (ESLint's `braces`, drizzle-kit's esbuild). No
+  packages added in R3. None reach the live app. Recheck at v1.3.0.

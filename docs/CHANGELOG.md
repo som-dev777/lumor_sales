@@ -7,9 +7,18 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-R3 Leads, in progress.
+Nothing yet. R4 (Daily work: quick-log and Dashboard) starts next.
 
-- Feature docs written for People (F02) and Companies (F03); decisions D-020 (PRD open questions) and D-021 (unique company names).
+## [1.2.0] - 2026-10-17
+
+R3 Leads: one shared, de-duplicated list of people and companies.
+
+- People page: My leads / All leads, filters (owner, persona, level, account filter, stage, market, next action Overdue/Today/This week), search, and Export CSV of what you see.
+- Add a person with their public LinkedIn link. The same profile can never be added twice: any variant of the link (with or without www, https, tracking codes, mobile or country addresses) is recognised, and you're shown "Already added by {owner}" with a link to them. Sales Navigator links go in their own field.
+- Person page: details, LinkedIn link, Edit (owner or Admin) or "This lead is claimed by {owner}", notes anyone can add, a timeline of everything logged, and the change history. Lost needs a reason, and changing the stage is logged.
+- Admins can select several leads and reassign their owner in one go.
+- Companies: typed on a person, linked by name (no duplicates, whatever the capitals). Company page with the deal in ₹, its people, a combined timeline, and Mark as customer.
+- Change history and the Audit Log show names instead of internal codes.
 
 ## [1.1.0] - 2026-10-17
 

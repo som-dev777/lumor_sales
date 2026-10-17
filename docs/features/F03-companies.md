@@ -1,6 +1,6 @@
 # F03: Companies
 
-- **Priority:** P0 · **Release:** R3 (v1.2.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R3 (v1.2.0) · **Status:** Done (v1.2.0)
 - **PRD:** [Screens → Companies](../PRD.md#screens-and-functional-requirements)
 
 ## What it does
@@ -44,9 +44,10 @@ deal once they become a customer.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                              |
-| ---------- | ---------- | --------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                            |
-| 2026-10-17 | Unreleased | Full doc written (R3).                                                                              |
-| 2026-10-17 | Unreleased | Rules built: unique names, create/edit, mark as customer, lists, combined timeline; with tests.     |
-| 2026-10-17 | Unreleased | Companies list and company page (deal, people, combined timeline, mark as customer, history) built. |
+| Date       | Version | Change                                                                                              |
+| ---------- | ------- | --------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.2.0   | Placeholder doc created.                                                                            |
+| 2026-10-17 | 1.2.0   | Full doc written (R3).                                                                              |
+| 2026-10-17 | 1.2.0   | Rules built: unique names, create/edit, mark as customer, lists, combined timeline; with tests.     |
+| 2026-10-17 | 1.2.0   | Companies list and company page (deal, people, combined timeline, mark as customer, history) built. |
+| 2026-10-17 | 1.2.0   | Released in v1.2.0 (R3 Leads).                                                                      |
