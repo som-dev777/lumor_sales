@@ -261,6 +261,16 @@
   }
 }
 
+.rowCode {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  gap: var(--space-3);
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
 .formActions {
   display: flex;
   justify-content: flex-end;

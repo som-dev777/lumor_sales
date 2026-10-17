@@ -2,6 +2,7 @@
 
 import type { LibraryKind } from "@/server/library/kinds";
 import type { PersonaOptions } from "@/server/library/queries";
+import { AccountFilterForm, EMPTY_ACCOUNT_FILTER } from "./AccountFilterForm";
 import { EMPTY_PERSONA, PersonaForm } from "./PersonaForm";
 
 export type FormTarget =
@@ -26,6 +27,16 @@ export function LibraryForm({ kind, target, values, formOptions, onDone }: Props
           target={target}
           defaultValues={(values as typeof EMPTY_PERSONA | undefined) ?? EMPTY_PERSONA}
           options={formOptions as PersonaOptions | undefined}
+          onDone={onDone}
+        />
+      );
+    case "accountFilter":
+      return (
+        <AccountFilterForm
+          target={target}
+          defaultValues={
+            (values as typeof EMPTY_ACCOUNT_FILTER | undefined) ?? EMPTY_ACCOUNT_FILTER
+          }
           onDone={onDone}
         />
       );

@@ -56,9 +56,10 @@ the PRD says otherwise (A6: Bengaluru, Mumbai, Delhi NCR). Loaded by `npm run se
 
 ## Change history
 
-| Date       | Version    | Change                                                                         |
-| ---------- | ---------- | ------------------------------------------------------------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                       |
-| 2026-10-16 | Unreleased | Full doc written (R2).                                                         |
-| 2026-10-16 | Unreleased | Account filter rules (Official code uniqueness, copy codes) built, with tests. |
-| 2026-10-17 | Unreleased | Seed: A1–A6 from the PRD (`npm run seed:library`), with tests.                 |
+| Date       | Version    | Change                                                                                                                                   |
+| ---------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                                 |
+| 2026-10-16 | Unreleased | Full doc written (R2).                                                                                                                   |
+| 2026-10-16 | Unreleased | Account filter rules (Official code uniqueness, copy codes) built, with tests.                                                           |
+| 2026-10-17 | Unreleased | Seed: A1–A6 from the PRD (`npm run seed:library`), with tests.                                                                           |
+| 2026-10-17 | Unreleased | Account Filters page built: tabs, cards (code badge, industries, HQ, filters, exclusions) with stats, add/edit form, the shared actions. |
