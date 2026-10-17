@@ -3,7 +3,7 @@
 Lumor Sales Hub is the internal web app where Lumor's sales team manages LinkedIn
 prospecting, from finding a lead in Sales Navigator to a paying customer.
 
-**Current version:** 1.5.0 (R6 AI, released 17 Oct 2026). All six planned releases are done; see [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
+**Current version:** 1.5.0 (R6 AI, released 17 Oct 2026). Next: R7 Plans (2.0.0), the first v2 release. See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
 
 ## Documents
 
@@ -17,7 +17,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | [decisions.md](decisions.md)                 | Significant choices and why they were made.                      |
 | [deploy.md](deploy.md)                       | Putting the app online (Turso + Netlify), step by step.          |
 | [qa-checklist.md](qa-checklist.md)           | The manual check of the whole app before the team uses it.       |
-| [features/](features/)                       | One file per feature (F01–F16): requirements, tests, change log. |
+| [features/](features/)                       | One file per feature (F01–F19): requirements, tests, change log. |
 | [../CLAUDE.md](../CLAUDE.md)                 | Standing rules every Claude Code session follows.                |
 
 ## Feature index
@@ -40,17 +40,23 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F08 | [Today planner](features/F08-today-planner.md)                  | P1       | R6      | Done (1.5.0) |
 | F09 | [Reply Assistant](features/F09-reply-assistant.md)              | P1       | R6      | Done (1.5.0) |
 | F10 | [Conversation summary and draft](features/F10-summary-draft.md) | P1       | R6      | Done (1.5.0) |
+| F17 | [Plans](features/F17-plans.md)                                  | P0       | R7      | In progress  |
+| F18 | [Conversation thread](features/F18-conversation-thread.md)      | P0       | R8      | Planned      |
+| F19 | [Reports](features/F19-reports.md)                              | P1       | R9      | Planned      |
 
 ## Releases
 
-| Release       | Version | Features           | Status              |
-| ------------- | ------- | ------------------ | ------------------- |
-| R1 Foundation | 1.0.0   | F01, F14, F16      | Released 2026-10-16 |
-| R2 Library    | 1.1.0   | F04, F05, F06, F07 | Released 2026-10-17 |
-| R3 Leads      | 1.2.0   | F02, F03           | Released 2026-10-17 |
-| R4 Daily work | 1.3.0   | F15, F11           | Released 2026-10-17 |
-| R5 Settings   | 1.4.0   | F12, F13           | Released 2026-10-17 |
-| R6 AI         | 1.5.0   | F08, F09, F10      | Released 2026-10-17 |
+| Release          | Version | Features           | Status              |
+| ---------------- | ------- | ------------------ | ------------------- |
+| R1 Foundation    | 1.0.0   | F01, F14, F16      | Released 2026-10-16 |
+| R2 Library       | 1.1.0   | F04, F05, F06, F07 | Released 2026-10-17 |
+| R3 Leads         | 1.2.0   | F02, F03           | Released 2026-10-17 |
+| R4 Daily work    | 1.3.0   | F15, F11           | Released 2026-10-17 |
+| R5 Settings      | 1.4.0   | F12, F13           | Released 2026-10-17 |
+| R6 AI            | 1.5.0   | F08, F09, F10      | Released 2026-10-17 |
+| R7 Plans         | 2.0.0   | F17, F08 (v2)      | In progress         |
+| R8 Conversations | 2.1.0   | F18                | Planned             |
+| R9 Reports       | 2.2.0   | F19                | Planned             |
 
 ## Running the app locally
 

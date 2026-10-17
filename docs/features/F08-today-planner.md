@@ -1,67 +1,67 @@
 # F08: Today planner
 
-- **Priority:** P1 · **Release:** R6 (v1.5.0) · **Status:** Done (v1.5.0)
-- **PRD:** [Screens → Today](../PRD.md#screens-and-functional-requirements), [AI features → Today planner (P01)](../PRD.md#ai-features)
+- **Priority:** P1 · **Release:** R6 (v1.5.0), revised in R7 (v2.0.0) · **Status:** In progress (v2)
+- **PRD:** [Version 2 scope → F08 Today (revised)](../PRD.md#version-2-scope-r7r9), [AI features → Today planner (P01)](../PRD.md#ai-features)
 
 ## What it does
 
-The home page (`/`). Rules build the signed-in rep's task list for today; AI prompt P01 can
-then order it and explain each task. It also shows a progress bar for today's connection
-requests and, after ranking, a 2-sentence summary of the week.
+The home page (`/`). From v2 it's driven by plans (F17) and deadlines: it lists exactly what
+the signed-in rep should do today, with the message or call script for each task. It also
+shows today's connection-request target and, after **Rank with AI** (P01), a reason for each
+task and a two-sentence summary of the week.
 
-## Sections (rules, for the rep's own leads; IST dates)
+## Sections (the rep's own leads; Do not contact and snoozed leads left out; IST dates)
 
-1. **Replies waiting:** the lead's latest activity is "Reply received". Always on top.
-2. **Demos today, and recaps:** next action "Hold demo" due today or earlier; or stage Demo
-   done with "Send recap" due.
-3. **Follow-ups due:** next action Send Message 1 / Follow-up 1 / Follow-up 2 / Break-up due
-   today or earlier (dates come from quick-log and Playbook Settings).
-4. **Requests to withdraw:** stage Request sent, and the request was sent more than
-   "withdraw after" days ago (Playbook Settings, default 14) without being accepted.
-5. **New outreach target:** requests left to hit today's target ("12 of 20 requests sent"),
-   with a suggested Tier 1 persona and an account filter to work on.
-6. **Stale leads:** no activity for "stale-lead" days (default 21) and not Lost or Paid, and not
-   already in a section above.
+1. **Replies waiting:** the lead's latest activity is a reply. Always on top.
+2. **Meetings today:** next action "Hold meeting" due today or earlier.
+3. **Expired reply deadlines:** "awaiting reply until" has passed. Built in R7; the dates are
+   set from R8 (F18).
+4. **Plan steps due today:** the current step of an active plan, due today. This includes
+   **Withdraw invite** tasks (14 days with no acceptance).
+5. **Overdue steps:** due before today.
+6. **Trial check-ins:** steps due from Trial plans.
+7. **Plans finished with no reply:** after the last step, or once the plan's time limit has
+   passed. **Nurture** (60 days, no touches) or **Lost** ("No response").
+8. **Nurture checks:** Nurture has ended. **Enrol in a plan** or **Lost**.
+9. **Stale leads:** people not on any plan with no activity for the stale-lead threshold
+   (D-033 F7).
 
-A lead appears in at most one section (the first that matches). Snoozed leads are hidden until
-the snooze date.
+A lead appears once, in the first section that matches.
 
-## Done and Snooze
+## Tasks
 
-| Section             | Done logs                                                   |
-| ------------------- | ----------------------------------------------------------- |
-| Reply waiting       | "Message sent" (Responded); next action cleared             |
-| Demo today          | Demo held (the F15 quick-log)                               |
-| Recap               | "Message sent" (Post-demo recap); next action cleared       |
-| Follow-up due       | Message 1 sent or the next follow-up (the F15 quick-log)    |
-| Request to withdraw | "Request withdrawn"; back to Prospect, sequence Not started |
-| Stale lead          | no Done; the lead's name links to it                        |
-
-- **Snooze to tomorrow** hides the lead from Today until tomorrow (IST). It's saved on the
-  person (`snoozed_until`) and audited.
-- Done and Snooze use the same permission as quick-log (the lead's owner or an Admin).
+- **Step tasks** show the message with placeholders filled in from the person, editable, or
+  the call script. **Done** logs the touch to the timeline with the exact text, the channel,
+  the plan and the step, then schedules the next step (F17). It's refused while any `{…}` is
+  unfilled.
+  - Email opens in the rep's mail app first.
+  - Calls show outcome buttons.
+  - Steps go through the cadence guardrails: blocks refuse; warnings ask "Log anyway?".
+- **Snooze:**
+  - **Plan step:** moves to tomorrow (a weekday, within the guardrails).
+  - **Other task:** hides the lead until tomorrow (`snoozed_until`).
+- **Replies waiting → Mark replied**, **Meetings → Meeting held**, **Withdraw invite →
+  Withdrawn**, **Finished/Nurture check → Nurture, Lost or Enrol**.
+- The **target bar** ("12 of 20 requests sent") stays. Admins' **Team** tab comes in R8.
 
 ## AI ranking (P01)
 
-- **Rank with AI** sends the task list, the rep's last 7 days of activity counts and the targets.
-  It returns the tasks in order of impact with a one-line reason each, and the week summary.
-- Ids the AI leaves out are kept, unranked, at the end; ids it invents are ignored.
-- Runs only when the button is clicked. If AI isn't set up, fails, or takes more than 30
-  seconds, the rule-based list stays and a message offers **Try again**.
+Unchanged from v1 apart from the section names (P01 v1.1). It runs only when **Rank with AI**
+is clicked. If AI isn't set up, fails, or takes over 30 seconds, the list stays in rule order.
 
 ## Tests
 
-- Automated: each section's rule; one section per lead; withdraw and stale thresholds from
-  Playbook Settings; snooze; Done for each section; ranking merges AI order and keeps
-  missing tasks; failures fall back.
-- Browser (R6 exit check): Today shows a rep's real list, Rank with AI orders it (stand-in AI),
-  Done and Snooze remove a task.
+- Automated: each section's rule; one section per lead; a step's Done schedules the next step;
+  Snooze within the guardrails; the finished and Nurture choices; Do not contact hidden;
+  ranking merges the AI order.
+- Browser: the R7 exit check runs through Today (see F17).
 
 ## Change history
 
-| Date       | Version | Change                                                                                                                   |
-| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
-| 2026-10-16 | 1.5.0   | Placeholder doc created.                                                                                                 |
-| 2026-10-17 | 1.5.0   | Full doc written (R6).                                                                                                   |
-| 2026-10-17 | 1.5.0   | Today page built: sections, target bar, Done, Snooze (snoozed_until), Rank with AI (P01) with fallback; R6 browser test. |
-| 2026-10-17 | 1.5.0   | Released in v1.5.0 (R6 AI).                                                                                              |
+| Date       | Version    | Change                                                                                                                   |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-16 | 1.5.0      | Placeholder doc created.                                                                                                 |
+| 2026-10-17 | 1.5.0      | Full doc written (R6).                                                                                                   |
+| 2026-10-17 | 1.5.0      | Today page built: sections, target bar, Done, Snooze (snoozed_until), Rank with AI (P01) with fallback; R6 browser test. |
+| 2026-10-17 | 1.5.0      | Released in v1.5.0 (R6 AI).                                                                                              |
+| 2026-10-18 | Unreleased | Rewritten for v2 (R7): plan-driven sections, step tasks with message or script, Nurture checks.                          |

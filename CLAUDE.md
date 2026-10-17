@@ -43,7 +43,8 @@ All dates are stored in UTC and shown in IST. Weeks run Monday to Sunday.
 1. Update the feature's doc in docs/features/ and its change-history section.
 2. Add a CHANGELOG.md entry (under "Unreleased" until a release).
 3. Versioning: bump MINOR once per completed release (R1 = 1.0.0, R2 = 1.1.0…)
-   and PATCH for fixes. Do not bump the version on every commit.
+   and PATCH for fixes. Version 2 starts at R7 = 2.0.0, then MINOR again (R8 = 2.1.0;
+   D-028). Do not bump the version on every commit.
 4. Update docs/README.md (feature index) if anything changed there.
 5. At a release or patch, add the AppRelease record (run `npm run releases:sync`).
 6. Record significant choices in docs/decisions.md.
@@ -77,6 +78,7 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-10-17): all six releases (R1–R6, v1.5.0) are built, and the manual QA checklist
-is docs/qa-checklist.md. Next work comes from the owner's QA findings; fixes are PATCH
-releases (1.5.1, …).
+Current instruction (2026-10-18): build all of R7 (steps 1–8 of the approved plan) in one
+go: full checks, commit and push after every step, fix failing checks yourself. Stop only if a
+decision would change the PRD or D-033, if existing data could be lost or damaged, or if
+blocked. At v2.0.0 give one summary (built, own choices, tests, exit check and QA steps).

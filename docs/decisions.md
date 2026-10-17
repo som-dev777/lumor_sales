@@ -319,3 +319,129 @@ replaces it.
 - **Date:** 2026-10-17 · **Status:** Accepted. Confirms D-025.
 - **Decision:** Same 9 build-time warnings. R6 added `@anthropic-ai/sdk`, which brings no new
   warnings. None reach the live app.
+
+## D-028: Version 2 starts at 2.0.0
+
+- **Date:** 2026-10-18 · **Status:** Accepted (owner, D-033 F11)
+- **Decision:** R7 is released as **v2.0.0** (a MAJOR bump), as the PRD says, because v2 changes
+  the stage list and replaces the fixed sequence. After that it's MINOR per release again
+  (R8 = 2.1.0, R9 = 2.2.0) and PATCH for fixes. CLAUDE.md's versioning line says so.
+- **Why:** The PRD's v2 plan names v2.0.0; CLAUDE.md said MINOR per release, which would have
+  made it 1.6.0.
+
+## D-029: Migrating v1 data to v2 stages, with a backup
+
+- **Date:** 2026-10-18 · **Status:** Accepted
+- **Decision:**
+  - Migration 0005 maps stages exactly as the PRD table says: Request sent → Contacted;
+    Connected and Messaged → Connected; Demo booked → Meeting scheduled; Demo done → Meeting
+    done; Trial/Pilot → Trial; the rest unchanged.
+  - Activity types Demo booked/held become Meeting booked/held. Past stage-change activities
+    get a `to_stage` value read from their text.
+  - The audit log is never changed: old entries keep the v1 names, which is a true record.
+  - SQLite can't change a CHECK list in place, so person, activity, proposal and
+    playbook_settings are rebuilt in one transaction (libSQL's migrate switches foreign keys
+    off for it). Afterwards `PRAGMA foreign_key_check` must find nothing.
+  - `npm run db:migrate` copies a local database file to `data/backups/` before applying any
+    pending migration. Production (Turso): make a copy first (docs/deploy.md).
+- **Why:** The PRD requires the migration; a backup makes it reversible.
+
+## D-030: One guardrail module; block or warn
+
+- **Date:** 2026-10-18 · **Status:** Accepted
+- **Decision:**
+  - All cadence rules live in `src/server/plans/guardrails.ts`: `checkPlan` for the builder and
+    `checkTouch` for single touches. The builder, quick-log, Today's Done and Snooze all use
+    them, so they can't disagree.
+  - Each finding is a **block** (refused, on the server) or a **warn** (the rep may choose "Log
+    anyway"; the overridden rules go in the audit entry).
+  - The values live in Playbook Settings.
+- **Why:** The PRD says the builder blocks bad plans and Today warns before a rep breaks a rule
+  by hand.
+
+## D-031: How plan scheduling works
+
+- **Date:** 2026-10-18 · **Status:** Accepted
+- **Decision:**
+  - A step is due on the actual done date of the previous step plus its wait, in calendar days.
+    With Skip weekends on, a Saturday or Sunday moves to Monday.
+  - A date that would make a 3rd touch in 7 days moves later.
+  - After a connection request the plan waits for Accepted. The withdraw task comes at day 14.
+  - Pausing for a reply moves the time limit later by the days paused.
+  - Finished and expired plans are worked out when a page is read; there's no background job.
+- **Why:** The PRD's scheduling rules, with no scheduler needed until R9.
+
+## D-032: The fixed sequence step is removed
+
+- **Date:** 2026-10-18 · **Status:** Accepted (owner, D-033 F3)
+- **Decision:** `person.sequence_step` is dropped in migration 0005. A plan's current step
+  replaces it. Its history stays in the audit log. Quick-log no longer sets follow-up dates;
+  plans do.
+- **Why:** The PRD says plans replace F15's fixed sequence.
+
+## D-033: Owner's answers on R7 (2026-10-18)
+
+- **Date:** 2026-10-18 · **Status:** Accepted (owner)
+- **Decision:**
+  - **Seed plan:** 5 steps. Call and Follow-up 2 merge into step 4 at +7 days (Call if a phone
+    is known → otherwise Email → otherwise LinkedIn message). Waits: Message 1 = 2 days after
+    acceptance, then +4, +7, +10. Rule 2 is not relaxed for calls.
+  - **Sixth touch** = a 5th follow-up after Message 1.
+  - **sequence_step** removed (D-032).
+  - **Channels:** a step has an ordered list of channel options, each with a condition (phone
+    known / email known / always). There is no separate condition field.
+  - **Skip weekends:** waits are calendar days rolled forward to Monday. Call retries use
+    business days.
+  - **Seniority:** optional on a person. Vice President or CXO get a 45-day plan limit; empty
+    or anything else gets 30.
+  - **Today:** withdraw is a plan task; the target bar stays; Stale only lists people not on a
+    plan.
+  - **Call outcomes** as proposed. Nurture is a date (`nurture_until`). The day-30 limit and
+    "finished with no reply" give the same Nurture/Lost choice. When Nurture ends, Today shows a
+    **Nurture check** task (enrol in a plan, or Lost).
+  - **"In person"** stays as a channel for logging meetings, not for plan steps.
+  - **Test date override:** only for local testing. It refuses to run unless the database is
+    the local file, and never runs in production.
+  - **v2.0.0** (D-028).
+  - **R7 starts now;** the v1.5.0 QA checklist is done after R7, together with R7's exit check.
+  - **Dashboard:** a simple per-plan and per-step reply-rate table in R7.
+  - **Prompts:** P01–P04 go to v1.1 (v2 stage names, guardrail 6).
+  - **"Contacted"** on the Dashboard = a person's first outreach touch of any kind in the
+    period.
+  - **Connection requests without a note** don't count as touches for rule 3 or rule 4; with a
+    note they count.
+  - **ends_by** counts from the acceptance date, or from the first touch when the plan doesn't
+    start with a connection request; not from enrolment.
+  - **Placeholders:** Done and Mark as sent are refused while any `{…}` is unfilled, with a
+    message naming it.
+  - **Quick-log on a plan:** a quick-log button that matches the current step's channel asks
+    "Is this step N of their plan?" Yes advances the plan; No logs an extra touch, checked by
+    the guardrails.
+  - **Pace:** R7 is built in one go; ask only if a decision would change the PRD or this
+    record, if data could be lost, or if blocked.
+- **Why:** The owner's answers to the R7 plan's flags.
+
+## D-034: Choices made while building R7
+
+- **Date:** 2026-10-18 · **Status:** Accepted
+- **Decision:**
+  - **What counts as a touch:** a connection request with a note, a LinkedIn message, an
+    InMail, an email, a WhatsApp message, or a call that **connected**. Calls with no answer
+    don't count. Otherwise the PRD's next-business-day retries would break rules 2 and 4.
+  - **Which guardrails apply to which plans:** rules 1–4 and 7 apply to **Outreach** plans
+    (people who haven't replied). Meeting follow-up, Trial and Onboarding plans run after a
+    conversation has started, so only rules 5, 6 and 8 apply to them.
+  - **Templates for steps:** a step names a template purpose. The app picks the best active
+    template for the person: one for their persona and level first, Official before Personal,
+    then any active template with that purpose.
+  - **Wrong number** removes the phone number from the person. The number stays in the call
+    activity text, so the change is recorded.
+  - **A finished plan stays Active** (with no next step) until the rep chooses Nurture or Lost
+    on Today, so the person can't be enrolled twice in the meantime.
+  - **Plan steps move the stage forward only:** a person's first outreach moves Prospect →
+    Contacted; acceptance → Connected.
+  - **Replies are linked to the plan and step** that came just before them, for the
+    per-step reply rate.
+  - **The test date switch** lives on the About page, as a cookie. It shows only when the
+    database is a local file, and the server refuses it otherwise.
+- **Why:** Gaps the PRD doesn't cover; none changes what the PRD or D-033 says.

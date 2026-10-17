@@ -10,7 +10,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-Nothing yet. All six planned releases are done.
+R7 Plans (v2.0.0), in progress.
+
+- PRD Version 2 scope added. Feature docs written for Plans (F17) and the plan-driven Today (F08 v2), with placeholders for F18 and F19; decisions D-028 to D-034.
 
 ## [1.5.0] - 2026-10-17
 
