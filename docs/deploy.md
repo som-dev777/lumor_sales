@@ -69,7 +69,7 @@ themselves, and new sign-ups can log in straight away. With it, links are emaile
    | `SEED_ADMIN_PASSWORD` | the first password for the three default Admins (10+ characters)      |
    | `RESEND_API_KEY`      | from Step 3 (leave out if you skipped it)                             |
    | `EMAIL_FROM`          | from Step 3 (leave out if you skipped it)                             |
-   | `ANTHROPIC_API_KEY`   | for the AI features (R6). Leave out until you have one.               |
+   | `ANTHROPIC_API_KEY`   | for the AI features: console.anthropic.com → API Keys. Optional.      |
 
 6. Click **Deploy**. The first build takes a few minutes. It creates the tables, the three
    default Admins and the starting library.

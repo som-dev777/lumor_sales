@@ -59,7 +59,8 @@ the snooze date.
 
 ## Change history
 
-| Date       | Version    | Change                   |
-| ---------- | ---------- | ------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created. |
-| 2026-10-17 | Unreleased | Full doc written (R6).   |
+| Date       | Version    | Change                                                                                                                   |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                 |
+| 2026-10-17 | Unreleased | Full doc written (R6).                                                                                                   |
+| 2026-10-17 | Unreleased | Today page built: sections, target bar, Done, Snooze (snoozed_until), Rank with AI (P01) with fallback; R6 browser test. |

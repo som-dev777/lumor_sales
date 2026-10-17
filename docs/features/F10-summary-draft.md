@@ -31,7 +31,8 @@ Two more tools in the person page's AI panel (owner or Admin).
 
 ## Change history
 
-| Date       | Version    | Change                   |
-| ---------- | ---------- | ------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created. |
-| 2026-10-17 | Unreleased | Full doc written (R6).   |
+| Date       | Version    | Change                                                                                                   |
+| ---------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                 |
+| 2026-10-17 | Unreleased | Full doc written (R6).                                                                                   |
+| 2026-10-17 | Unreleased | Summarise (Save as note, Confirm) and Draft (Mark as sent with template version) built; R6 browser test. |

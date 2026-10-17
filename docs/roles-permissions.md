@@ -32,6 +32,7 @@ test in `src/lib/permissions.test.ts`.
 | Create, edit and log activity on leads they own                      | `lead.create`, `lead.edit` (with the lead)                           | Yes   | Yes                                         |
 | View and add notes on leads owned by others                          | `record.view`, `lead.addNote`                                        | Yes   | Yes                                         |
 | Log outreach on leads owned by others                                | `lead.edit` (with the lead): owner or Admin                          | Yes   | No. Shows "This lead is claimed by {owner}" |
+| Use the AI panel, Today's Done and Snooze on a lead                  | `lead.edit` (with the lead): owner or Admin                          | Yes   | Own leads only                              |
 | Reassign the owner of a lead or company (single or bulk)             | `lead.reassign`                                                      | Yes   | No                                          |
 | Create, edit and delete Official personas, filters and templates     | `library.create` / `library.edit` / `library.delete` (Official item) | Yes   | No. Official items show a lock icon         |
 | Create, edit and delete own Personal personas, filters and templates | `library.create` / `library.edit` / `library.delete` (Personal item) | Yes   | Yes, own items only                         |

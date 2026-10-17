@@ -38,6 +38,8 @@ export const person = sqliteTable(
     nextAction: text("next_action"),
     // Plain IST date, YYYY-MM-DD.
     nextActionDate: text("next_action_date"),
+    // Hidden from Today until this IST date (F08 "Snooze to tomorrow").
+    snoozedUntil: text("snoozed_until"),
     lostReason: text("lost_reason", { enum: LOST_REASONS }),
     converted: flag("converted").notNull().default(false),
     convertedDate: text("converted_date"),

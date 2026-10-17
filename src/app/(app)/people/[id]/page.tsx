@@ -5,6 +5,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { ExternalLink } from "lucide-react";
 import { ChangeHistory } from "@/components/audit/ChangeHistory";
+import { AiPanel } from "@/components/ai/AiPanel";
 import { MarkCustomerButton } from "@/components/leads/MarkCustomerButton";
 import { NoteForm } from "@/components/leads/NoteForm";
 import { PersonDialogButton } from "@/components/leads/PersonDialogButton";
@@ -22,6 +23,8 @@ import { formatIstDate, todayIst } from "@/lib/time";
 import { leadFormOptions } from "@/server/leads/options";
 import { canLogOutreach, getPerson, personTimeline } from "@/server/leads/people";
 import { nextFollowUp } from "@/server/leads/quicklog";
+import { aiMode } from "@/server/ai/client";
+import { factsMissing, getProductFacts } from "@/server/settings";
 
 export const metadata: Metadata = { title: "Person" };
 
@@ -41,7 +44,11 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
   const db = getDb();
   const p = await getPerson(db, id);
   if (!p) notFound();
-  const [events, options] = await Promise.all([personTimeline(db, id), leadFormOptions(db)]);
+  const [events, options, facts] = await Promise.all([
+    personTimeline(db, id),
+    leadFormOptions(db),
+    getProductFacts(db),
+  ]);
   const mayEdit = canLogOutreach(viewer, p.ownerId);
 
   const fact = (label: string, value: React.ReactNode) => (
@@ -157,6 +164,14 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
           templates={options.templates}
           defaultTemplateId={p.openerTemplateId}
           today={todayIst()}
+        />
+      )}
+
+      {mayEdit && (
+        <AiPanel
+          personId={p.id}
+          status={aiMode() === "off" ? "off" : factsMissing(facts) ? "no-facts" : "ready"}
+          templates={options.templates}
         />
       )}
 

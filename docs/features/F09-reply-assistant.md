@@ -42,7 +42,8 @@ On the person page (owner or Admin), the rep pastes the prospect's message and c
 
 ## Change history
 
-| Date       | Version    | Change                   |
-| ---------- | ---------- | ------------------------ |
-| 2026-10-16 | Unreleased | Placeholder doc created. |
-| 2026-10-17 | Unreleased | Full doc written (R6).   |
+| Date       | Version    | Change                                                                                                                                           |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-16 | Unreleased | Placeholder doc created.                                                                                                                         |
+| 2026-10-17 | Unreleased | Full doc written (R6).                                                                                                                           |
+| 2026-10-17 | Unreleased | Reply Assistant built in the person page AI panel: saved reply, reply type, suggestions, Mark as sent with edit level, Confirm; R6 browser test. |

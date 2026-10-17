@@ -18,11 +18,15 @@ export type QuickLog =
   | { action: "accepted" }
   | { action: "message1Sent"; templateId?: string | null }
   | { action: "followUpSent" }
-  | { action: "gotReply"; replyType: (typeof REPLY_TYPES)[number] }
+  | { action: "gotReply"; replyType: (typeof REPLY_TYPES)[number] | null }
   | { action: "demoBooked"; demoDate: string }
   | { action: "demoHeld" }
   | { action: "markConverted" }
-  | { action: "markLost"; lostReason: (typeof LOST_REASONS)[number] };
+  | { action: "markLost"; lostReason: (typeof LOST_REASONS)[number] }
+  // From Today's Done buttons (F08).
+  | { action: "responded" }
+  | { action: "recapSent" }
+  | { action: "requestWithdrawn" };
 
 export type QuickLogAction = QuickLog["action"];
 
@@ -203,6 +207,33 @@ export async function quickLog(
           nextActionDate: null,
           content: "Converted",
           personExtra: { converted: true, convertedDate: today },
+        };
+        break;
+      case "responded":
+        plan = {
+          activityType: "Message sent",
+          stage: before.stage,
+          nextAction: null,
+          nextActionDate: null,
+          content: "Responded",
+        };
+        break;
+      case "recapSent":
+        plan = {
+          activityType: "Message sent",
+          stage: before.stage,
+          nextAction: null,
+          nextActionDate: null,
+          content: "Post-demo recap",
+        };
+        break;
+      case "requestWithdrawn":
+        plan = {
+          activityType: "Request withdrawn",
+          stage: "Prospect",
+          step: "Not started",
+          nextAction: null,
+          nextActionDate: null,
         };
         break;
       case "markLost":

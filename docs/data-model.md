@@ -148,6 +148,7 @@ Unique: the company name, ignoring case and surrounding spaces (`lower(trim(name
 | opener_template_version | A, B or C                                            |
 | next_action             | text                                                 |
 | next_action_date        | plain date                                           |
+| snoozed_until           | plain date; hidden from Today until then (F08)       |
 | lost_reason             | Lost reason. **Required when stage is Lost** (CHECK) |
 | converted               | 0/1, default 0                                       |
 | converted_date          | plain date                                           |
