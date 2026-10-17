@@ -10,7 +10,11 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-R4 Daily work, in progress.
+Nothing yet. R5 (Settings: Product Facts and Playbook Settings) starts next.
+
+## [1.3.0] - 2026-10-17
+
+R4 Daily work: one-click quick-log with automatic follow-up dates, the funnel Dashboard, and everything needed to go online.
 
 - Feature docs written for Quick-log (F15) and Dashboard (F11); D-023 (getting ready to go online).
 - Quick-log rules on the server: each action logs the activity and moves the stage, sequence step and next action, with follow-up dates counted from Message 1 (F15).

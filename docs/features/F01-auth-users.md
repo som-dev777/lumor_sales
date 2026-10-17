@@ -113,12 +113,12 @@ blocked everywhere at once.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                            |
-| ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | 1.0.0      | Feature doc written (R1).                                                                                                         |
-| 2026-10-16 | 1.0.0      | user/session/account/verification/invite tables, no-delete and deactivation triggers added, with tests.                           |
-| 2026-10-16 | 1.0.0      | Login, invite registration, reset and forced password change built; admin plugin dropped and deactivation keeps sessions (D-010). |
-| 2026-10-16 | 1.0.0      | Self sign-up for @lumor.tech (D-012); three default Admins replace the gmail Admin (D-013).                                       |
-| 2026-10-16 | 1.0.0      | Settings → Users page built: invite, pending invites, roles, deactivate/reactivate, reset links, guards.                          |
-| 2026-10-16 | 1.0.0      | Released in v1.0.0 (R1 Foundation).                                                                                               |
-| 2026-10-17 | Unreleased | Wrong-password pause, emailed invite/reset links and sign-up confirmation through Resend (D-023).                                 |
+| Date       | Version | Change                                                                                                                            |
+| ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.0.0   | Feature doc written (R1).                                                                                                         |
+| 2026-10-16 | 1.0.0   | user/session/account/verification/invite tables, no-delete and deactivation triggers added, with tests.                           |
+| 2026-10-16 | 1.0.0   | Login, invite registration, reset and forced password change built; admin plugin dropped and deactivation keeps sessions (D-010). |
+| 2026-10-16 | 1.0.0   | Self sign-up for @lumor.tech (D-012); three default Admins replace the gmail Admin (D-013).                                       |
+| 2026-10-16 | 1.0.0   | Settings → Users page built: invite, pending invites, roles, deactivate/reactivate, reset links, guards.                          |
+| 2026-10-16 | 1.0.0   | Released in v1.0.0 (R1 Foundation).                                                                                               |
+| 2026-10-17 | 1.3.0   | Wrong-password pause, emailed invite/reset links and sign-up confirmation through Resend (D-023).                                 |

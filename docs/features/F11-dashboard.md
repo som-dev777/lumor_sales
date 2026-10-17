@@ -1,6 +1,6 @@
 # F11: Dashboard
 
-- **Priority:** P0 · **Release:** R4 (v1.3.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R4 (v1.3.0) · **Status:** Done (v1.3.0)
 - **PRD:** [Screens → Dashboard](../PRD.md#screens-and-functional-requirements), [Business rules → Funnel and benchmarks](../PRD.md#business-rules)
 
 ## What it does
@@ -60,9 +60,10 @@ version, market and rep.
 
 ## Change history
 
-| Date       | Version    | Change                                                                                        |
-| ---------- | ---------- | --------------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                      |
-| 2026-10-17 | Unreleased | Full doc written (R4).                                                                        |
-| 2026-10-17 | Unreleased | Funnel counting, conversions and breakdowns built and tested on the server.                   |
-| 2026-10-17 | Unreleased | Dashboard page: period switch, funnel chart, conversion tiles, breakdown table; browser test. |
+| Date       | Version | Change                                                                                        |
+| ---------- | ------- | --------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.3.0   | Placeholder doc created.                                                                      |
+| 2026-10-17 | 1.3.0   | Full doc written (R4).                                                                        |
+| 2026-10-17 | 1.3.0   | Funnel counting, conversions and breakdowns built and tested on the server.                   |
+| 2026-10-17 | 1.3.0   | Dashboard page: period switch, funnel chart, conversion tiles, breakdown table; browser test. |
+| 2026-10-17 | 1.3.0   | Released in v1.3.0 (R4 Daily work).                                                           |

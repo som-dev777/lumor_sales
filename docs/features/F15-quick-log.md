@@ -1,6 +1,6 @@
 # F15: Quick-log actions and sequence automation
 
-- **Priority:** P0 · **Release:** R4 (v1.3.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R4 (v1.3.0) · **Status:** Done (v1.3.0)
 - **PRD:** [Business rules → Quick-log automation](../PRD.md#business-rules)
 
 ## What it does
@@ -58,9 +58,10 @@ has a company that isn't a customer yet, the app offers Mark as customer straigh
 
 ## Change history
 
-| Date       | Version    | Change                                                                                            |
-| ---------- | ---------- | ------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | Unreleased | Placeholder doc created.                                                                          |
-| 2026-10-17 | Unreleased | Full doc written (R4).                                                                            |
-| 2026-10-17 | Unreleased | Quick-log rules built and tested on the server.                                                   |
-| 2026-10-17 | Unreleased | "Log what happened" bar and dialogs on the person page; Mark-as-customer prompt after converting. |
+| Date       | Version | Change                                                                                            |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.3.0   | Placeholder doc created.                                                                          |
+| 2026-10-17 | 1.3.0   | Full doc written (R4).                                                                            |
+| 2026-10-17 | 1.3.0   | Quick-log rules built and tested on the server.                                                   |
+| 2026-10-17 | 1.3.0   | "Log what happened" bar and dialogs on the person page; Mark-as-customer prompt after converting. |
+| 2026-10-17 | 1.3.0   | Released in v1.3.0 (R4 Daily work).                                                               |

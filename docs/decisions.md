@@ -285,3 +285,9 @@ replaces it.
     setup. The owner creates the accounts; nothing is published automatically.
 - **Why:** These were the items deferred to "before going online" in R1. Accounts and API
   keys can only come from the owner.
+
+## D-024: Dependency warnings rechecked at v1.3.0
+
+- **Date:** 2026-10-17 · **Status:** Accepted. Confirms D-019 and D-022.
+- **Decision:** Same 9 build-time warnings (ESLint's `braces`, drizzle-kit's esbuild). R4
+  added Recharts, which brings no new warnings. None reach the live app. Recheck at v1.4.0.
