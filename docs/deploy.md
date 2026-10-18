@@ -69,7 +69,8 @@ themselves, and new sign-ups can log in straight away. With it, links are emaile
    | `SEED_ADMIN_PASSWORD` | the first password for the three default Admins (10+ characters)      |
    | `RESEND_API_KEY`      | from Step 3 (leave out if you skipped it)                             |
    | `EMAIL_FROM`          | from Step 3 (leave out if you skipped it)                             |
-   | `ANTHROPIC_API_KEY`   | for the AI features: console.anthropic.com → API Keys. Optional.      |
+   | `OPENAI_API_KEY`      | for the AI features: platform.openai.com → API keys. Optional.        |
+   | `OPENAI_MODEL`        | optional: another OpenAI model than the default `gpt-5.5`             |
 
 6. Click **Deploy**. The first build takes a few minutes. It creates the tables, the three
    default Admins and the starting library.
@@ -84,6 +85,13 @@ themselves, and new sign-ups can log in straight away. With it, links are emaile
 2. Click **Change password** (bottom left) and set your own password. Ask Arijeet and Prince
    to do the same as soon as they first log in.
 3. Go through `docs/qa-checklist.md` on the live site.
+
+## Keeping keys safe
+
+Paste API keys only into Netlify's environment variables (and `.env.local` on your Mac).
+Never send them by chat or email. If a key has been shared anywhere else, create a new one
+(OpenAI: platform.openai.com → API keys → Create new secret key), put it in Netlify and
+`.env.local`, then delete the old key there.
 
 ## Before upgrading to a new version
 

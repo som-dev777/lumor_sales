@@ -48,7 +48,7 @@ export function AiPanel({
       </h2>
       {status === "off" && (
         <Alert tone="info">
-          AI isn&rsquo;t set up yet. An Admin needs to add ANTHROPIC_API_KEY (see docs/deploy.md).
+          AI isn&rsquo;t set up yet. An Admin needs to add OPENAI_API_KEY (see docs/deploy.md).
           Everything else works without it.
         </Alert>
       )}

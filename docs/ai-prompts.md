@@ -15,11 +15,14 @@ See [PRD.md § AI features](PRD.md#ai-features) for what each must do.
 
 ## How they run
 
-- Model: `claude-opus-5-5` (Anthropic API, server-side only; the key never reaches the browser),
-  effort `low` for speed, with the server-side refusal fallback (`fallbacks: "default"`).
-- Each prompt's text is the **system prompt**. The app sends the data (the person, timeline,
-  Product Facts, …) as labelled JSON in the user message, and asks for a JSON answer in a fixed
-  shape (structured outputs), which the app checks before showing it.
+- Provider (D-036): **OpenAI**, Responses API, server-side only (the key never reaches the
+  browser). Model `gpt-5.5` by default, or the one named in `OPENAI_MODEL`; reasoning effort
+  `low` for speed. (R6 to v2.0.0 used Anthropic's `claude-opus-5-5`; the prompt texts are the
+  same on both.)
+- Each prompt's text is sent as the **instructions** (system prompt). The app sends the data
+  (the person, timeline, Product Facts, …) as labelled JSON in the input, and asks for a JSON
+  answer in a fixed shape (structured outputs), which the app checks before showing it. If the
+  model refuses, the rep sees "The AI declined to answer this one".
 - 30-second limit, no automatic retries; the screen offers **Try again**.
 - Runs only when a user clicks a button. Nothing is ever sent to a prospect by the app.
 

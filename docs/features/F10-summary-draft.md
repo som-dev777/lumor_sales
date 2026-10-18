@@ -31,9 +31,10 @@ Two more tools in the person page's AI panel (owner or Admin).
 
 ## Change history
 
-| Date       | Version | Change                                                                                                   |
-| ---------- | ------- | -------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | 1.5.0   | Placeholder doc created.                                                                                 |
-| 2026-10-17 | 1.5.0   | Full doc written (R6).                                                                                   |
-| 2026-10-17 | 1.5.0   | Summarise (Save as note, Confirm) and Draft (Mark as sent with template version) built; R6 browser test. |
-| 2026-10-17 | 1.5.0   | Released in v1.5.0 (R6 AI).                                                                              |
+| Date       | Version    | Change                                                                                                   |
+| ---------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.5.0      | Placeholder doc created.                                                                                 |
+| 2026-10-17 | 1.5.0      | Full doc written (R6).                                                                                   |
+| 2026-10-17 | 1.5.0      | Summarise (Save as note, Confirm) and Draft (Mark as sent with template version) built; R6 browser test. |
+| 2026-10-17 | 1.5.0      | Released in v1.5.0 (R6 AI).                                                                              |
+| 2026-10-18 | Unreleased | The AI now runs on OpenAI (default model gpt-5.5, D-036); same prompt and screens.                       |

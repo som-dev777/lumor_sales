@@ -60,7 +60,7 @@ const fillFacts = () =>
 describe("Reply Assistant (F09)", () => {
   it("the pasted reply is saved before the AI runs, even when AI isn't set up", async () => {
     vi.stubEnv("AI_FAKE", "");
-    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    vi.stubEnv("OPENAI_API_KEY", "");
     const saved = await savePastedReply(t.db, rep, personId, "Sounds interesting, tell me more");
     expect(saved).toMatchObject({
       type: "Reply received",

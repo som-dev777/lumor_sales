@@ -29,7 +29,7 @@ On the person page (owner or Admin), the rep pastes the prospect's message and c
   changed, and is audited. The AI may suggest only Replied, Demo booked, Demo done or
   Trial/Pilot.
 - AI needs Product Facts ("What Lumor does" and "Live features"); without them the panel says
-  so. Without `ANTHROPIC_API_KEY` it says "AI isn't set up yet".
+  so. Without `OPENAI_API_KEY` it says "AI isn't set up yet".
 - 30-second limit with **Try again**. Users can't use it on someone else's lead.
 
 ## Tests
@@ -42,9 +42,10 @@ On the person page (owner or Admin), the rep pastes the prospect's message and c
 
 ## Change history
 
-| Date       | Version | Change                                                                                                                                           |
-| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-10-16 | 1.5.0   | Placeholder doc created.                                                                                                                         |
-| 2026-10-17 | 1.5.0   | Full doc written (R6).                                                                                                                           |
-| 2026-10-17 | 1.5.0   | Reply Assistant built in the person page AI panel: saved reply, reply type, suggestions, Mark as sent with edit level, Confirm; R6 browser test. |
-| 2026-10-17 | 1.5.0   | Released in v1.5.0 (R6 AI).                                                                                                                      |
+| Date       | Version    | Change                                                                                                                                           |
+| ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-16 | 1.5.0      | Placeholder doc created.                                                                                                                         |
+| 2026-10-17 | 1.5.0      | Full doc written (R6).                                                                                                                           |
+| 2026-10-17 | 1.5.0      | Reply Assistant built in the person page AI panel: saved reply, reply type, suggestions, Mark as sent with edit level, Confirm; R6 browser test. |
+| 2026-10-17 | 1.5.0      | Released in v1.5.0 (R6 AI).                                                                                                                      |
+| 2026-10-18 | Unreleased | The AI now runs on OpenAI (default model gpt-5.5, D-036); same prompt, guardrails and screens.                                                   |

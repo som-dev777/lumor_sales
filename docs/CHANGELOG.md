@@ -10,7 +10,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-Nothing yet. R8 (Conversations: the thread, AI reply deadlines and the Team tab) comes next.
+R8 (Conversations: the thread, AI reply deadlines and the Team tab) comes next.
+
+- All AI features (Today's Rank with AI, Reply Assistant, Summarise conversation, Draft message) now run on OpenAI (default model gpt-5.5, or the one in OPENAI_MODEL). Same prompts, guardrails and screens. Set OPENAI_API_KEY to turn AI on.
 
 ## [2.0.0] - 2026-10-18
 

@@ -1,23 +1,29 @@
-// Calling Claude for the AI features (F08–F10). Server-side only: the API key never reaches
-// the browser. Each call sends one prompt from prompts.ts plus labelled data, and gets back a
-// JSON answer in a fixed shape (structured outputs), checked with Zod before use.
-import Anthropic from "@anthropic-ai/sdk";
-import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
+// Calling the AI for every AI feature (F08 Rank with AI, F09 Reply Assistant, F10 summary and
+// draft). OpenAI since D-036. Server-side only: the API key never reaches the browser. Each
+// call sends one prompt from prompts.ts plus labelled data, and gets back a JSON answer in a
+// fixed shape (structured outputs), checked with Zod before use.
+import OpenAI from "openai";
+import { zodTextFormat } from "openai/helpers/zod";
 import type { z } from "zod";
 import { PROMPTS, type PromptId } from "./prompts";
 
-export const AI_MODEL = "claude-opus-5-5";
+/** The default model; set OPENAI_MODEL in the environment to use another (D-036). */
+export const DEFAULT_AI_MODEL = "gpt-5.5";
 /** PRD: AI responses time out after 30 seconds, with a retry option on screen. */
 export const AI_TIMEOUT_MS = 30_000;
 
 export const AI_NOT_SET_UP =
-  "AI isn't set up yet. An Admin needs to add ANTHROPIC_API_KEY (see docs/deploy.md).";
+  "AI isn't set up yet. An Admin needs to add OPENAI_API_KEY (see docs/deploy.md).";
 
 export class AiError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "AiError";
   }
+}
+
+export function aiModel(): string {
+  return process.env.OPENAI_MODEL?.trim() || DEFAULT_AI_MODEL;
 }
 
 /**
@@ -28,7 +34,7 @@ export function aiMode(): "live" | "fake" | "off" {
   if (process.env.AI_FAKE === "1" && (process.env.DATABASE_URL ?? "").startsWith("file:")) {
     return "fake";
   }
-  return process.env.ANTHROPIC_API_KEY?.trim() ? "live" : "off";
+  return process.env.OPENAI_API_KEY?.trim() ? "live" : "off";
 }
 
 /** The data for a prompt, as labelled sections (e.g. "PRODUCT FACTS:" then JSON). */
@@ -42,10 +48,10 @@ export function formatInput(input: Record<string, unknown>): string {
     .join("\n\n");
 }
 
-let client: Anthropic | null = null;
+let client: OpenAI | null = null;
 
 /**
- * Runs one prompt. `fake` answers instead of Claude in the browser tests. Throws AiError with
+ * Runs one prompt. `fake` answers instead of the AI in the browser tests. Throws AiError with
  * a message that can be shown to the rep as-is.
  */
 export async function runPrompt<T>(
@@ -58,48 +64,53 @@ export async function runPrompt<T>(
   if (mode === "off") throw new AiError(AI_NOT_SET_UP);
   if (mode === "fake") return schema.parse(fake());
 
-  client ??= new Anthropic({ timeout: AI_TIMEOUT_MS, maxRetries: 0 });
+  client ??= new OpenAI({ timeout: AI_TIMEOUT_MS, maxRetries: 0 });
   let response;
   try {
-    response = await client.beta.messages.parse({
-      model: AI_MODEL,
-      max_tokens: 16000,
-      // If the model declines for policy reasons, the API retries on its default fallback.
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
-      system: PROMPTS[id].system,
-      messages: [{ role: "user", content: formatInput(input) }],
-      output_config: { effort: "low", format: betaZodOutputFormat(schema) },
+    response = await client.responses.parse({
+      model: aiModel(),
+      instructions: PROMPTS[id].system,
+      input: formatInput(input),
+      // Low reasoning effort keeps answers well inside the 30-second limit.
+      reasoning: { effort: "low" },
+      text: { format: zodTextFormat(schema, `${id.toLowerCase()}_result`) },
     });
   } catch (e) {
     throw new AiError(explain(e));
   }
-  if (response.stop_reason === "refusal") {
+  const refused = response.output.some(
+    (item) => item.type === "message" && item.content.some((c) => c.type === "refusal"),
+  );
+  if (refused) {
     throw new AiError("The AI declined to answer this one. Try rewording, or write it yourself.");
   }
-  if (response.stop_reason === "max_tokens" || !response.parsed_output) {
+  if (response.status === "incomplete" || !response.output_parsed) {
     throw new AiError("The AI's answer came back incomplete. Try again.");
   }
-  const checked = schema.safeParse(response.parsed_output);
-  if (!checked.success)
+  const checked = schema.safeParse(response.output_parsed);
+  if (!checked.success) {
     throw new AiError("The AI's answer wasn't in the expected shape. Try again.");
+  }
   return checked.data;
 }
 
 function explain(e: unknown): string {
-  if (e instanceof Anthropic.APIConnectionTimeoutError) {
+  if (e instanceof OpenAI.APIConnectionTimeoutError) {
     return "The AI took longer than 30 seconds. Try again.";
   }
-  if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) {
-    return "The AI key was refused. An Admin should check ANTHROPIC_API_KEY.";
+  if (e instanceof OpenAI.AuthenticationError || e instanceof OpenAI.PermissionDeniedError) {
+    return "The AI key was refused. An Admin should check OPENAI_API_KEY.";
   }
-  if (e instanceof Anthropic.RateLimitError) {
-    return "The AI is busy right now. Wait a minute and try again.";
+  if (e instanceof OpenAI.RateLimitError) {
+    return "The AI is busy right now (or the account is out of credit). Wait a minute and try again.";
   }
-  if (e instanceof Anthropic.APIConnectionError) {
+  if (e instanceof OpenAI.NotFoundError) {
+    return "The AI model wasn't found. An Admin should check OPENAI_MODEL.";
+  }
+  if (e instanceof OpenAI.APIConnectionError) {
     return "Couldn't reach the AI service. Check the internet connection and try again.";
   }
-  if (e instanceof Anthropic.APIError) {
+  if (e instanceof OpenAI.APIError) {
     console.error(`AI call failed: ${e.status} ${e.message}`);
     return "The AI service had a problem. Try again.";
   }

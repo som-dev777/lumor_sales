@@ -16,8 +16,8 @@ Next.js (App Router) + TypeScript · SQLite via Drizzle ORM + libSQL client
 (local file data/app.db; Turso in production) · Better Auth · SCSS modules with
 CSS variables (no Tailwind, no inline styles) · Radix UI · Lucide icons ·
 React Hook Form + Zod · TanStack Table · Recharts · date-fns + date-fns-tz
-(Asia/Kolkata) · Vitest + Playwright · ESLint + Prettier · Anthropic API
-(server-side only) · Resend (planned) · Node.js 22+. Hosting: Netlify.
+(Asia/Kolkata) · Vitest + Playwright · ESLint + Prettier · OpenAI API
+(server-side only; D-036) · Resend (planned) · Node.js 22+. Hosting: Netlify.
 All dates are stored in UTC and shown in IST. Weeks run Monday to Sunday.
 
 ## Data changes

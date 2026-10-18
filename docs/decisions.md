@@ -455,3 +455,23 @@ replaces it.
 - **Date:** 2026-10-18 · **Status:** Accepted. Confirms D-027.
 - **Decision:** Same 9 build-time warnings (ESLint's `braces`, drizzle-kit's esbuild). R7 added no
   packages. None reach the live app. Recheck at v2.1.0.
+
+## D-036: The AI features use OpenAI instead of Anthropic
+
+- **Date:** 2026-10-18 · **Status:** Accepted (owner). Replaces the model and provider part of
+  D-026; everything else in D-026 still applies.
+- **Decision:**
+  - All four AI features (Today's Rank with AI P01, Reply Assistant P02, Summarise P03, Draft
+    P04) call **OpenAI** through the official `openai` library's Responses API, from one file
+    (`src/server/ai/client.ts`). The prompts (P01–P04 v1.1), structured answers checked with
+    Zod, the 30-second limit with Try again, the Product Facts requirement and the stand-in AI
+    for tests are unchanged.
+  - Default model **`gpt-5.5`**: the newest general model on the account with a fixed, dated
+    version (2026-04-23), with reasoning effort `low` to stay well inside 30 seconds. A test
+    call on the Reply Assistant prompt answered in about 8 seconds and followed the guardrails.
+    `OPENAI_MODEL` can name another model without a code change.
+  - The key lives only in `.env.local` (locally) and Netlify's environment variables
+    (production) as `OPENAI_API_KEY`. `@anthropic-ai/sdk` is removed.
+  - CLAUDE.md's stack line now says OpenAI API. The PRD's stack table still says Anthropic;
+    CLAUDE.md wins (it points here).
+- **Why:** The owner chose OpenAI for all AI features and provided the key.

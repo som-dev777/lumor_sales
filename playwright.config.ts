@@ -30,9 +30,9 @@ export default defineConfig({
       BETTER_AUTH_URL: `http://localhost:${PORT}`,
       BETTER_AUTH_SECRET: "e2e-only-secret-not-used-anywhere-else-0123456789",
       SEED_ADMIN_PASSWORD: "e2e-admin-password",
-      // The stand-in AI (works only with a local database file); never calls Anthropic.
+      // The stand-in AI (works only with a local database file); never calls OpenAI.
       AI_FAKE: "1",
-      ANTHROPIC_API_KEY: "",
+      OPENAI_API_KEY: "",
       RESEND_API_KEY: "",
       EMAIL_FROM: "",
     },

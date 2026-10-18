@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AI_NOT_SET_UP, aiMode, formatInput, runPrompt } from "./client";
+import { AI_NOT_SET_UP, aiMode, aiModel, DEFAULT_AI_MODEL, formatInput, runPrompt } from "./client";
 import { editDistance, editLevel } from "./assist";
 import { GUARDRAILS, PROMPTS } from "./prompts";
 import { z } from "zod";
@@ -33,7 +33,7 @@ describe("AI client", () => {
   const schema = z.object({ ok: z.boolean() });
 
   it("without a key, says AI isn't set up (and never calls out)", async () => {
-    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    vi.stubEnv("OPENAI_API_KEY", "");
     vi.stubEnv("AI_FAKE", "");
     expect(aiMode()).toBe("off");
     await expect(runPrompt("P01", schema, {}, () => ({ ok: true }))).rejects.toThrow(AI_NOT_SET_UP);
@@ -41,11 +41,19 @@ describe("AI client", () => {
 
   it("the stand-in AI only works with a local database file", () => {
     vi.stubEnv("AI_FAKE", "1");
-    vi.stubEnv("ANTHROPIC_API_KEY", "");
+    vi.stubEnv("OPENAI_API_KEY", "");
     vi.stubEnv("DATABASE_URL", "libsql://prod.turso.io");
     expect(aiMode()).toBe("off");
     vi.stubEnv("DATABASE_URL", "file:.e2e/app.db");
     expect(aiMode()).toBe("fake");
+  });
+
+  it("uses gpt-5.5 unless OPENAI_MODEL names another model (D-036)", () => {
+    vi.stubEnv("OPENAI_MODEL", "");
+    expect(aiModel()).toBe(DEFAULT_AI_MODEL);
+    expect(DEFAULT_AI_MODEL).toBe("gpt-5.5");
+    vi.stubEnv("OPENAI_MODEL", "gpt-5.4-mini");
+    expect(aiModel()).toBe("gpt-5.4-mini");
   });
 
   it("labels each part of the data", () => {

@@ -34,7 +34,7 @@ plus an Incognito window): one for you as Admin, one for a test rep.
 
 **AI without a key (optional):** to see the AI screens with stand-in answers, stop the app
 (Ctrl+C in the Terminal) and start it with `AI_FAKE=1 npm run dev`. The answers are canned, not
-real AI. To try the real AI, put your key in `.env.local` as `ANTHROPIC_API_KEY=...` and run
+real AI. To try the real AI, put your key in `.env.local` as `OPENAI_API_KEY=...` (already done on your Mac) and run
 `npm run dev` again.
 
 ---
@@ -142,7 +142,7 @@ Needs Product Facts filled in (5.1), and either a real key or `AI_FAKE=1` (see s
       step; **Save as note** adds it to the timeline.
 - [ ] 6.8 **Draft message**: choose a template and click **Draft**. The placeholders are filled
       in; **Mark as sent** logs it.
-- [ ] 6.9 Without a key (normal `npm run dev`, no `ANTHROPIC_API_KEY`): the AI panel says "AI isn't
+- [ ] 6.9 Without a key (normal `npm run dev`, no `OPENAI_API_KEY`): the AI panel says "AI isn't
       set up yet" and everything else still works.
 
 ## 7. Audit Log and About (F14, F16)
@@ -198,7 +198,7 @@ Set it back to today when you're done.
    minutes. Then repeat a few checks above on the live address (1.1, 3.1, 4.1, 6.4).
 2. **Email (recommended):** add `RESEND_API_KEY` and `EMAIL_FROM` in Netlify (deploy.md step 3) so
    invites and resets are emailed and new sign-ups confirm their email.
-3. **AI:** add `ANTHROPIC_API_KEY` in Netlify. Fill in **Product Facts** fully first, since the AI
+3. **AI:** add `OPENAI_API_KEY` in Netlify (a fresh key; see the note on keys in deploy.md). Fill in **Product Facts** fully first, since the AI
    only uses what's written there.
 4. **Passwords:** you, Arijeet and Prince each log in and **Change password** away from the shared
    starting password.
