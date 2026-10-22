@@ -1,6 +1,6 @@
 # F20: AI Resources
 
-- **Priority:** P0 · **Release:** v2.1.0 (before R8) · **Status:** In progress
+- **Priority:** P0 · **Release:** v2.1.0 (before R8) · **Status:** Done
 - **Decisions:** D-037 (owner's choices on 2026-10-22), D-036 (AI on OpenAI)
 - **Replaces:** F12 Product Facts (its calendar link moves here)
 
@@ -82,7 +82,8 @@ A new **AI Resources** page in the sidebar with two parts:
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                                                                        |
-| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-22 | Unreleased | Feature doc written, before code.                                                                                                                                             |
-| 2026-10-22 | 2.1.0      | Built: knowledge files with versions, calendar link, sales resources (5 MB uploads and links), downloads for signed-in users, prompts v1.2; seed:knowledge; F20 browser test. |
+| Date       | Version | Change                                                                                                                                                                        |
+| ---------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-22 | 2.1.0   | Feature doc written, before code.                                                                                                                                             |
+| 2026-10-22 | 2.1.0   | Built: knowledge files with versions, calendar link, sales resources (5 MB uploads and links), downloads for signed-in users, prompts v1.2; seed:knowledge; F20 browser test. |
+| 2026-10-22 | 2.1.0   | Released in v2.1.0 (AI Resources).                                                                                                                                            |

@@ -14,6 +14,6 @@ adds the `awaiting_reply_until` field and Today's "Expired reply deadlines" sect
 
 ## Change history
 
-| Date       | Version    | Change                   |
-| ---------- | ---------- | ------------------------ |
-| 2026-10-18 | Unreleased | Placeholder doc created. |
+| Date       | Version | Change                   |
+| ---------- | ------- | ------------------------ |
+| 2026-10-18 | 2.1.0   | Placeholder doc created. |

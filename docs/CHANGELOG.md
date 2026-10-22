@@ -10,7 +10,11 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-AI Resources (v2.1.0), in progress; then R8 Conversations (v2.2.0).
+R8 Conversations (v2.2.0), on the owner's go-ahead.
+
+## [2.1.0] - 2026-10-22
+
+AI Resources: the AI now runs on OpenAI and reads a knowledge base the team manages, and reps get one place for decks and product videos.
 
 - Feature doc written for AI Resources (F20); decision D-037. The owner's AI knowledge base is stored in docs/ai-knowledge/.
 - New **AI Resources** page (sidebar). AI knowledge: the 8 starting files about Lumor, which the AI may only quote from; Admins add or edit files (each change keeps the old version and is in the history) and set the demo calendar link. Sales resources: Admins upload decks, images and short videos (PDF, JPG, PNG, MD, MP4 up to 5 MB) or add links; everyone opens and downloads them.
