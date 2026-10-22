@@ -21,6 +21,7 @@ npm run db:migrate
 npm run seed:admin
 npm run seed:library
 npm run seed:plans
+npm run seed:knowledge
 npm run releases:sync
 npm run dev
 ```
@@ -108,12 +109,15 @@ real AI. To try the real AI, put your key in `.env.local` as `OPENAI_API_KEY=...
       their first touch). Tiles show "low sample". Switch to **Month**, use the arrows, try each
       **Break down by** option, and see the **Plans** table at the bottom.
 
-## 5. Settings (F12, F13)
+## 5. AI Resources and Settings (F20, F13)
 
-- [ ] 5.1 **Settings → Product Facts**: a warning says the AI facts are missing. As Admin, **Edit**,
-      fill in What Lumor does and Live features, and add a calendar link (it must start with
-      `https://`). Save: the warning goes, and "Last edited by" shows you.
-- [ ] 5.2 As the rep, Product Facts is readable with no Edit button.
+- [ ] 5.1 **AI Resources** (sidebar): the 8 starting knowledge files are listed, AI guardrails
+      last with "Placed last". As Admin, set the **Calendar link for demos** (it must start with
+      `https://`) and **Save link**. Open a file, **Edit**, change a line, **Save**: it shows
+      version 2, and "Earlier versions" keeps the old text.
+- [ ] 5.2 **Sales resources** tab: **Add resource** → upload a small PDF deck, then **Add a link**
+      for a product video. As the rep, open the files and **Download** the PDF; there's no Edit,
+      Add or Remove button. A file over 5 MB, or a .docx, is refused with a clear message.
 - [ ] 5.3 **Settings → Playbook Settings**: the follow-up delays are gone; the cadence guardrail
       values are there (message 1–3 days after accepting, 3-day gaps, 4 follow-ups, 2 touches a
       week, 30/45-day plans, 60-day Nurture). As Admin, try setting "Message after accepting: at
@@ -121,7 +125,7 @@ real AI. To try the real AI, put your key in `.env.local` as `OPENAI_API_KEY=...
 
 ## 6. Today and the AI (F08, F09, F10)
 
-Needs Product Facts filled in (5.1), and either a real key or `AI_FAKE=1` (see step 0).
+Needs the knowledge files (5.1; loaded by `npm run seed:knowledge`), and either a real key or `AI_FAKE=1` (see step 0).
 
 - [ ] 6.1 As the rep, log **Got a reply** on two leads. **Today** shows them under Replies
       waiting, with the "x of 20 requests sent" bar and a suggested persona.
@@ -132,7 +136,7 @@ Needs Product Facts filled in (5.1), and either a real key or `AI_FAKE=1` (see s
 - [ ] 6.4 On a person page, **AI assistant → Reply Assistant**: paste a prospect's message and
       click **Suggest replies**. The message is in the timeline right away. You get a reply type
       (change it: "Reply type saved"), 2–3 replies with approach labels, a suggested next step,
-      and flags if the prospect asked something Product Facts doesn't cover.
+      and flags if the prospect asked something the knowledge files don't cover.
 - [ ] 6.5 With a real key, read the suggestions carefully: 2–4 lines, friendly, **no invented
       features or prices**, the partner panel never called proprietary, and two 20-minute demo
       slots plus your calendar link when the prospect is interested.
@@ -198,8 +202,8 @@ Set it back to today when you're done.
    minutes. Then repeat a few checks above on the live address (1.1, 3.1, 4.1, 6.4).
 2. **Email (recommended):** add `RESEND_API_KEY` and `EMAIL_FROM` in Netlify (deploy.md step 3) so
    invites and resets are emailed and new sign-ups confirm their email.
-3. **AI:** add `OPENAI_API_KEY` in Netlify (a fresh key; see the note on keys in deploy.md). Fill in **Product Facts** fully first, since the AI
-   only uses what's written there.
+3. **AI:** add `OPENAI_API_KEY` in Netlify (a fresh key; see the note on keys in deploy.md). Check the files on **AI Resources** first, since the AI
+   only uses what's written there, and set the calendar link.
 4. **Passwords:** you, Arijeet and Prince each log in and **Change password** away from the shared
    starting password.
 5. **Team:** sign-ups with @lumor.tech work straight away; invite anyone else from Settings →

@@ -24,7 +24,7 @@ import { addPersonNote } from "@/server/actions/leads";
 import type { Choice } from "@/server/leads/options";
 import styles from "./ai.module.scss";
 
-export type AiStatus = "ready" | "off" | "no-facts";
+export type AiStatus = "ready" | "off" | "no-knowledge";
 
 type Step = { stage: string; nextAction: string; nextActionDate: string };
 type Suggestion = { approach: string; text: string };
@@ -52,10 +52,10 @@ export function AiPanel({
           Everything else works without it.
         </Alert>
       )}
-      {status === "no-facts" && (
+      {status === "no-knowledge" && (
         <Alert tone="warning">
-          The AI needs Product Facts first, so it only says true things about Lumor.{" "}
-          <Link href="/settings/product-facts">Open Product Facts</Link>
+          The AI needs its knowledge files first, so it only says true things about Lumor.{" "}
+          <Link href="/ai-resources">Open AI Resources</Link>
         </Alert>
       )}
       {status === "ready" && (

@@ -11,13 +11,15 @@ On the person page (owner or Admin), the rep pastes the prospect's message and c
 1. The text is saved straight away as a "Reply received" activity (stage → Replied, sequence
    Stopped, next action Respond today), even if the AI then fails.
 2. P02 gets the reply, the full timeline, the person (persona, level, company, stage, sequence
-   step), the team's reply templates and Product Facts.
+   step), the team's reply templates, the AI knowledge files ticked for P02 and the
+   demo calendar link (F20).
 3. The panel shows:
    - the **reply type** the AI chose, which the rep can change (saved on the activity; it drives
      the Dashboard's "Interested" count)
    - **2–3 suggested replies**, each with its approach label, editable, with Copy
    - a **suggested stage and next action with date**, with Confirm
-   - **flags** for anything Product Facts doesn't answer
+   - **flags** for anything the knowledge files don't answer, and for interest in upcoming
+     features
 4. **Mark as sent** logs a "Message sent" activity with the final text, the approach, AI
    suggestion used = yes and the **edit level**.
 
@@ -28,8 +30,8 @@ On the person page (owner or Admin), the rep pastes the prospect's message and c
 - **Confirm** sets the stage, next action and date, logs a "Stage change" activity if the stage
   changed, and is audited. The AI may suggest only Replied, Demo booked, Demo done or
   Trial/Pilot.
-- AI needs Product Facts ("What Lumor does" and "Live features"); without them the panel says
-  so. Without `OPENAI_API_KEY` it says "AI isn't set up yet".
+- AI needs at least one active knowledge file for P02 (AI Resources, F20); without one the
+  panel says so and links to AI Resources. Without `OPENAI_API_KEY` it says "AI isn't set up yet".
 - 30-second limit with **Try again**. Users can't use it on someone else's lead.
 
 ## Tests
@@ -49,3 +51,4 @@ On the person page (owner or Admin), the rep pastes the prospect's message and c
 | 2026-10-17 | 1.5.0      | Reply Assistant built in the person page AI panel: saved reply, reply type, suggestions, Mark as sent with edit level, Confirm; R6 browser test. |
 | 2026-10-17 | 1.5.0      | Released in v1.5.0 (R6 AI).                                                                                                                      |
 | 2026-10-18 | Unreleased | The AI now runs on OpenAI (default model gpt-5.5, D-036); same prompt, guardrails and screens.                                                   |
+| 2026-10-22 | 2.1.0      | Reads the AI knowledge files (F20, D-037) instead of Product Facts; P02 v1.2 flags interest in upcoming features.                                |

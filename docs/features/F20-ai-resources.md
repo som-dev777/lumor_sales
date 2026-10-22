@@ -82,6 +82,7 @@ A new **AI Resources** page in the sidebar with two parts:
 
 ## Change history
 
-| Date       | Version    | Change                            |
-| ---------- | ---------- | --------------------------------- |
-| 2026-10-22 | Unreleased | Feature doc written, before code. |
+| Date       | Version    | Change                                                                                                                                                                        |
+| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-22 | Unreleased | Feature doc written, before code.                                                                                                                                             |
+| 2026-10-22 | 2.1.0      | Built: knowledge files with versions, calendar link, sales resources (5 MB uploads and links), downloads for signed-in users, prompts v1.2; seed:knowledge; F20 browser test. |

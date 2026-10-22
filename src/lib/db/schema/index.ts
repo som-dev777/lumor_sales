@@ -13,3 +13,4 @@ export * from "./audit-log";
 export * from "./app-release";
 export * from "./login-attempt";
 export * from "./plan";
+export * from "./ai-resources";

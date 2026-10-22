@@ -13,7 +13,9 @@ import { placeholdersIn } from "@/lib/validation/library";
 import { LeadError } from "../leads/companies";
 import { loadPerson } from "../leads/people";
 import { logWithPlan } from "../plans/enrolment";
-import { factsMissing, getProductFacts } from "../settings";
+import { knowledgeFor } from "../knowledge";
+import { getCalendarLink } from "../settings";
+import type { AiPromptId } from "@/lib/db/enums";
 import { AiError, runPrompt } from "./client";
 
 // --- Edit level (PRD) -----------------------------------------------------------------------
@@ -42,7 +44,7 @@ export function editLevel(suggestion: string, sent: string): "None" | "Light" | 
 
 // --- What the AI is told ---------------------------------------------------------------------
 
-async function leadContext(db: DbOrTx, personId: string) {
+async function leadContext(db: DbOrTx, personId: string, prompt: AiPromptId) {
   const [row] = await db
     .select({ p: person, companyName: company.name, persona })
     .from(person)
@@ -56,12 +58,7 @@ async function leadContext(db: DbOrTx, personId: string) {
     .where(eq(activity.personId, personId))
     .orderBy(desc(activity.occurredAt))
     .limit(50);
-  const facts = await getProductFacts(db);
-  if (factsMissing(facts)) {
-    throw new AiError(
-      "Product Facts aren't filled in yet, so the AI has nothing true to say about Lumor. An Admin can fill them in under Settings → Product Facts.",
-    );
-  }
+  const knowledge = await aiKnowledge(db, prompt);
   return {
     row,
     PERSON: {
@@ -81,14 +78,25 @@ async function leadContext(db: DbOrTx, personId: string) {
       replyType: e.replyType,
       content: e.content,
     })),
-    PRODUCT_FACTS: {
-      whatLumorDoes: facts.whatLumorDoes,
-      liveFeatures: facts.liveFeatures,
-      featuresNotLive: facts.featuresNotLive,
-      pricingGuidance: facts.pricingGuidance,
-      positioningRules: facts.positioningRules,
-      calendarLink: facts.calendarLink,
-    },
+    ...knowledge,
+  };
+}
+
+/**
+ * The knowledge base for a prompt (F20), plus the calendar link. It goes first in the AI's
+ * input so it can be cached. Refuses when no knowledge file applies.
+ */
+export async function aiKnowledge(db: DbOrTx, prompt: AiPromptId) {
+  const knowledge = await knowledgeFor(db, prompt);
+  if (!knowledge) {
+    throw new AiError(
+      "The AI knowledge base has no files for this yet, so the AI has nothing true to say about Lumor. An Admin can add them under AI Resources.",
+    );
+  }
+  const { calendarLink } = await getCalendarLink(db);
+  return {
+    KNOWLEDGE_BASE: knowledge,
+    CALENDAR_LINK: calendarLink ?? "(not set: ask the rep for a link)",
   };
 }
 
@@ -147,7 +155,7 @@ export async function suggestReplies(db: Db, actor: Actor, activityId: string, n
     throw new LeadError("That reply doesn't exist.");
   }
   await loadOwnLead(db, actor, reply.personId);
-  const ctx = await leadContext(db, reply.personId);
+  const ctx = await leadContext(db, reply.personId, "P02");
   const replyTemplates = await db
     .select({ name: template.name, purpose: template.purpose, body: template.body })
     .from(template)
@@ -159,12 +167,13 @@ export async function suggestReplies(db: Db, actor: Actor, activityId: string, n
     "P02",
     replyResultSchema,
     {
+      "KNOWLEDGE BASE": ctx.KNOWLEDGE_BASE,
+      "CALENDAR LINK": ctx.CALENDAR_LINK,
       TODAY: today,
       REPLY: reply.content ?? "",
       PERSON: ctx.PERSON,
       TIMELINE: ctx.TIMELINE,
       "REPLY TEMPLATES": replyTemplates,
-      "PRODUCT FACTS": ctx.PRODUCT_FACTS,
     },
     () => fakeReply(ctx.PERSON.name, today),
   );
@@ -360,17 +369,17 @@ export async function summariseThread(
   now = new Date(),
 ) {
   await loadOwnLead(db, actor, personId);
-  const ctx = await leadContext(db, personId);
+  const ctx = await leadContext(db, personId, "P03");
   const today = todayIst(now);
   const result = await runPrompt(
     "P03",
     summaryResultSchema,
     {
+      "KNOWLEDGE BASE": ctx.KNOWLEDGE_BASE,
       TODAY: today,
       THREAD: thread,
       PERSON: ctx.PERSON,
       TIMELINE: ctx.TIMELINE,
-      "PRODUCT FACTS": ctx.PRODUCT_FACTS,
     },
     () => ({
       summary: `${ctx.PERSON.name} is interested and wants to see how it works on their data.`,
@@ -401,24 +410,26 @@ export async function draftFromTemplate(
   await loadOwnLead(db, actor, personId);
   const [t] = await db.select().from(template).where(eq(template.id, templateId));
   if (!t || t.status !== "Active") throw new LeadError("Choose an active template.");
-  const ctx = await leadContext(db, personId);
+  const ctx = await leadContext(db, personId, "P04");
   return runPrompt(
     "P04",
     draftResultSchema,
     {
+      "KNOWLEDGE BASE": ctx.KNOWLEDGE_BASE,
+      "CALENDAR LINK": ctx.CALENDAR_LINK,
       TEMPLATE: { name: t.name, purpose: t.purpose, version: t.version, body: t.body },
       PERSON: ctx.PERSON,
       "PERSONA ANGLE": ctx.PERSONA_ANGLE,
       TIMELINE: ctx.TIMELINE,
-      "PRODUCT FACTS": ctx.PRODUCT_FACTS,
     },
-    () => ({
-      message: t.body
+    () => {
+      // Stand-in AI: fills what it knows and leaves the rest visible, as the guardrails say.
+      const message = t.body
         .replaceAll(/\{(first ?name|name)\}/gi, ctx.PERSON.name.split(" ")[0])
-        .replaceAll(/\{company\}/gi, ctx.PERSON.company ?? "your team")
-        .replaceAll(/\{[^}]*\}/g, "your work"),
-      notes: [],
-    }),
+        .replaceAll(/\{company\}/gi, ctx.PERSON.company ?? "{Company}");
+      const left = [...message.matchAll(/\{([^{}\n]{1,40})\}/g)].map((m) => `Fill in {${m[1]}}.`);
+      return { message, notes: left };
+    },
   );
 }
 

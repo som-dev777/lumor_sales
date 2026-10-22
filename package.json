@@ -20,7 +20,8 @@
     "releases:sync": "tsx scripts/sync-releases.ts",
     "test:e2e": "playwright test",
     "seed:library": "tsx scripts/seed-library.ts",
-    "seed:plans": "tsx scripts/seed-plans.ts"
+    "seed:plans": "tsx scripts/seed-plans.ts",
+    "seed:knowledge": "tsx scripts/seed-knowledge.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

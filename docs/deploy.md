@@ -73,7 +73,7 @@ themselves, and new sign-ups can log in straight away. With it, links are emaile
    | `OPENAI_MODEL`        | optional: another OpenAI model than the default `gpt-5.5`             |
 
 6. Click **Deploy**. The first build takes a few minutes. It creates the tables, the three
-   default Admins and the starting library.
+   default Admins, the starting library, the seed plans and the AI knowledge files.
 7. When it's done, Netlify shows the site's address. If it differs from what you put in
    `BETTER_AUTH_URL` (you can rename the site under **Site configuration → Change site
    name**), update `BETTER_AUTH_URL` to the exact address, then **Deploys → Trigger deploy →

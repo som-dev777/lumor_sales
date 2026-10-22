@@ -21,6 +21,9 @@ export type PlainAction =
   | "proposal.decide"
   | "settings.read"
   | "settings.edit"
+  // AI Resources (F20): Admins change the AI knowledge and the sales resources.
+  | "knowledge.edit"
+  | "resources.manage"
   | "audit.view"
   | "audit.modify";
 
@@ -67,6 +70,8 @@ export function can(actor: Actor, action: Action, record?: Partial<LibraryItem>)
     case "lead.reassign":
     case "proposal.decide":
     case "settings.edit":
+    case "knowledge.edit":
+    case "resources.manage":
     case "audit.view":
       return isAdmin;
 

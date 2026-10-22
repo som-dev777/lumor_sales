@@ -14,9 +14,9 @@ const SECTIONS = [
     icon: Users,
   },
   {
-    href: "/settings/product-facts",
-    title: "Product Facts",
-    description: "The only facts the AI may use about Lumor. Everyone reads; Admin edits.",
+    href: "/ai-resources",
+    title: "AI Resources",
+    description: "What the AI knows about Lumor (replaces Product Facts), plus decks and videos.",
     icon: BookOpenCheck,
   },
   {

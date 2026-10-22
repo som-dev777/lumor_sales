@@ -1,10 +1,10 @@
 # Netlify settings (D-023). Netlify reads this file on every deploy.
 # The build first brings the Turso database up to date, adds the default Admins and the
-# starting library and seed plans if they're missing (both leave existing data alone), records the
+# starting library, seed plans and AI knowledge if they're missing (both leave existing data alone), records the
 # releases for the About page, then builds the app.
 
 [build]
-  command = "npm run db:migrate && npm run seed:admin && npm run seed:library -- --first-time && npm run seed:plans && npm run releases:sync && npm run build"
+  command = "npm run db:migrate && npm run seed:admin && npm run seed:library -- --first-time && npm run seed:plans && npm run seed:knowledge && npm run releases:sync && npm run build"
   publish = ".next"
 
 [build.environment]

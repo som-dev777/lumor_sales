@@ -98,6 +98,14 @@ describe("PRD permission table", () => {
     expect(can(inactiveRep, "plan.use", official)).toBe(false);
   });
 
+  it("AI Resources (F20): Admins change the AI knowledge and sales resources; Users read", () => {
+    expect(can(admin, "knowledge.edit")).toBe(true);
+    expect(can(rep, "knowledge.edit")).toBe(false);
+    expect(can(admin, "resources.manage")).toBe(true);
+    expect(can(rep, "resources.manage")).toBe(false);
+    expect(can(rep, "record.view")).toBe(true);
+  });
+
   it("Approve or reject proposals: Admin yes, User no", () => {
     expect(can(admin, "proposal.decide")).toBe(true);
     expect(can(rep, "proposal.decide")).toBe(false);

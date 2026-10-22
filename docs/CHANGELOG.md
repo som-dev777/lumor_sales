@@ -13,6 +13,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 AI Resources (v2.1.0), in progress; then R8 Conversations (v2.2.0).
 
 - Feature doc written for AI Resources (F20); decision D-037. The owner's AI knowledge base is stored in docs/ai-knowledge/.
+- New **AI Resources** page (sidebar). AI knowledge: the 8 starting files about Lumor, which the AI may only quote from; Admins add or edit files (each change keeps the old version and is in the history) and set the demo calendar link. Sales resources: Admins upload decks, images and short videos (PDF, JPG, PNG, MD, MP4 up to 5 MB) or add links; everyone opens and downloads them.
+- Product Facts is replaced by AI Resources; its old page now opens AI Resources.
+- All four AI prompts move to v1.2 and read the knowledge files (guardrails file last). Draft message leaves a placeholder it can't fill visible and tells the rep, instead of making one up.
 
 - All AI features (Today's Rank with AI, Reply Assistant, Summarise conversation, Draft message) now run on OpenAI (default model gpt-5.5, or the one in OPENAI_MODEL). Same prompts, guardrails and screens. Set OPENAI_API_KEY to turn AI on.
 

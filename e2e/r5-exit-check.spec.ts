@@ -1,4 +1,5 @@
-// The R5 exit check, automated: an Admin edits Product Facts and Playbook Settings; everyone
+// The R5 exit check, automated (Product Facts moved to AI Resources in v2.1.0): an Admin edits
+// the calendar link and Playbook Settings; everyone
 // can read them, only Admins can edit, every change is in the history, and a new follow-up
 // delay is used by the next quick-log.
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
@@ -55,29 +56,20 @@ test.beforeAll(async ({ browser }) => {
   await expect(rep).toHaveURL("/");
 });
 
-test("an Admin fills in Product Facts; a User reads them but can't edit", async () => {
+test("Product Facts now lives in AI Resources: the calendar link is set there by Admins", async () => {
   await admin.goto("/settings/product-facts");
-  await expect(shown(admin.getByText(/Not filled in yet/))).toBeVisible();
-  await admin.getByRole("button", { name: "Edit" }).click();
-  const d = admin.getByRole("dialog");
-  await d.getByLabel("What Lumor does").fill("An AI research assistant for insight teams.");
-  await d.getByLabel("Live features").fill("Survey analysis\nInterview summaries");
-  await d.getByLabel("Calendar link").fill("cal.com/lumor");
-  await d.getByRole("button", { name: "Save" }).click();
-  await expect(d.getByText("Use a full link starting with https://")).toBeVisible();
-  await d.getByLabel("Calendar link").fill("https://cal.com/lumor/demo");
-  await d.getByRole("button", { name: "Save" }).click();
-  await expect(d).toBeHidden();
-  await expect(shown(admin.getByText(/Not filled in yet/))).toBeHidden();
-  await expect(shown(admin.getByText(/Last edited by Somnath/))).toBeVisible();
+  await expect(admin).toHaveURL(/\/ai-resources$/);
+  const link = shown(admin.getByLabel("Calendar link for demos"));
+  await link.fill("http://cal.com/lumor");
+  await admin.getByRole("button", { name: "Save link" }).click();
+  await expect(shown(admin.getByText("Use a full link starting with https://"))).toBeVisible();
+  await link.fill("https://cal.com/lumor/demo");
+  await admin.getByRole("button", { name: "Save link" }).click();
+  await expect(shown(admin.getByText("Calendar link saved."))).toBeVisible();
 
-  await rep.goto("/settings/product-facts");
-  await expect(shown(rep.getByText("An AI research assistant for insight teams."))).toBeVisible();
+  await rep.goto("/ai-resources");
   await expect(shown(rep.getByRole("link", { name: "https://cal.com/lumor/demo" }))).toBeVisible();
-  await expect(shown(rep.getByRole("button", { name: "Edit" }))).toHaveCount(0);
-  await expect(shown(rep.getByRole("heading", { name: "Change history" }))).toBeVisible();
-  await rep.screenshot({ path: "test-results/r5-facts.png", fullPage: true });
-  await expect(shown(rep.getByText("Live features", { exact: true }).last())).toBeVisible();
+  await expect(rep.getByLabel("Calendar link for demos")).toHaveCount(0);
 });
 
 test("exit check: a new guardrail value is used by the next quick-log", async () => {

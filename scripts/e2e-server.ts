@@ -10,6 +10,7 @@ run("db:migrate");
 run("seed:admin");
 run("seed:library");
 run("seed:plans");
+run("seed:knowledge");
 
 const server = spawn("npx", ["next", "start", "-p", "3100"], {
   stdio: "inherit",

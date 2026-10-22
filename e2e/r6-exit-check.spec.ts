@@ -37,14 +37,7 @@ test.beforeAll(async ({ browser }) => {
   await shown(admin.getByLabel("Password")).fill(ADMIN.password);
   await admin.getByRole("button", { name: "Log in" }).click();
   await expect(admin).toHaveURL("/");
-  // The AI needs Product Facts.
-  await admin.goto("/settings/product-facts");
-  await admin.getByRole("button", { name: "Edit" }).click();
-  const d = admin.getByRole("dialog");
-  await d.getByLabel("What Lumor does").fill("An AI research assistant for insight teams.");
-  await d.getByLabel("Live features").fill("Survey analysis");
-  await d.getByRole("button", { name: "Save" }).click();
-  await expect(d).toBeHidden();
+  // The AI reads the starting knowledge base (seeded by the test server).
 
   rep = await newPage(browser);
   await rep.goto("/signup");
@@ -95,7 +88,8 @@ test("summarise a thread and save it as a note; draft from a template", async ()
   await rep.getByRole("button", { name: "Draft", exact: true }).click();
   const draft = rep.getByLabel("Message", { exact: true });
   await expect(draft).not.toHaveValue("");
-  await expect(draft).not.toHaveValue(/\{/);
+  // Unknown placeholders stay visible (guardrails file); the rep fills them before sending.
+  await draft.fill((await draft.inputValue()).replace(/\{[^}]*\}/g, "research"));
   await rep.getByRole("button", { name: "Mark as sent" }).click();
   await expect(shown(rep.getByText("Logged as sent."))).toBeVisible();
 });

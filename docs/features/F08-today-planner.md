@@ -46,7 +46,8 @@ A lead appears once, in the first section that matches.
 
 ## AI ranking (P01)
 
-Unchanged from v1 apart from the section names (P01 v1.1). It runs only when **Rank with AI**
+Unchanged from v1 apart from the section names; from v2.1.0 it reads the AI knowledge files
+ticked for P01 (P01 v1.2, F20). It runs only when **Rank with AI**
 is clicked. If AI isn't set up, fails, or takes over 30 seconds, the list stays in rule order.
 
 ## Tests
@@ -69,3 +70,4 @@ is clicked. If AI isn't set up, fails, or takes over 30 seconds, the list stays 
 | 2026-10-18 | 2.0.0      | Fix: a reply that pauses a plan now shows under Replies waiting (system events are ignored when finding the latest activity).                                    |
 | 2026-10-18 | 2.0.0      | Released in v2.0.0 (R7 Plans).                                                                                                                                   |
 | 2026-10-18 | Unreleased | The AI now runs on OpenAI (default model gpt-5.5, D-036); same prompt and screens.                                                                               |
+| 2026-10-22 | 2.1.0      | Rank with AI reads the AI knowledge files ticked for P01 (F20, D-037).                                                                                           |

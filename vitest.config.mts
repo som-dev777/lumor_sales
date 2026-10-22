@@ -8,5 +8,8 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
+    // Database tests each use a real SQLite file; a few at a time keeps them reliable on a busy
+    // machine (unlimited workers timed out under load).
+    maxWorkers: 4,
   },
 });

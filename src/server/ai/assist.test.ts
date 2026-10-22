@@ -4,9 +4,9 @@ import { activity, auditLog, person, template } from "@/lib/db/schema";
 import { createTestDb, insertTestUser } from "@/lib/db/test-db";
 import { PermissionError, type Actor } from "@/lib/permissions";
 import { personSchema } from "@/lib/validation/leads";
-import { productFactsSchema } from "@/lib/validation/settings";
 import { createPerson } from "../leads/people";
-import { saveProductFacts } from "../settings";
+import { seedKnowledge, updateKnowledge, listKnowledge } from "../knowledge";
+import { readSeedKnowledge } from "../knowledge-files";
 import {
   applyNextStep,
   draftFromTemplate,
@@ -50,12 +50,7 @@ afterEach(() => {
   t.cleanup();
 });
 
-const fillFacts = () =>
-  saveProductFacts(
-    t.db,
-    admin,
-    productFactsSchema.parse({ whatLumorDoes: "Research AI", liveFeatures: "Survey analysis" }),
-  );
+const fillFacts = () => seedKnowledge(t.db, readSeedKnowledge());
 
 describe("Reply Assistant (F09)", () => {
   it("the pasted reply is saved before the AI runs, even when AI isn't set up", async () => {
@@ -73,9 +68,25 @@ describe("Reply Assistant (F09)", () => {
     await expect(suggestReplies(t.db, rep, saved.id)).rejects.toThrow(AI_NOT_SET_UP);
   });
 
-  it("needs Product Facts before suggesting anything", async () => {
+  it("needs the AI knowledge base before suggesting anything", async () => {
     const saved = await savePastedReply(t.db, rep, personId, "Tell me more");
-    await expect(suggestReplies(t.db, rep, saved.id)).rejects.toThrow(/Product Facts/);
+    await expect(suggestReplies(t.db, rep, saved.id)).rejects.toThrow(
+      /knowledge base has no files/,
+    );
+    // Files that are switched off don't count either.
+    await fillFacts();
+    for (const f of await listKnowledge(t.db)) {
+      await updateKnowledge(t.db, admin, f.id, {
+        title: f.title,
+        content: f.content,
+        loadFor: ["P02"],
+        placeLast: f.placeLast,
+        active: false,
+      });
+    }
+    await expect(suggestReplies(t.db, rep, saved.id)).rejects.toThrow(
+      /knowledge base has no files/,
+    );
   });
 
   it("returns a reply type, 2–3 suggestions and a next step; the rep can change the type", async () => {
@@ -132,13 +143,25 @@ describe("Mark as sent and Confirm", () => {
       })
       .returning();
     const draft = await draftFromTemplate(t.db, rep, personId, tpl.id);
-    expect(draft.message).toBe("Hi Priya, saw your work at your team.");
+    // Unknown placeholders stay visible and the rep is told (guardrails file, D-037).
+    expect(draft).toEqual({
+      message: "Hi Priya, saw your work at {Company}.",
+      notes: ["Fill in {Company}."],
+    });
+    await expect(
+      markSent(t.db, rep, personId, {
+        suggestion: draft.message,
+        text: draft.message,
+        templateId: tpl.id,
+      }),
+    ).rejects.toThrow("Fill in {Company} first.");
+    const text = "Hi Priya, saw your work at Acme.";
     const row = await markSent(t.db, rep, personId, {
       suggestion: draft.message,
-      text: draft.message,
+      text,
       templateId: tpl.id,
     });
-    expect(row).toMatchObject({ templateId: tpl.id, templateVersion: "B", editLevel: "None" });
+    expect(row).toMatchObject({ templateId: tpl.id, templateVersion: "B", editLevel: "Heavy" });
   });
 
   it("Confirm sets stage and next action, logs the stage change; never Lost or Paid", async () => {

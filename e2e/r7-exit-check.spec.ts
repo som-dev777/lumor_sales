@@ -41,14 +41,7 @@ test.beforeAll(async ({ browser }) => {
   await shown(admin.getByLabel("Password")).fill(ADMIN.password);
   await admin.getByRole("button", { name: "Log in" }).click();
   await expect(admin).toHaveURL("/");
-  // Product Facts for the Reply Assistant (stand-in AI).
-  await admin.goto("/settings/product-facts");
-  await admin.getByRole("button", { name: "Edit" }).click();
-  const d = admin.getByRole("dialog");
-  await d.getByLabel("What Lumor does").fill("An AI research assistant for insight teams.");
-  await d.getByLabel("Live features").fill("Survey analysis");
-  await d.getByRole("button", { name: "Save" }).click();
-  await expect(d).toBeHidden();
+  // The Reply Assistant reads the starting knowledge base (seeded by the test server).
 
   const r = await newPage(browser);
   rep = r.page;

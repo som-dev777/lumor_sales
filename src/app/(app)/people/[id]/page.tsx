@@ -27,7 +27,7 @@ import { aiMode } from "@/server/ai/client";
 import { planState } from "@/server/plans/enrolment";
 import { usablePlans } from "@/server/plans/plans";
 import { appNow } from "@/lib/clock";
-import { factsMissing, getProductFacts } from "@/server/settings";
+import { knowledgeFor } from "@/server/knowledge";
 
 export const metadata: Metadata = { title: "Person" };
 
@@ -48,10 +48,10 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
   const p = await getPerson(db, id);
   if (!p) notFound();
   const today = todayIst(await appNow());
-  const [events, options, facts, state, plans] = await Promise.all([
+  const [events, options, knowledge, state, plans] = await Promise.all([
     personTimeline(db, id),
     leadFormOptions(db),
-    getProductFacts(db),
+    knowledgeFor(db, "P02"),
     planState(db, id, today),
     usablePlans(db, viewer),
   ]);
@@ -257,7 +257,7 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
       {mayEdit && (
         <AiPanel
           personId={p.id}
-          status={aiMode() === "off" ? "off" : factsMissing(facts) ? "no-facts" : "ready"}
+          status={aiMode() === "off" ? "off" : knowledge ? "ready" : "no-knowledge"}
           templates={options.templates}
         />
       )}

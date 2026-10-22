@@ -8,6 +8,7 @@ import { accountFilter, activity, company, person, persona } from "@/lib/db/sche
 import { assertCan, type Actor } from "@/lib/permissions";
 import { addDaysIst, formatIstDate, toIstDate, todayIst } from "@/lib/time";
 import { SECTIONS, type SectionKey } from "@/lib/today-sections";
+import { aiKnowledge } from "./ai/assist";
 import { runPrompt } from "./ai/client";
 import { LeadError } from "./leads/companies";
 import { loadPerson } from "./leads/people";
@@ -326,10 +327,12 @@ export function applyRanking(tasks: Task[], ranking: z.infer<typeof rankingSchem
 export async function rankToday(db: Db, viewer: Actor, now = new Date()) {
   const plan = await buildToday(db, viewer, now);
   if (plan.tasks.length === 0) return { tasks: [], summary: null as string | null };
+  const knowledge = await aiKnowledge(db, "P01");
   const ranking = await runPrompt(
     "P01",
     rankingSchema,
     {
+      "KNOWLEDGE BASE": knowledge.KNOWLEDGE_BASE,
       TODAY: plan.today,
       TASKS: plan.tasks.map((t) => ({
         id: t.id,

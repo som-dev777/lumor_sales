@@ -50,10 +50,10 @@ test("a wrong password is refused", async () => {
   await expect(shown(admin.getByText("Wrong email or password."))).toBeVisible();
 });
 
-test("a default Admin logs in and sees all 12 menu items (v2 adds Plans)", async () => {
+test("a default Admin logs in and sees all 13 menu items (v2 adds Plans and AI Resources)", async () => {
   await logIn(admin, ADMIN.email, ADMIN.password);
   await expect(admin).toHaveURL("/");
-  await expect(menuItems(admin)).toHaveCount(12);
+  await expect(menuItems(admin)).toHaveCount(13);
 });
 
 test("sign-up: only @lumor.tech, never a default Admin email", async () => {
@@ -74,7 +74,7 @@ test("sign-up: only @lumor.tech, never a default Admin email", async () => {
 });
 
 test("a User sees 9 menu items and is refused Admin pages", async () => {
-  await expect(menuItems(rep)).toHaveCount(10);
+  await expect(menuItems(rep)).toHaveCount(11);
   await expect(menuItems(rep).filter({ hasText: "Audit Log" })).toHaveCount(0);
   for (const path of ["/audit-log", "/approvals", "/settings/users"]) {
     await rep.goto(path);

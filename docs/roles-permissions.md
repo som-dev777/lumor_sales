@@ -43,8 +43,11 @@ test in `src/lib/permissions.test.ts`.
 | See and use a plan (enrol people)                                    | `plan.use`: Official plans for all; Personal for the owner and Admins | Yes   | Official + own                              |
 | Approve or reject a plan proposal                                    | `proposal.decide`                                                     | Yes   | No                                          |
 | Approve or reject proposals                                          | `proposal.decide`                                                     | Yes   | No                                          |
-| Read Product Facts and Playbook Settings                             | `settings.read`                                                       | Yes   | Yes                                         |
-| Edit Product Facts and Playbook Settings                             | `settings.edit`                                                       | Yes   | No                                          |
+| Read Playbook Settings                                               | `settings.read`                                                       | Yes   | Yes                                         |
+| Edit Playbook Settings                                               | `settings.edit`                                                       | Yes   | No                                          |
+| Read AI knowledge files and download sales resources (F20)           | `record.view`                                                         | Yes   | Yes                                         |
+| Add and edit AI knowledge files; set the demo calendar link          | `knowledge.edit`                                                      | Yes   | No                                          |
+| Add and remove sales resources (files and links)                     | `resources.manage`                                                    | Yes   | No                                          |
 | View the Audit Log                                                   | `audit.view`                                                          | Yes   | No. Users see change history on each record |
 | Edit or delete Audit Log entries                                     | `audit.modify`                                                        | No    | No                                          |
 

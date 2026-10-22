@@ -81,7 +81,10 @@ describe("v1 → v2 migration", () => {
     await act("a4", "Stage change", "Messaged → Lost (No budget)");
     await act("a5", "Request sent", null);
 
-    expect(await pendingMigrations(client)).toEqual(["0005_v2_plans", "0006_drop_v1_sequence"]);
+    expect((await pendingMigrations(client)).slice(0, 2)).toEqual([
+      "0005_v2_plans",
+      "0006_drop_v1_sequence",
+    ]);
     await migrate(db, { migrationsFolder: "drizzle" });
 
     const people = await client.execute("SELECT id, stage FROM person ORDER BY id");

@@ -1,23 +1,14 @@
-// Product Facts (F12) and Playbook Settings (F13): one row each, read by everyone, edited by
+// The calendar link (F20) and Playbook Settings (F13): one row each, read by everyone, edited by
 // Admins. Each save is audited with the fields that changed, in the same transaction.
 import { eq } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
 import { playbookSettings, productFacts, user } from "@/lib/db/schema";
 import { assertCan, type Actor } from "@/lib/permissions";
-import type { PlaybookSettingsData, ProductFactsData } from "@/lib/validation/settings";
+import type { PlaybookSettingsData } from "@/lib/validation/settings";
 import { getPlaybookSettings } from "./leads/quicklog";
 
 export { getPlaybookSettings };
-
-export const FACT_FIELDS = [
-  "whatLumorDoes",
-  "liveFeatures",
-  "featuresNotLive",
-  "pricingGuidance",
-  "positioningRules",
-  "calendarLink",
-] as const satisfies readonly (keyof ProductFactsData)[];
 
 export const PLAYBOOK_FIELDS = [
   "withdrawAfterDays",
@@ -39,46 +30,47 @@ export const PLAYBOOK_FIELDS = [
 const pick = <K extends string>(row: Record<string, unknown>, keys: readonly K[]) =>
   Object.fromEntries(keys.map((k) => [k, row[k]])) as Record<K, unknown>;
 
-/** Product Facts with the name of whoever last edited them. */
-export async function getProductFacts(db: DbOrTx) {
+/**
+ * The calendar link the AI offers for demos (F20). It lives in the old Product Facts row; the
+ * rest of Product Facts was replaced by the AI knowledge base (D-037).
+ */
+export async function getCalendarLink(db: DbOrTx) {
   const [row] = await db
-    .select({ facts: productFacts, editorName: user.name })
+    .select({
+      calendarLink: productFacts.calendarLink,
+      at: productFacts.lastEditedAt,
+      editorName: user.name,
+    })
     .from(productFacts)
     .leftJoin(user, eq(user.id, productFacts.lastEditedBy))
     .where(eq(productFacts.id, 1));
-  if (!row) throw new Error("Product Facts are missing. Run npm run db:migrate.");
-  return { ...row.facts, editorName: row.editorName };
+  if (!row) throw new Error("Settings are missing. Run npm run db:migrate.");
+  return row;
 }
 
-/** The AI features need at least these two (F12). */
-export function factsMissing(f: { whatLumorDoes: string | null; liveFeatures: string | null }) {
-  return !f.whatLumorDoes || !f.liveFeatures;
-}
-
-export async function saveProductFacts(
+export async function saveCalendarLink(
   db: Db,
   actor: Actor,
-  data: ProductFactsData,
+  calendarLink: string | null,
   now = new Date(),
 ) {
-  assertCan(actor, "settings.edit");
+  assertCan(actor, "knowledge.edit");
   return db.transaction(async (tx) => {
     const [before] = await tx.select().from(productFacts).where(eq(productFacts.id, 1));
-    const changed = FACT_FIELDS.some((k) => before[k] !== data[k]);
-    if (!changed) return before;
+    if (before.calendarLink === calendarLink) return before;
     const [after] = await tx
       .update(productFacts)
-      .set({ ...data, lastEditedBy: actor.id, lastEditedAt: now, updatedAt: now })
+      .set({ calendarLink, lastEditedBy: actor.id, lastEditedAt: now, updatedAt: now })
       .where(eq(productFacts.id, 1))
       .returning();
     await writeAudit(tx, {
       userId: actor.id,
-      entityType: "Product Facts",
+      entityType: "Calendar link",
       recordId: "1",
-      recordName: "Product Facts",
+      recordName: "Calendar link",
       action: "Updated",
-      before: pick(before, FACT_FIELDS),
-      after: pick(after, FACT_FIELDS),
+      before: { calendarLink: before.calendarLink },
+      after: { calendarLink: after.calendarLink },
     });
     return after;
   });

@@ -1,0 +1,232 @@
+@use "../../styles/mixins" as *;
+
+.card {
+  @include card;
+  margin-bottom: var(--space-4);
+  padding: var(--space-5);
+}
+
+.tabs {
+  display: inline-flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-card);
+}
+
+.tab,
+.tabActive {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+.tabActive {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: var(--weight-medium);
+}
+
+.topRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.inlineForm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+  min-width: min(100%, 420px);
+
+  > :first-child {
+    flex: 1;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.fileCard {
+  @include card;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  color: var(--color-text);
+
+  &:hover {
+    border-color: var(--color-primary);
+    text-decoration: none;
+  }
+}
+
+.fileTitle {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.content {
+  margin: 0;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.section {
+  margin-bottom: var(--space-5);
+}
+
+.sectionTitle {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.list {
+  @include card;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.resource {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.resourceMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.resourceActions,
+.row,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.actions {
+  justify-content: flex-end;
+}
+
+.linkButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+
+  &:hover {
+    text-decoration: none;
+    background: var(--color-page);
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+
+  legend {
+    padding: 0 var(--space-1);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+  }
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.toggle {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.fileField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.versions {
+  margin-top: var(--space-2);
+
+  summary {
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+  }
+
+  > * + * {
+    margin-top: var(--space-3);
+  }
+}

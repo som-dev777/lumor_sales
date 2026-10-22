@@ -1,4 +1,5 @@
 import {
+  BookMarked,
   BookOpenText,
   Building2,
   ChartColumn,
@@ -22,7 +23,7 @@ export type NavItem = {
   adminOnly?: boolean;
 };
 
-// The sidebar items from the PRD (Screens; v2 adds Plans after Templates), in order.
+// The sidebar items from the PRD (Screens; v2 adds Plans, then AI Resources (F20)), in order.
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Today", icon: LayoutList },
   { href: "/people", label: "People", icon: Users },
@@ -31,6 +32,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/account-filters", label: "Account Filters", icon: Filter },
   { href: "/templates", label: "Templates", icon: BookOpenText },
   { href: "/plans", label: "Plans", icon: Route },
+  { href: "/ai-resources", label: "AI Resources", icon: BookMarked },
   { href: "/dashboard", label: "Dashboard", icon: ChartColumn },
   { href: "/approvals", label: "Approvals", icon: CircleCheckBig, adminOnly: true },
   { href: "/audit-log", label: "Audit Log", icon: History, adminOnly: true },

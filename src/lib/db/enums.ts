@@ -157,3 +157,19 @@ export const AUDIT_ACTIONS = [
   "Reactivated",
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
+
+// --- AI Resources (F20) ---
+export const AI_PROMPT_IDS = ["P01", "P02", "P03", "P04"] as const;
+export type AiPromptId = (typeof AI_PROMPT_IDS)[number];
+
+export const RESOURCE_CATEGORIES = [
+  "Sales deck",
+  "Product video",
+  "One-pager",
+  "Case study",
+  "Image",
+  "Other",
+] as const;
+export type ResourceCategory = (typeof RESOURCE_CATEGORIES)[number];
+
+export const RESOURCE_KINDS = ["file", "link"] as const;

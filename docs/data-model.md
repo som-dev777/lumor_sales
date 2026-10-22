@@ -54,6 +54,9 @@ This document must match the code. Update it in the same step as any schema chan
 | Edit level         | None, Light, Heavy                                                                                                                                                                                                              |
 | Proposal item type | Persona, AccountFilter, Template, Plan                                                                                                                                                                                          |
 | Proposal decision  | Pending, Approved, Rejected                                                                                                                                                                                                     |
+| AI prompt          | P01 (Today planner), P02 (Reply Assistant), P03 (Summarise), P04 (Draft message)                                                                                                                                                |
+| Resource category  | Sales deck, Product video, One-pager, Case study, Image, Other                                                                                                                                                                  |
+| Resource kind      | file, link                                                                                                                                                                                                                      |
 | Audit action       | Created, Updated, Deleted, Approved, Rejected, Reassigned, Role changed, Deactivated, Reactivated                                                                                                                               |
 
 ## The 12 PRD entities
@@ -226,7 +229,9 @@ Indexes: (person_id, occurred_at), (user_id, occurred_at), (type, occurred_at), 
 ### product_facts (single row, id = 1)
 
 what_lumor_does, live_features, features_not_live, pricing_guidance, positioning_rules,
-calendar_link, last_edited_by (→ user), last_edited_at.
+calendar_link, last_edited_by (→ user), last_edited_at. Since v2.1.0 (D-037) only
+`calendar_link` is used (edited on AI Resources); the other text columns are kept but no longer
+read or shown. The AI's facts come from `knowledge_file`.
 
 ### playbook_settings (single row, id = 1)
 
@@ -266,6 +271,30 @@ person_id (→ person), plan_id (→ plan), version, status (Enrolment status), 
 request_sent_date, accepted_date, ends_by, call_attempts, started_at, paused_at, ended_at,
 end_reason. **Partial unique index `plan_enrolment_one_live`: one Active or Paused row per
 person** (`WHERE status IN ('Active','Paused')`).
+
+### knowledge_file (F20)
+
+slug (unique, e.g. `01-company-and-positioning`), title, content (Markdown), load_for (JSON list
+of AI prompts that read it), place_last (0/1: read after the others so its rules win), active
+(0/1), sort_order, version (starts at 1, +1 on every text change), last_edited_by (→ user),
+last_edited_at. `npm run seed:knowledge` adds the starting files from `docs/ai-knowledge/`
+and never changes a file that exists.
+
+### knowledge_revision
+
+file_id (→ knowledge_file), version, content: the text a file had before each change. Unique
+(file_id, version).
+
+### sales_resource (F20)
+
+title, description (optional), category (Resource category), kind (Resource kind), url (links,
+https only), file_name, mime_type, size_bytes (files). Check: a link has a url, a file has a
+file_name. Index on category.
+
+### sales_resource_file
+
+resource_id (primary key, → sales_resource), data (blob, 5 MB at most: PDF, JPG, PNG, MD or
+MP4). Kept apart so the list never loads file bytes. Removing a resource deletes both rows.
 
 ### audit_log (insert-only)
 
@@ -326,4 +355,5 @@ drop a trigger. The app never runs schema-changing commands at runtime.
 migration to a local database file, it copies the file to `data/backups/`. Afterwards it runs
 `PRAGMA foreign_key_check` and prints the number of people per stage before and after.
 0005 and 0006 move v1 data to v2 (D-029): stages, activity types, `to_stage`, new columns and
-tables, and dropping `sequence_step` and the old follow-up delays.
+tables, and dropping `sequence_step` and the old follow-up delays. 0007 adds the four AI
+Resources tables (F20).

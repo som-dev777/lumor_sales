@@ -3,15 +3,15 @@ import { auditLog } from "@/lib/db/schema";
 import { createTestDb, insertTestUser } from "@/lib/db/test-db";
 import { PermissionError, type Actor } from "@/lib/permissions";
 import { personSchema } from "@/lib/validation/leads";
-import { playbookSettingsSchema, productFactsSchema } from "@/lib/validation/settings";
+import { calendarLinkSchema } from "@/lib/validation/ai-resources";
+import { playbookSettingsSchema } from "@/lib/validation/settings";
 import { createPerson } from "./leads/people";
 import { quickLog } from "./leads/quicklog";
 import {
-  factsMissing,
+  getCalendarLink,
   getPlaybookSettings,
-  getProductFacts,
+  saveCalendarLink,
   savePlaybookSettings,
-  saveProductFacts,
 } from "./settings";
 
 let t: Awaited<ReturnType<typeof createTestDb>>;
@@ -26,13 +26,6 @@ beforeEach(async () => {
 });
 afterEach(() => t.cleanup());
 
-const facts = (over: Record<string, unknown> = {}) =>
-  productFactsSchema.parse({
-    whatLumorDoes: "AI research assistant",
-    liveFeatures: "Survey analysis",
-    calendarLink: "https://cal.com/lumor/demo",
-    ...over,
-  });
 const playbook = (over: Record<string, unknown> = {}) =>
   playbookSettingsSchema.parse({
     withdrawAfterDays: 14,
@@ -52,42 +45,19 @@ const playbook = (over: Record<string, unknown> = {}) =>
     ...over,
   });
 
-describe("Product Facts (F12)", () => {
-  it("starts empty; an Admin saves, and it's audited with the changed fields", async () => {
-    expect(factsMissing(await getProductFacts(t.db))).toBe(true);
-    await saveProductFacts(t.db, admin, facts());
-    const saved = await getProductFacts(t.db);
-    expect(saved).toMatchObject({ whatLumorDoes: "AI research assistant", editorName: "Somnath" });
-    expect(saved.lastEditedAt).toBeInstanceOf(Date);
-    expect(factsMissing(saved)).toBe(false);
+describe("calendar link (F20)", () => {
+  it("Admins set it; it's audited; Users are refused; it must be https", async () => {
+    expect((await getCalendarLink(t.db)).calendarLink).toBeNull();
+    await saveCalendarLink(t.db, admin, "https://cal.com/lumor/demo");
+    expect(await getCalendarLink(t.db)).toMatchObject({
+      calendarLink: "https://cal.com/lumor/demo",
+      editorName: "Somnath",
+    });
     const [entry] = await t.db.select().from(auditLog);
-    expect(entry).toMatchObject({
-      entityType: "Product Facts",
-      action: "Updated",
-      userId: admin.id,
-    });
-    expect(entry.changes).toMatchObject({
-      liveFeatures: { before: null, after: "Survey analysis" },
-    });
-    expect(entry.changes).not.toHaveProperty("lastEditedAt");
-  });
-
-  it("saving with nothing changed writes no audit entry", async () => {
-    await saveProductFacts(t.db, admin, facts());
-    await saveProductFacts(t.db, admin, facts());
-    expect(await t.db.select().from(auditLog)).toHaveLength(1);
-  });
-
-  it("Users can read but not edit", async () => {
-    await expect(saveProductFacts(t.db, rep, facts())).rejects.toThrow(PermissionError);
-    expect((await getProductFacts(t.db)).whatLumorDoes).toBeNull();
-  });
-
-  it("the calendar link must be https; text is limited to 5,000 characters", () => {
-    expect(productFactsSchema.safeParse({ calendarLink: "http://cal.com/x" }).success).toBe(false);
-    expect(productFactsSchema.safeParse({ calendarLink: "cal.com/x" }).success).toBe(false);
-    expect(productFactsSchema.parse({ calendarLink: "" }).calendarLink).toBeNull();
-    expect(productFactsSchema.safeParse({ liveFeatures: "x".repeat(5001) }).success).toBe(false);
+    expect(entry).toMatchObject({ entityType: "Calendar link", action: "Updated" });
+    await expect(saveCalendarLink(t.db, rep, null)).rejects.toThrow(PermissionError);
+    expect(calendarLinkSchema.safeParse({ calendarLink: "http://cal.com/x" }).success).toBe(false);
+    expect(calendarLinkSchema.parse({ calendarLink: "" }).calendarLink).toBeNull();
   });
 });
 
