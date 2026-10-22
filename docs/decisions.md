@@ -475,3 +475,26 @@ replaces it.
   - CLAUDE.md's stack line now says OpenAI API. The PRD's stack table still says Anthropic;
     CLAUDE.md wins (it points here).
 - **Why:** The owner chose OpenAI for all AI features and provided the key.
+
+## D-037: AI Resources replaces Product Facts (owner, 2026-10-22)
+
+- **Date:** 2026-10-22 · **Status:** Accepted (owner: "go with your recommendations")
+- **Decision:**
+  - A new **AI Resources** page (F20) holds the AI knowledge base: the owner's Markdown files,
+    which become the only facts the AI may use. Each prompt reads the files the knowledge
+    base's README assigns to it, with the guardrails file placed last. This **replaces Product
+    Facts** (F12); only its calendar link is kept, moved to AI Resources.
+  - **Admins only** change AI knowledge and add or remove sales resources; everyone reads and
+    downloads.
+  - Sales resources are PDF, JPG, PNG, MD or MP4 files **up to 5 MB**, stored in the app's
+    database (no new storage account), or **links**. Videos and large decks go in as links,
+    because the online host (Netlify) can't take uploads over about 6 MB.
+  - The AI reads the **Markdown knowledge files only**, not PDFs, images or videos.
+  - Prompts P01–P04 move to **version 1.2**: they read the KNOWLEDGE BASE instead of Product
+    Facts, and the Draft prompt now leaves an unknown placeholder visible and tells the rep, as
+    the guardrails file says. The app still refuses to log a message with an unfilled `{…}`.
+  - **Release numbering:** this ships as **v2.1.0**, before R8. R8 Conversations becomes
+    **v2.2.0** and R9 Reports **v2.3.0** (the PRD's release plan said 2.1.0 and 2.2.0;
+    CLAUDE.md follows this record).
+- **Why:** The owner's knowledge base is more complete and better governed than the Product Facts
+  form, and reps need one place for decks and videos.

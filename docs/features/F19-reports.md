@@ -1,6 +1,6 @@
 # F19: Reports
 
-- **Priority:** P1 · **Release:** R9 (v2.2.0) · **Status:** Planned
+- **Priority:** P1 · **Release:** R9 (v2.3.0) · **Status:** Planned
 - **PRD:** [Version 2 scope → F19](../PRD.md#version-2-scope-r7r9)
 
 ## What it does

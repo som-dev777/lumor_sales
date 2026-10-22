@@ -43,8 +43,8 @@ All dates are stored in UTC and shown in IST. Weeks run Monday to Sunday.
 1. Update the feature's doc in docs/features/ and its change-history section.
 2. Add a CHANGELOG.md entry (under "Unreleased" until a release).
 3. Versioning: bump MINOR once per completed release (R1 = 1.0.0, R2 = 1.1.0…)
-   and PATCH for fixes. Version 2 starts at R7 = 2.0.0, then MINOR again (R8 = 2.1.0;
-   D-028). Do not bump the version on every commit.
+   and PATCH for fixes. Version 2 starts at R7 = 2.0.0, then MINOR again (AI Resources = 2.1.0,
+   R8 = 2.2.0, R9 = 2.3.0; D-028, D-037). Do not bump the version on every commit.
 4. Update docs/README.md (feature index) if anything changed there.
 5. At a release or patch, add the AppRelease record (run `npm run releases:sync`).
 6. Record significant choices in docs/decisions.md.
@@ -78,6 +78,5 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-10-18): R7 (v2.0.0) is built and released. The owner now runs R7's exit check and
-the QA checklist (docs/qa-checklist.md). Fixes are PATCH releases (2.0.1, …); R8 starts on
-the owner's go-ahead.
+Current (2026-10-22): building AI Resources (F20, v2.1.0) in one go, then stop with a summary.
+The owner runs R7's exit check and the QA checklist after it. R8 starts on the owner's go-ahead.

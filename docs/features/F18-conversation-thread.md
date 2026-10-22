@@ -1,6 +1,6 @@
 # F18: Conversation thread and AI reply guidance
 
-- **Priority:** P0 · **Release:** R8 (v2.1.0) · **Status:** Planned
+- **Priority:** P0 · **Release:** R8 (v2.2.0) · **Status:** Planned
 - **PRD:** [Version 2 scope → F18](../PRD.md#version-2-scope-r7r9)
 
 ## What it does
