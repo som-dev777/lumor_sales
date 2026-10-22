@@ -43,3 +43,4 @@ Two more tools in the person page's AI panel (owner or Admin).
 | 2026-10-22 | 2.1.0   | Summarise and Draft read the AI knowledge files (F20, D-037). P04 v1.2 leaves an unknown placeholder visible and tells the rep in the notes; Mark as sent stays refused until it's filled. |
 | 2026-10-22 | 2.1.0   | Released in v2.1.0 (AI Resources).                                                                                                                                                         |
 | 2026-10-22 | 2.2.0   | Summarise (P03 v1.3) and Draft (P04 v1.3) read the conversation thread (F18); no pasting.                                                                                                  |
+| 2026-10-22 | 2.2.0   | Released in v2.2.0 (R8 Conversations).                                                                                                                                                     |

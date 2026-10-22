@@ -79,3 +79,4 @@ is clicked. If AI isn't set up, fails, or takes over 30 seconds, the list stays 
 | 2026-10-22 | 2.1.0   | Rank with AI reads the AI knowledge files ticked for P01 (F20, D-037).                                                                                           |
 | 2026-10-22 | 2.1.0   | Released in v2.1.0 (AI Resources).                                                                                                                               |
 | 2026-10-22 | 2.2.0   | R8: nudge tasks with Draft nudge in Expired reply deadlines; the Admins' Team tab (F18, D-038).                                                                  |
+| 2026-10-22 | 2.2.0   | Released in v2.2.0 (R8 Conversations).                                                                                                                           |

@@ -1,6 +1,6 @@
 # F18: Conversation thread and AI reply guidance
 
-- **Priority:** P0 · **Release:** R8 (v2.2.0) · **Status:** In progress
+- **Priority:** P0 · **Release:** R8 (v2.2.0) · **Status:** Done
 - **PRD:** [Version 2 scope → F18](../PRD.md#version-2-scope-r7r9)
 - **Decisions:** D-038 (owner's choices on 2026-10-22, and mine)
 - **Changes:** F09 Reply Assistant becomes **Suggest next message**; F10 Summarise and Draft read
@@ -136,3 +136,4 @@ One button. It reads the whole thread and works out the situation first:
 | 2026-10-18 | 2.1.0   | Placeholder doc created.                                                                                                                                    |
 | 2026-10-22 | 2.2.0   | Full doc written (R8) with the owner's choices, before code.                                                                                                |
 | 2026-10-22 | 2.2.0   | Built: conversation thread, one-at-a-time and pasted messages (P05), Suggest next message (P02 v2.0), reply-by dates and nudges, Team tab; R8 browser test. |
+| 2026-10-22 | 2.2.0   | Released in v2.2.0 (R8 Conversations).                                                                                                                      |

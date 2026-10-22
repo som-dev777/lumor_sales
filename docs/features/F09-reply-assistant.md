@@ -57,3 +57,4 @@ On the person page (owner or Admin), the rep pastes the prospect's message and c
 | 2026-10-22 | 2.1.0   | Reads the AI knowledge files (F20, D-037) instead of Product Facts; P02 v1.2 flags interest in upcoming features.                                |
 | 2026-10-22 | 2.1.0   | Released in v2.1.0 (AI Resources).                                                                                                               |
 | 2026-10-22 | 2.2.0   | Replaced by Suggest next message (F18, P02 v2.0): replies go into the conversation first; the AI's reply type is saved on the reply.             |
+| 2026-10-22 | 2.2.0   | Released in v2.2.0 (R8 Conversations).                                                                                                           |

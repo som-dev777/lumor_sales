@@ -10,7 +10,11 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-R8 Conversations (v2.2.0), in progress.
+R9 Reports (v2.3.0), on the owner's go-ahead.
+
+## [2.2.0] - 2026-10-22
+
+R8 Conversations: every message is recorded with who sent it, where and when, and the AI suggests the next message from the whole conversation, with reply-by dates and nudges on Today.
 
 - Feature doc written for the conversation thread (F18) with the owner's choices; decision D-038.
 - Person pages get a chat-style **Conversation** instead of the timeline: every message shows who sent it (you or them), where (LinkedIn, InMail, Email, WhatsApp, Call or In person) and when. Add messages one at a time, with an earlier time if needed, or **paste a whole conversation** and let the AI split it for you to check. Old activities appear in it automatically.
