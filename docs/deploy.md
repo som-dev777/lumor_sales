@@ -9,7 +9,7 @@ Time needed: about 30 minutes. Do the steps in order.
 ## What you'll end up with
 
 - A database in Mumbai (Turso), which holds all the app's data.
-- The website (Netlify), at an address like `https://lumor-sales.netlify.app`.
+- The website (Netlify), at an address like `https://your-site-url.com`.
 - Every time new code is pushed to GitHub (`main`), Netlify rebuilds and updates the site.
   Each build brings the database up to date first.
 
@@ -65,7 +65,7 @@ themselves, and new sign-ups can log in straight away. With it, links are emaile
    | `DATABASE_URL`        | the Turso URL from Step 1 (`libsql://…`)                              |
    | `DATABASE_AUTH_TOKEN` | the Turso token from Step 1                                           |
    | `BETTER_AUTH_SECRET`  | the key from Step 2                                                   |
-   | `BETTER_AUTH_URL`     | the site address, e.g. `https://lumor-sales.netlify.app` (see step 7) |
+   | `BETTER_AUTH_URL`     | the site address, e.g. `https://your-site-url.com` (see step 7) |
    | `SEED_ADMIN_PASSWORD` | the first password for the three default Admins (10+ characters)      |
    | `RESEND_API_KEY`      | from Step 3 (leave out if you skipped it)                             |
    | `EMAIL_FROM`          | from Step 3 (leave out if you skipped it)                             |
