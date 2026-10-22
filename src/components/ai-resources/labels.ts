@@ -3,7 +3,7 @@ import type { AiPromptId } from "@/lib/db/enums";
 
 export const PROMPT_LABEL: Record<AiPromptId, string> = {
   P01: "Today: Rank with AI (P01)",
-  P02: "Reply Assistant (P02)",
+  P02: "Suggest next message (P02)",
   P03: "Summarise conversation (P03)",
   P04: "Draft message (P04)",
 };

@@ -13,6 +13,11 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 R8 Conversations (v2.2.0), in progress.
 
 - Feature doc written for the conversation thread (F18) with the owner's choices; decision D-038.
+- Person pages get a chat-style **Conversation** instead of the timeline: every message shows who sent it (you or them), where (LinkedIn, InMail, Email, WhatsApp, Call or In person) and when. Add messages one at a time, with an earlier time if needed, or **paste a whole conversation** and let the AI split it for you to check. Old activities appear in it automatically.
+- A reply pauses the plan from the time it arrived; messages dated earlier re-plan quietly from their real date.
+- **Suggest next message** replaces the Reply Assistant: it reads the whole conversation and knows whether to reply, wait, nudge, close the loop or start. Accepting a suggestion sets an **Expect a reply by** date you confirm.
+- **Today**: when that date passes, a nudge task with **Draft nudge** (at most 2 nudges, then close the loop). Admins get a **Team** tab.
+- Summarise and Draft read the conversation; no more pasting. AI prompts: P02 v2.0, P03 and P04 v1.3, new P05 (split conversation).
 
 ## [2.1.0] - 2026-10-22
 

@@ -86,6 +86,21 @@ export const ACTIVITY_TYPES = [
 export const CHANNELS = ["LinkedIn", "InMail", "Email", "Call", "WhatsApp", "In person"] as const;
 export type Channel = (typeof CHANNELS)[number];
 
+/** Where a conversation message happened (F18). */
+export const THREAD_CHANNELS = [
+  "LinkedIn",
+  "InMail",
+  "Email",
+  "WhatsApp",
+  "Call",
+  "In person",
+] as const satisfies readonly Channel[];
+export type ThreadChannel = (typeof THREAD_CHANNELS)[number];
+
+/** Which side of the conversation a message is on (F18): from the rep or from the prospect. */
+export const DIRECTIONS = ["out", "in"] as const;
+export type Direction = (typeof DIRECTIONS)[number];
+
 export const CALL_OUTCOMES = [
   "Connected",
   "No answer",

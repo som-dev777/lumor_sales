@@ -4,6 +4,7 @@ import {
   ACTIVITY_TYPES,
   CALL_OUTCOMES,
   CHANNELS,
+  DIRECTIONS,
   EDIT_LEVELS,
   REPLY_TYPES,
   STAGES,
@@ -45,6 +46,8 @@ export const activity = sqliteTable(
     toStage: text("to_stage", { enum: STAGES }),
     // A connection request sent with a note counts as a touch (D-033).
     requestNote: flag("request_note").notNull().default(false),
+    // R8 (F18): out = from the rep, in = from the prospect, empty = notes and events.
+    direction: text("direction", { enum: DIRECTIONS }),
   },
   (t) => [
     check("activity_type_check", oneOf("type", ACTIVITY_TYPES)),
@@ -61,6 +64,7 @@ export const activity = sqliteTable(
     check("activity_call_outcome_check", oneOfOrNull("call_outcome", CALL_OUTCOMES)),
     check("activity_to_stage_check", oneOfOrNull("to_stage", STAGES)),
     check("activity_request_note_check", sql`${t.requestNote} IN (0, 1)`),
+    check("activity_direction_check", oneOfOrNull("direction", DIRECTIONS)),
     index("activity_person_time_idx").on(t.personId, t.occurredAt),
     index("activity_user_time_idx").on(t.userId, t.occurredAt),
     index("activity_type_time_idx").on(t.type, t.occurredAt),

@@ -7,12 +7,11 @@ import { ExternalLink } from "lucide-react";
 import { ChangeHistory } from "@/components/audit/ChangeHistory";
 import { AiPanel } from "@/components/ai/AiPanel";
 import { PlanPanel } from "@/components/plans/PlanPanel";
+import { Conversation, type ThreadView } from "@/components/conversation/Conversation";
 import { MarkCustomerButton } from "@/components/leads/MarkCustomerButton";
-import { NoteForm } from "@/components/leads/NoteForm";
 import { PersonDialogButton } from "@/components/leads/PersonDialogButton";
 import { QuickLogBar } from "@/components/leads/QuickLogBar";
 import { StageBadge } from "@/components/leads/StageBadge";
-import { Timeline } from "@/components/leads/Timeline";
 import styles from "@/components/leads/leads.module.scss";
 import { Alert } from "@/components/ui/Alert";
 import { StatusMessage } from "@/components/ui/StatusMessage";
@@ -20,9 +19,11 @@ import { getDb } from "@/lib/db/client";
 import { profileHref } from "@/lib/linkedin";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
-import { formatIstDate, todayIst } from "@/lib/time";
+import { formatIst, formatIstDate, toIstLocal, todayIst } from "@/lib/time";
 import { leadFormOptions } from "@/server/leads/options";
-import { canLogOutreach, getPerson, personTimeline } from "@/server/leads/people";
+import { canLogOutreach, getPerson } from "@/server/leads/people";
+import { situationOf, threadOf } from "@/server/conversation";
+import { describeSituation } from "@/server/ai/assist";
 import { aiMode } from "@/server/ai/client";
 import { planState } from "@/server/plans/enrolment";
 import { usablePlans } from "@/server/plans/plans";
@@ -47,9 +48,11 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
   const db = getDb();
   const p = await getPerson(db, id);
   if (!p) notFound();
-  const today = todayIst(await appNow());
-  const [events, options, knowledge, state, plans] = await Promise.all([
-    personTimeline(db, id),
+  const now = await appNow();
+  const today = todayIst(now);
+  const [thread, situation, options, knowledge, state, plans] = await Promise.all([
+    threadOf(db, id),
+    situationOf(db, id, today),
     leadFormOptions(db),
     knowledgeFor(db, "P02"),
     planState(db, id, today),
@@ -78,6 +81,18 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
             : null
       : null;
   const mayEdit = canLogOutreach(viewer, p.ownerId);
+  const firstName = p.fullName.split(/\s+/)[0];
+  const items: ThreadView[] = thread.map((i) => ({
+    id: i.id,
+    side: i.side,
+    when: formatIst(i.at),
+    who: i.side === "them" ? p.fullName : i.userId === viewer.id ? "You" : (i.userName ?? "System"),
+    type: i.type,
+    channel: i.channel,
+    content: i.content,
+    replyType: i.replyType,
+    step: i.side === "me" ? i.planStepOrder : null,
+  }));
 
   const fact = (label: string, value: React.ReactNode) => (
     <div>
@@ -259,15 +274,24 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
           personId={p.id}
           status={aiMode() === "off" ? "off" : knowledge ? "ready" : "no-knowledge"}
           templates={options.templates}
+          situation={describeSituation(situation, firstName)}
         />
       )}
 
       <div className={styles.columns}>
-        <section className={styles.panel} aria-label="Timeline">
-          <h2 className={styles.panelTitle}>Timeline</h2>
-          <NoteForm personId={p.id} />
-          <Timeline events={events} />
-        </section>
+        <Conversation
+          personId={p.id}
+          firstName={firstName}
+          items={items}
+          canLog={mayEdit}
+          now={toIstLocal(now)}
+          currentStep={currentStep && currentStep.action !== "requestSent" ? currentStep : null}
+          defaultChannel={
+            situation.lastChannel && situation.lastChannel !== "In person"
+              ? situation.lastChannel
+              : "LinkedIn"
+          }
+        />
         <div>
           {p.notes && (
             <section className={styles.panel}>

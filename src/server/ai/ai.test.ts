@@ -14,7 +14,8 @@ describe("prompts are stored word for word (docs/ai-prompts.md)", () => {
       expect(doc).toContain(`## ${id}: ${p.name}`);
       expect(doc).toContain(`### Version ${p.version}`);
       expect(doc).toContain(p.system);
-      expect(p.system).toContain(GUARDRAILS);
+      // P05 only splits pasted text; nothing it returns is sent to a prospect.
+      if (id !== "P05") expect(p.system).toContain(GUARDRAILS);
     });
   }
 });

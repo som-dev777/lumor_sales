@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, index, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { LEVELS, LOST_REASONS, SENIORITIES, STAGES, TEMPLATE_VERSIONS } from "../enums";
 import { baseColumns, flag, oneOf, oneOfOrNull } from "./_shared";
 import { accountFilter } from "./account-filter";
@@ -53,6 +53,8 @@ export const person = sqliteTable(
     dncDate: text("dnc_date"),
     nurtureUntil: text("nurture_until"),
     awaitingReplyUntil: text("awaiting_reply_until"),
+    // Nudges sent since the last reply (F18: at most 2, then close the loop).
+    nudgeCount: integer("nudge_count").notNull().default(0),
   },
   (t) => [
     check("person_linkedin_url_check", sql`${t.linkedinUrl} LIKE '%linkedin.com/in/%'`),

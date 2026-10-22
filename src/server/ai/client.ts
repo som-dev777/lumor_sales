@@ -1,4 +1,4 @@
-// Calling the AI for every AI feature (F08 Rank with AI, F09 Reply Assistant, F10 summary and
+// Calling the AI for every AI feature (F08 Rank with AI, F18 Suggest next message and split conversation, F10 summary and
 // draft). OpenAI since D-036. Server-side only: the API key never reaches the browser. Each
 // call sends one prompt from prompts.ts plus labelled data, and gets back a JSON answer in a
 // fixed shape (structured outputs), checked with Zod before use.

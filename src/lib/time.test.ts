@@ -3,12 +3,14 @@ import {
   addDaysIst,
   formatIst,
   formatIstDate,
+  fromIstLocal,
   isIstDate,
   istDateSpan,
   istDayRange,
   istMonthRange,
   istWeekRange,
   todayIst,
+  toIstLocal,
 } from "./time";
 
 describe("IST dates", () => {
@@ -68,5 +70,24 @@ describe("IST ranges", () => {
     const month = istMonthRange(new Date("2026-10-31T20:00:00Z")); // 1 Nov, 01:30 IST
     expect(month.start.toISOString()).toBe("2026-10-31T18:30:00.000Z");
     expect(month.end.toISOString()).toBe("2026-11-30T18:30:00.000Z");
+  });
+});
+
+describe("IST date-and-time inputs (F18)", () => {
+  it("shows and reads times in IST", () => {
+    expect(toIstLocal(new Date("2026-10-16T05:00:00Z"))).toBe("2026-10-16T10:30");
+    expect(fromIstLocal("2026-10-16T10:30")?.toISOString()).toBe("2026-10-16T05:00:00.000Z");
+    expect(fromIstLocal("2026-10-16 10:30")?.toISOString()).toBe("2026-10-16T05:00:00.000Z");
+  });
+
+  it("refuses anything that isn't a real date and time", () => {
+    for (const bad of [
+      "",
+      "2026-10-16",
+      "2026-02-30T10:00",
+      "2026-10-16T24:00",
+      "16/10/2026 10:30",
+    ])
+      expect(fromIstLocal(bad)).toBeNull();
   });
 });

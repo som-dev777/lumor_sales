@@ -41,7 +41,7 @@ test.beforeAll(async ({ browser }) => {
   await shown(admin.getByLabel("Password")).fill(ADMIN.password);
   await admin.getByRole("button", { name: "Log in" }).click();
   await expect(admin).toHaveURL("/");
-  // The Reply Assistant reads the starting knowledge base (seeded by the test server).
+  // The AI reads the starting knowledge base (seeded by the test server).
 
   const r = await newPage(browser);
   rep = r.page;
@@ -165,12 +165,16 @@ test("exit check: enrol, on time, wait for acceptance, weekend → Monday, late 
   await rep.screenshot({ path: "test-results/r7-person.png", fullPage: true });
 });
 
-test("exit check: a pasted reply pauses the plan; Resume brings it back", async () => {
+test("exit check: a reply pauses the plan; Resume brings it back", async () => {
   await setDate("2026-10-30");
   await rep.goto(personUrl);
-  await shown(rep.getByLabel("Prospect's message")).fill("Interesting, tell me more.");
-  await shown(rep.getByRole("button", { name: "Suggest replies" })).click();
-  await expect(shown(rep.getByLabel("Reply type"))).toHaveValue("Interested");
+  const conversation = shown(rep.getByRole("region", { name: "Conversation" }));
+  await conversation.getByLabel("From Ella").check();
+  await conversation.getByLabel("What Ella sent or said").fill("Interesting, tell me more.");
+  await conversation.getByRole("button", { name: "Add to conversation" }).click();
+  await expect(shown(rep.getByText("Added to the conversation."))).toBeVisible();
+  await shown(rep.getByRole("button", { name: "Suggest next message" })).click();
+  await expect(shown(rep.getByLabel("Reply type", { exact: true }))).toHaveValue("Interested");
   await rep.reload();
   await expect(panel(rep)).toContainText("Paused");
   await rep.goto("/");

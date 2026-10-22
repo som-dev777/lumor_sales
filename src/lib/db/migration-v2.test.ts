@@ -80,6 +80,8 @@ describe("v1 → v2 migration", () => {
     await act("a3", "Stage change", "Demo done → Trial/Pilot");
     await act("a4", "Stage change", "Messaged → Lost (No budget)");
     await act("a5", "Request sent", null);
+    await act("a6", "Message sent", "Hi Person 0");
+    await act("a7", "Reply received", "Thanks!");
 
     expect((await pendingMigrations(client)).slice(0, 2)).toEqual([
       "0005_v2_plans",
@@ -92,20 +94,23 @@ describe("v1 → v2 migration", () => {
     V1_STAGES.forEach(([, v2], i) => expect(byId[`p${i}`]).toBe(v2));
 
     const acts = await client.execute(
-      "SELECT id, type, to_stage, request_note FROM activity ORDER BY id",
+      "SELECT id, type, to_stage, request_note, direction FROM activity ORDER BY id",
     );
-    expect(acts.rows.map((r) => [r.id, r.type, r.to_stage, r.request_note])).toEqual([
-      ["a1", "Meeting booked", null, 0],
-      ["a2", "Meeting held", null, 0],
-      ["a3", "Stage change", "Trial", 0],
-      ["a4", "Stage change", "Lost", 0],
-      ["a5", "Request sent", null, 0],
+    // 0008 (R8) puts messages on the rep's side and replies on the prospect's.
+    expect(acts.rows.map((r) => [r.id, r.type, r.to_stage, r.request_note, r.direction])).toEqual([
+      ["a1", "Meeting booked", null, 0, null],
+      ["a2", "Meeting held", null, 0, null],
+      ["a3", "Stage change", "Trial", 0, null],
+      ["a4", "Stage change", "Lost", 0, null],
+      ["a5", "Request sent", null, 0, null],
+      ["a6", "Message sent", null, 0, "out"],
+      ["a7", "Reply received", null, 0, "in"],
     ]);
 
     const cols = await client.execute("PRAGMA table_info(person)");
     expect(cols.rows.map((r) => r.name)).not.toContain("sequence_step");
     expect(cols.rows.map((r) => r.name)).toEqual(
-      expect.arrayContaining(["phone", "do_not_contact", "nurture_until"]),
+      expect.arrayContaining(["phone", "do_not_contact", "nurture_until", "nudge_count"]),
     );
     const settings = await client.execute("PRAGMA table_info(playbook_settings)");
     expect(settings.rows.map((r) => r.name)).not.toContain("follow_up_1_delay_days");

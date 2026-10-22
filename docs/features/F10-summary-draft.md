@@ -20,6 +20,8 @@ Two more tools in the person page's AI panel (owner or Admin).
 
 ## Rules
 
+- From R8 (F18), Summarise reads the saved conversation (one click, no pasting) and Draft reads
+  it too, so it doesn't repeat what was said.
 - Same guardrails, knowledge-file requirement (F20), 30-second limit and permissions as F09.
 - The AI may suggest stages Request sent through Trial/Pilot (never Lost or Paid).
 
@@ -40,3 +42,4 @@ Two more tools in the person page's AI panel (owner or Admin).
 | 2026-10-18 | 2.1.0   | The AI now runs on OpenAI (default model gpt-5.5, D-036); same prompt and screens.                                                                                                         |
 | 2026-10-22 | 2.1.0   | Summarise and Draft read the AI knowledge files (F20, D-037). P04 v1.2 leaves an unknown placeholder visible and tells the rep in the notes; Mark as sent stays refused until it's filled. |
 | 2026-10-22 | 2.1.0   | Released in v2.1.0 (AI Resources).                                                                                                                                                         |
+| 2026-10-22 | 2.2.0   | Summarise (P03 v1.3) and Draft (P04 v1.3) read the conversation thread (F18); no pasting.                                                                                                  |

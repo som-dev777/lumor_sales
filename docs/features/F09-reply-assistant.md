@@ -1,6 +1,9 @@
-# F09: Reply Assistant
+# F09: Reply Assistant (replaced by Suggest next message in R8)
 
-- **Priority:** P1 · **Release:** R6 (v1.5.0) · **Status:** Done (v1.5.0)
+- **Priority:** P1 · **Release:** R6 (v1.5.0) · **Status:** Replaced in v2.2.0 by **Suggest next
+  message** ([F18](F18-conversation-thread.md), D-038). Replies are now added to the
+  conversation (with their channel and time), and one button suggests the next message whether
+  or not they've replied. Edit level, reply type, Mark as sent and Confirm work as below.
 - **PRD:** [AI features → Reply Assistant (P02); Guardrails; Edit level](../PRD.md#ai-features)
 
 ## What it does
@@ -53,3 +56,4 @@ On the person page (owner or Admin), the rep pastes the prospect's message and c
 | 2026-10-18 | 2.1.0   | The AI now runs on OpenAI (default model gpt-5.5, D-036); same prompt, guardrails and screens.                                                   |
 | 2026-10-22 | 2.1.0   | Reads the AI knowledge files (F20, D-037) instead of Product Facts; P02 v1.2 flags interest in upcoming features.                                |
 | 2026-10-22 | 2.1.0   | Released in v2.1.0 (AI Resources).                                                                                                               |
+| 2026-10-22 | 2.2.0   | Replaced by Suggest next message (F18, P02 v2.0): replies go into the conversation first; the AI's reply type is saved on the reply.             |

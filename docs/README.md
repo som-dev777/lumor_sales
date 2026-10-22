@@ -23,28 +23,28 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 
 ## Feature index
 
-| ID  | Feature                                                         | Priority | Release | Status       |
-| --- | --------------------------------------------------------------- | -------- | ------- | ------------ |
-| F01 | [Auth and users](features/F01-auth-users.md)                    | P0       | R1      | Done (1.0.0) |
-| F14 | [Audit Log](features/F14-audit-log.md)                          | P0       | R1      | Done (1.0.0) |
-| F16 | [About and releases](features/F16-about-releases.md)            | P0       | R1      | Done (1.0.0) |
-| F04 | [Personas](features/F04-personas.md)                            | P0       | R2      | Done (1.1.0) |
-| F05 | [Account filters](features/F05-account-filters.md)              | P0       | R2      | Done (1.1.0) |
-| F06 | [Templates](features/F06-templates.md)                          | P0       | R2      | Done (1.1.0) |
-| F07 | [Approvals](features/F07-approvals.md)                          | P1       | R2      | Done (1.1.0) |
-| F02 | [People](features/F02-people.md)                                | P0       | R3      | Done (1.2.0) |
-| F03 | [Companies](features/F03-companies.md)                          | P0       | R3      | Done (1.2.0) |
-| F15 | [Quick-log and sequence automation](features/F15-quick-log.md)  | P0       | R4      | Done (1.3.0) |
-| F11 | [Dashboard](features/F11-dashboard.md)                          | P0       | R4      | Done (1.3.0) |
-| F12 | [Product Facts](features/F12-product-facts.md)                  | P0       | R5      | Done (1.4.0) |
-| F13 | [Playbook Settings](features/F13-playbook-settings.md)          | P0       | R5      | Done (1.4.0) |
-| F08 | [Today planner](features/F08-today-planner.md)                  | P1       | R6      | Done (1.5.0) |
-| F09 | [Reply Assistant](features/F09-reply-assistant.md)              | P1       | R6      | Done (1.5.0) |
-| F10 | [Conversation summary and draft](features/F10-summary-draft.md) | P1       | R6      | Done (1.5.0) |
-| F17 | [Plans](features/F17-plans.md)                                  | P0       | R7      | Done (2.0.0) |
-| F18 | [Conversation thread](features/F18-conversation-thread.md)      | P0       | R8      | In progress  |
-| F19 | [Reports](features/F19-reports.md)                              | P1       | R9      | Planned      |
-| F20 | [AI Resources](features/F20-ai-resources.md)                    | P0       | 2.1.0   | Done         |
+| ID  | Feature                                                              | Priority | Release | Status           |
+| --- | -------------------------------------------------------------------- | -------- | ------- | ---------------- |
+| F01 | [Auth and users](features/F01-auth-users.md)                         | P0       | R1      | Done (1.0.0)     |
+| F14 | [Audit Log](features/F14-audit-log.md)                               | P0       | R1      | Done (1.0.0)     |
+| F16 | [About and releases](features/F16-about-releases.md)                 | P0       | R1      | Done (1.0.0)     |
+| F04 | [Personas](features/F04-personas.md)                                 | P0       | R2      | Done (1.1.0)     |
+| F05 | [Account filters](features/F05-account-filters.md)                   | P0       | R2      | Done (1.1.0)     |
+| F06 | [Templates](features/F06-templates.md)                               | P0       | R2      | Done (1.1.0)     |
+| F07 | [Approvals](features/F07-approvals.md)                               | P1       | R2      | Done (1.1.0)     |
+| F02 | [People](features/F02-people.md)                                     | P0       | R3      | Done (1.2.0)     |
+| F03 | [Companies](features/F03-companies.md)                               | P0       | R3      | Done (1.2.0)     |
+| F15 | [Quick-log and sequence automation](features/F15-quick-log.md)       | P0       | R4      | Done (1.3.0)     |
+| F11 | [Dashboard](features/F11-dashboard.md)                               | P0       | R4      | Done (1.3.0)     |
+| F12 | [Product Facts](features/F12-product-facts.md)                       | P0       | R5      | Done (1.4.0)     |
+| F13 | [Playbook Settings](features/F13-playbook-settings.md)               | P0       | R5      | Done (1.4.0)     |
+| F08 | [Today planner](features/F08-today-planner.md)                       | P1       | R6      | Done (1.5.0)     |
+| F09 | [Reply Assistant](features/F09-reply-assistant.md) (replaced by F18) | P1       | R6      | Replaced (2.2.0) |
+| F10 | [Conversation summary and draft](features/F10-summary-draft.md)      | P1       | R6      | Done (1.5.0)     |
+| F17 | [Plans](features/F17-plans.md)                                       | P0       | R7      | Done (2.0.0)     |
+| F18 | [Conversation thread](features/F18-conversation-thread.md)           | P0       | R8      | In progress      |
+| F19 | [Reports](features/F19-reports.md)                                   | P1       | R9      | Planned          |
+| F20 | [AI Resources](features/F20-ai-resources.md)                         | P0       | 2.1.0   | Done             |
 
 ## Releases
 

@@ -9,7 +9,8 @@ import { Dialog } from "@/components/ui/Dialog";
 import { TextArea } from "@/components/ui/TextArea";
 import { useToast } from "@/components/ui/Toast";
 import { SECTIONS } from "@/lib/today-sections";
-import { doneTask, rankMyDay, snoozeTask } from "@/server/actions/ai";
+import { SuggestionCard } from "@/components/ai/SuggestionCard";
+import { doneTask, rankMyDay, snoozeTask, suggestNextMessage } from "@/server/actions/ai";
 import { doStep, planCommand, type StepResult } from "@/server/actions/plans";
 import type { Task, TodayPlan } from "@/server/today";
 import styles from "./today.module.scss";
@@ -103,7 +104,7 @@ export function TodayList({ tasks, outreach, aiReady }: Props) {
       {ranked ? (
         <ol className={styles.list} aria-label="Ranked tasks">
           {ranked.map((t) => (
-            <TaskRow key={t.id} task={t} showSection />
+            <TaskRow key={t.id} task={t} aiReady={aiReady} showSection />
           ))}
         </ol>
       ) : (
@@ -117,7 +118,7 @@ export function TodayList({ tasks, outreach, aiReady }: Props) {
               </h2>
               <ul className={styles.list}>
                 {items.map((t) => (
-                  <TaskRow key={t.id} task={t} />
+                  <TaskRow key={t.id} task={t} aiReady={aiReady} />
                 ))}
               </ul>
             </section>
@@ -132,9 +133,26 @@ const MESSAGE_CHANNELS = ["LinkedIn message", "InMail", "Email", "WhatsApp"];
 
 type Reply = { ok: boolean; message?: string; error?: string };
 
-function TaskRow({ task, showSection = false }: { task: Task; showSection?: boolean }) {
+type Draft = Extract<Awaited<ReturnType<typeof suggestNextMessage>>, { ok: true }>["data"];
+
+function TaskRow({
+  task,
+  aiReady,
+  showSection = false,
+}: {
+  task: Task;
+  aiReady: boolean;
+  showSection?: boolean;
+}) {
   const notify = useToast();
   const [busy, start] = useTransition();
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const draftNudge = () =>
+    start(async () => {
+      const r = await suggestNextMessage(task.personId);
+      if (r.ok) setDraft(r.data);
+      else notify("error", r.error);
+    });
   const [text, setText] = useState(task.message ?? "");
   const [warnings, setWarnings] = useState<{
     input: Record<string, unknown>;
@@ -189,6 +207,21 @@ function TaskRow({ task, showSection = false }: { task: Task; showSection?: bool
         )}
         {task.kind === "step" && !isMessage && task.script && (
           <p className={styles.script}>{task.script}</p>
+        )}
+        {draft && (
+          <div className={styles.drafts}>
+            <span className={styles.reason}>{draft.advice}</span>
+            {draft.suggestions.map((s, i) => (
+              <SuggestionCard
+                key={i}
+                personId={task.personId}
+                suggestion={s}
+                channel={draft.channel}
+                situation={draft.situation}
+                replyBy={draft.replyBy}
+              />
+            ))}
+          </div>
         )}
       </div>
       <div className={styles.taskActions}>
@@ -280,7 +313,17 @@ function TaskRow({ task, showSection = false }: { task: Task; showSection?: bool
             </Button>
           </>
         )}
-        {task.kind === "open" && (
+        {task.kind === "nudge" && aiReady && !draft && (
+          <Button
+            variant="secondary"
+            loading={busy}
+            onClick={draftNudge}
+            aria-label={`Draft a nudge for ${task.name}`}
+          >
+            <Sparkles size={16} aria-hidden /> Draft nudge
+          </Button>
+        )}
+        {(task.kind === "open" || task.kind === "nudge") && (
           <Link href={`/people/${task.personId}`} className={styles.linkButton}>
             Open
           </Link>

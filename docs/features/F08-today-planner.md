@@ -14,8 +14,10 @@ task and a two-sentence summary of the week.
 
 1. **Replies waiting:** the lead's latest activity is a reply. Always on top.
 2. **Meetings today:** next action "Hold meeting" due today or earlier.
-3. **Expired reply deadlines:** "awaiting reply until" has passed. Built in R7; the dates are
-   set from R8 (F18).
+3. **Expired reply deadlines:** the reply-by date the rep confirmed has passed with no reply
+   (F18). A **nudge** task: "Expected a reply by 24 Oct · nudge 1 of 2", with **Draft nudge**
+   (the AI drafts it in place; Mark as sent asks for the next reply-by date). After 2 nudges it
+   says to close the loop politely.
 4. **Plan steps due today:** the current step of an active plan, due today. This includes
    **Withdraw invite** tasks (14 days with no acceptance).
 5. **Overdue steps:** due before today.
@@ -42,7 +44,11 @@ A lead appears once, in the first section that matches.
   - **Other task:** hides the lead until tomorrow (`snoozed_until`).
 - **Replies waiting → Mark replied**, **Meetings → Meeting held**, **Withdraw invite →
   Withdrawn**, **Finished/Nurture check → Nurture, Lost or Enrol**.
-- The **target bar** ("12 of 20 requests sent") stays. Admins' **Team** tab comes in R8.
+- The **target bar** ("12 of 20 requests sent") stays.
+- **Team tab (Admins, R8):** **My day** / **Team** at the top of Today. Per active user: tasks due
+  today (every section except Overdue and Stale), overdue steps, done today (connection requests,
+  messages, calls, tasks, withdrawals and meetings held logged today; D-038), people on active
+  plans, and replies waiting more than 1 day.
 
 ## AI ranking (P01)
 
@@ -72,3 +78,4 @@ is clicked. If AI isn't set up, fails, or takes over 30 seconds, the list stays 
 | 2026-10-18 | 2.1.0   | The AI now runs on OpenAI (default model gpt-5.5, D-036); same prompt and screens.                                                                               |
 | 2026-10-22 | 2.1.0   | Rank with AI reads the AI knowledge files ticked for P01 (F20, D-037).                                                                                           |
 | 2026-10-22 | 2.1.0   | Released in v2.1.0 (AI Resources).                                                                                                                               |
+| 2026-10-22 | 2.2.0   | R8: nudge tasks with Draft nudge in Expired reply deadlines; the Admins' Team tab (F18, D-038).                                                                  |

@@ -2,7 +2,7 @@
 // switch, stop, withdraw, finish and Nurture. Each change checks permissions (the lead's owner
 // or an Admin, plus a plan they can use), the cadence guardrails, and writes its activity and
 // audit entry in one transaction.
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
 import type { CallOutcome } from "@/lib/db/enums";
@@ -604,6 +604,8 @@ async function onAccepted(tx: DbOrTx, actor: Actor, p: PersonRow, today: string)
 async function onReply(tx: DbOrTx, actor: Actor, p: PersonRow, replyActivityId: string, now: Date) {
   const e = await liveEnrolment(tx, p.id);
   if (!e || e.status !== "Active") return;
+  // A reply from before the plan started is history (F18: pasted conversations).
+  if (e.startedAt && e.startedAt > now) return;
   await tx
     .update(activity)
     .set({ planEnrolmentId: e.id, planStepOrder: Math.max(1, e.currentStep - 1) })
@@ -618,6 +620,45 @@ async function onReply(tx: DbOrTx, actor: Actor, p: PersonRow, replyActivityId: 
   );
   const pl = await loadPlan(tx, e.planId);
   await logPlanEvent(tx, actor, p, e.id, `${pl.name} paused: they replied`, now);
+}
+
+/**
+ * After a reply (F17 + F18): the plan pauses from the reply's time, and if it's the latest
+ * message in the conversation, the reply-by date and the nudge count reset.
+ */
+export async function afterReply(
+  tx: DbOrTx,
+  actor: Actor,
+  p: PersonRow,
+  reply: { id: string; occurredAt: Date },
+) {
+  const [later] = await tx
+    .select({ id: activity.id })
+    .from(activity)
+    .where(
+      and(
+        eq(activity.personId, p.id),
+        eq(activity.direction, "out"),
+        gt(activity.occurredAt, reply.occurredAt),
+      ),
+    )
+    .limit(1);
+  if (!later && (p.awaitingReplyUntil || p.nudgeCount)) {
+    await tx
+      .update(person)
+      .set({ awaitingReplyUntil: null, nudgeCount: 0 })
+      .where(eq(person.id, p.id));
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Person",
+      recordId: p.id,
+      recordName: p.fullName,
+      action: "Updated",
+      before: { awaitingReplyUntil: p.awaitingReplyUntil, nudgeCount: p.nudgeCount },
+      after: { awaitingReplyUntil: null, nudgeCount: 0, reason: "they replied" },
+    });
+  }
+  await onReply(tx, actor, p, reply.id, reply.occurredAt);
 }
 
 const ACTION_KIND: Partial<Record<QuickLog["action"], TouchKind>> = {
@@ -635,57 +676,75 @@ export async function logWithPlan(
   actor: Actor,
   personId: string,
   log: QuickLog,
-  opts: { note?: string | null; now?: Date; asStep?: boolean; override?: boolean } = {},
+  opts: LogOptions = {},
+) {
+  return db.transaction((tx) => logWithPlanTx(tx, actor, personId, log, opts));
+}
+
+type LogOptions = {
+  note?: string | null;
+  now?: Date;
+  asStep?: boolean;
+  override?: boolean;
+  /** Something that already happened on an earlier day (F18): no guardrail warnings. */
+  history?: boolean;
+};
+
+/** logWithPlan inside an open transaction (the conversation thread uses it too, F18). */
+export async function logWithPlanTx(
+  tx: DbOrTx,
+  actor: Actor,
+  personId: string,
+  log: QuickLog,
+  opts: LogOptions = {},
 ) {
   const now = opts.now ?? new Date();
-  return db.transaction(async (tx) => {
-    if (opts.asStep) {
-      const text = log.action === "messageSent" ? (opts.note ?? "") : opts.note;
-      await completeStepTx(
-        tx,
-        actor,
-        personId,
-        {
-          text: text || null,
-          outcome: log.action === "callLogged" ? log.outcome : undefined,
-          override: opts.override,
-        },
-        now,
-      );
-      return { person: await loadPerson(tx, personId), activity: null };
-    }
-    const p = await loadPerson(tx, personId);
-    assertCan(actor, "lead.edit", p);
-    const kind = ACTION_KIND[log.action];
-    let overrides: number[] = [];
-    if (kind && OUTREACH_ACTIONS.includes(log.action)) {
-      overrides = await guardTouch(
-        tx,
-        p,
-        {
-          kind,
-          withNote: log.action === "requestSent" ? Boolean(log.withNote) : undefined,
-          connected: log.action === "callLogged" ? log.outcome === "Connected" : undefined,
-        },
-        todayIst(now),
-        Boolean(opts.override),
-      );
-    }
-    const done = await quickLogTx(tx, actor, personId, log, { note: opts.note, now });
-    if (overrides.length) {
-      await writeAudit(tx, {
-        userId: actor.id,
-        entityType: "Activity",
-        recordId: done.activity.id,
-        recordName: `${done.activity.type} to ${p.fullName}`,
-        action: "Created",
-        after: { type: done.activity.type, guardrailOverride: overrides.join(", ") },
-      });
-    }
-    if (log.action === "accepted") await onAccepted(tx, actor, done.person, todayIst(now));
-    if (log.action === "gotReply") await onReply(tx, actor, done.person, done.activity.id, now);
-    return done;
-  });
+  if (opts.asStep) {
+    const text = log.action === "messageSent" ? (opts.note ?? "") : opts.note;
+    await completeStepTx(
+      tx,
+      actor,
+      personId,
+      {
+        text: text || null,
+        outcome: log.action === "callLogged" ? log.outcome : undefined,
+        override: opts.override || opts.history,
+      },
+      now,
+    );
+    return { person: await loadPerson(tx, personId), activity: null };
+  }
+  const p = await loadPerson(tx, personId);
+  assertCan(actor, "lead.edit", p);
+  const kind = ACTION_KIND[log.action];
+  let overrides: number[] = [];
+  if (kind && OUTREACH_ACTIONS.includes(log.action) && !opts.history) {
+    overrides = await guardTouch(
+      tx,
+      p,
+      {
+        kind,
+        withNote: log.action === "requestSent" ? Boolean(log.withNote) : undefined,
+        connected: log.action === "callLogged" ? log.outcome === "Connected" : undefined,
+      },
+      todayIst(now),
+      Boolean(opts.override),
+    );
+  }
+  const done = await quickLogTx(tx, actor, personId, log, { note: opts.note, now });
+  if (overrides.length) {
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Activity",
+      recordId: done.activity.id,
+      recordName: `${done.activity.type} to ${p.fullName}`,
+      action: "Created",
+      after: { type: done.activity.type, guardrailOverride: overrides.join(", ") },
+    });
+  }
+  if (log.action === "accepted") await onAccepted(tx, actor, done.person, todayIst(now));
+  if (log.action === "gotReply") await afterReply(tx, actor, done.person, done.activity);
+  return done;
 }
 
 // --- Pause, resume, switch, stop, withdraw, finish, Nurture, snooze ---------------------------

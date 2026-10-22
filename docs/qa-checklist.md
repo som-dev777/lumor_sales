@@ -133,17 +133,18 @@ Needs the knowledge files (5.1; loaded by `npm run seed:knowledge`), and either 
       2-sentence summary of your week appears.
 - [ ] 6.3 **Mark replied** on one task: it disappears and the lead's timeline shows "Responded".
       **Snooze** the other: it disappears until tomorrow.
-- [ ] 6.4 On a person page, **AI assistant → Reply Assistant**: paste a prospect's message and
-      click **Suggest replies**. The message is in the timeline right away. You get a reply type
-      (change it: "Reply type saved"), 2–3 replies with approach labels, a suggested next step,
-      and flags if the prospect asked something the knowledge files don't cover.
+- [ ] 6.4 On a person page, in **Conversation**, choose **From {their name}**, paste their message
+      and click **Add to conversation**. Then **AI assistant → Suggest next message**. You get a
+      reply type (change it: "Reply type saved"), 2–3 replies with approach labels, an **Expect a
+      reply by** date, a suggested next step, and flags if they asked something the knowledge
+      files don't cover.
 - [ ] 6.5 With a real key, read the suggestions carefully: 2–4 lines, friendly, **no invented
       features or prices**, the partner panel never called proprietary, and two 20-minute demo
       slots plus your calendar link when the prospect is interested.
 - [ ] 6.6 Edit a suggestion a little and **Mark as sent**: it's logged as a message. **Confirm**
       the next step: stage and next action update.
-- [ ] 6.7 **Summarise conversation**: paste a thread, get a summary, needs, objections and a next
-      step; **Save as note** adds it to the timeline.
+- [ ] 6.7 **Summarise conversation**: one click summarises the conversation: a summary, needs,
+      objections and a next step; **Save as note** adds it to the conversation.
 - [ ] 6.8 **Draft message**: choose a template and click **Draft**. The placeholders are filled
       in; **Mark as sent** logs it.
 - [ ] 6.9 Without a key (normal `npm run dev`, no `OPENAI_API_KEY`): the AI panel says "AI isn't
@@ -189,9 +190,27 @@ Set it back to today when you're done.
 - [ ] 8.11 Finished plans and Nurture: when all steps are done, Today offers **Nurture** or
       **Lost**; when Nurture ends, a **Nurture check** offers **Enrol again** or **Lost**.
 
-## 9. Phone check
+## 9. Conversations (F18) and the Team tab
 
-- [ ] 9.1 On your phone (or Chrome's device toolbar), Today and People work: the menu collapses
+- [ ] 9.1 On a person page, **Conversation** shows every message with who sent it, the channel
+      and the date and time; your messages on the right, theirs on the left, notes in the
+      middle. **Show plan and stage events** reveals plan and stage changes.
+- [ ] 9.2 Add **From me** on **Call** with an earlier time: it appears in the right place in the
+      order. A time in the future is refused.
+- [ ] 9.3 **Paste a whole conversation**: copy a real LinkedIn thread, paste it, **Split into
+      messages**. Check From and When for each row (fix any), untick anything already there,
+      **Save**. A reply in it moves them to Replied and pauses their plan.
+- [ ] 9.4 With your last message unanswered, **Suggest next message** says to wait until the
+      reply-by date. Accept a suggestion with a 2-day **Expect a reply by** date.
+- [ ] 9.5 On the About page, set the **Test date** past that date: **Today → Expired reply
+      deadlines** shows the person ("nudge 1 of 2"). **Draft nudge**, then **Mark as sent** with
+      a new date: the task goes. Clear the test date afterwards.
+- [ ] 9.6 As Admin, **Today → Team**: one row per person with due, overdue, done today, on plans
+      and replies waiting over 1 day. As the rep, there's no Team link.
+
+## 10. Phone check
+
+- [ ] 10.1 On your phone (or Chrome's device toolbar), Today, People and a person's conversation work: the menu collapses
       to a button, nothing runs off the side of the screen.
 
 ---

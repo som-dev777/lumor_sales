@@ -75,3 +75,15 @@ export function isIstDate(value: string): value is IstDate {
   const dt = new Date(Date.UTC(y, m - 1, d));
   return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
 }
+
+/** A moment as "YYYY-MM-DDTHH:mm" in IST, the value a date-and-time input shows (F18). */
+export function toIstLocal(moment: Date): string {
+  return formatInTimeZone(moment, TIME_ZONE, "yyyy-MM-dd'T'HH:mm");
+}
+
+/** Reads "YYYY-MM-DDTHH:mm" (or "YYYY-MM-DD HH:mm") as an IST time. Null if it isn't one. */
+export function fromIstLocal(value: string): Date | null {
+  const m = value.trim().match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})$/);
+  if (!m || !isIstDate(m[1]) || Number(m[2]) > 23 || Number(m[3]) > 59) return null;
+  return fromZonedTime(`${m[1]}T${m[2]}:${m[3]}:00`, TIME_ZONE);
+}

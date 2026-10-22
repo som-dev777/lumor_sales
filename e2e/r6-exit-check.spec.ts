@@ -1,6 +1,7 @@
 // The R6 exit check from the PRD, automated with the stand-in AI (AI_FAKE, so no real API
-// calls): a pasted reply returns a reply type, 2–3 suggestions and a stage suggestion; Today
-// ranks a real rep's list. Plus summarise and draft.
+// calls): a reply returns a reply type, 2–3 suggestions and a stage suggestion; Today ranks a
+// real rep's list. Plus summarise and draft. From R8 the reply is added to the conversation and
+// "Suggest next message" replaces the Reply Assistant (F18).
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 
 const ADMIN = { email: "somnath@lumor.tech", password: "e2e-admin-password" };
@@ -49,11 +50,17 @@ test.beforeAll(async ({ browser }) => {
   await expect(rep).toHaveURL("/");
 });
 
-test("exit check: a pasted reply gets a reply type, 2–3 suggestions and a stage suggestion", async () => {
+test("exit check: a reply gets a reply type, 2–3 suggestions and a stage suggestion", async () => {
   await addLead("Asha Verma", "asha-verma-r6");
-  await rep.getByLabel("Prospect's message").fill("Sounds interesting. How does it work?");
-  await rep.getByRole("button", { name: "Suggest replies" }).click();
-  await expect(rep.getByLabel("Reply type")).toHaveValue("Interested");
+  const conversation = shown(rep.getByRole("region", { name: "Conversation" }));
+  await conversation.getByLabel("From Asha").check();
+  await conversation
+    .getByLabel("What Asha sent or said")
+    .fill("Sounds interesting. How does it work?");
+  await conversation.getByRole("button", { name: "Add to conversation" }).click();
+  await expect(shown(rep.getByText("Added to the conversation."))).toBeVisible();
+  await rep.getByRole("button", { name: "Suggest next message" }).click();
+  await expect(rep.getByLabel("Reply type", { exact: true })).toHaveValue("Interested");
   const cards = rep.getByLabel(/^Reply: /);
   await expect(cards).toHaveCount(2);
   await expect(cards.first()).toHaveValue(/20-minute demo/);
@@ -72,12 +79,9 @@ test("exit check: a pasted reply gets a reply type, 2–3 suggestions and a stag
   await expect(shown(rep.getByText(/Thanks!$/))).toBeVisible();
 });
 
-test("summarise a thread and save it as a note; draft from a template", async () => {
+test("summarise the conversation and save it as a note; draft from a template", async () => {
   await rep.goto(leadUrls[0]);
   await rep.getByRole("tab", { name: "Summarise conversation" }).click();
-  await rep
-    .getByLabel("LinkedIn conversation")
-    .fill("Me: Hi Asha\nAsha: Interested, worried about setup.");
   await rep.getByRole("button", { name: "Summarise" }).click();
   await expect(rep.getByText(/Asha Verma is interested/)).toBeVisible();
   await rep.getByRole("button", { name: "Save as note" }).click();

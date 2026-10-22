@@ -7,13 +7,14 @@ import { personSchema } from "@/lib/validation/leads";
 import { createPerson } from "../leads/people";
 import { seedKnowledge, updateKnowledge, listKnowledge } from "../knowledge";
 import { readSeedKnowledge } from "../knowledge-files";
+import { addEntry } from "../conversation";
 import {
   applyNextStep,
   draftFromTemplate,
   markSent,
-  savePastedReply,
   setReplyType,
-  suggestReplies,
+  splitConversation,
+  suggestNext,
   summariseThread,
 } from "./assist";
 import { AI_NOT_SET_UP } from "./client";
@@ -52,25 +53,16 @@ afterEach(() => {
 
 const fillFacts = () => seedKnowledge(t.db, readSeedKnowledge());
 
-describe("Reply Assistant (F09)", () => {
-  it("the pasted reply is saved before the AI runs, even when AI isn't set up", async () => {
-    vi.stubEnv("AI_FAKE", "");
-    vi.stubEnv("OPENAI_API_KEY", "");
-    const saved = await savePastedReply(t.db, rep, personId, "Sounds interesting, tell me more");
-    expect(saved).toMatchObject({
-      type: "Reply received",
-      replyType: null,
-      content: "Sounds interesting, tell me more",
-    });
-    const [p] = await t.db.select().from(person).where(eq(person.id, personId));
-    expect(p).toMatchObject({ stage: "Replied", nextAction: "Respond" });
-    await fillFacts();
-    await expect(suggestReplies(t.db, rep, saved.id)).rejects.toThrow(AI_NOT_SET_UP);
-  });
+const NOW = new Date("2026-10-21T06:30:00Z"); // Wednesday 21 Oct, 12:00 IST
+const at = (iso: string) => new Date(iso);
+const add = (from: "me" | "them", text: string, when: string, channel = "LinkedIn" as const) =>
+  addEntry(t.db, rep, personId, { from, channel, at: at(when), text }, { now: NOW });
+const personRow = async () => (await t.db.select().from(person).where(eq(person.id, personId)))[0];
 
+describe("Suggest next message (F18, replaces the Reply Assistant)", () => {
   it("needs the AI knowledge base before suggesting anything", async () => {
-    const saved = await savePastedReply(t.db, rep, personId, "Tell me more");
-    await expect(suggestReplies(t.db, rep, saved.id)).rejects.toThrow(
+    await add("them", "Tell me more", "2026-10-21T05:00:00Z");
+    await expect(suggestNext(t.db, rep, personId, NOW)).rejects.toThrow(
       /knowledge base has no files/,
     );
     // Files that are switched off don't count either.
@@ -84,29 +76,140 @@ describe("Reply Assistant (F09)", () => {
         active: false,
       });
     }
-    await expect(suggestReplies(t.db, rep, saved.id)).rejects.toThrow(
+    await expect(suggestNext(t.db, rep, personId, NOW)).rejects.toThrow(
       /knowledge base has no files/,
     );
   });
 
-  it("returns a reply type, 2–3 suggestions and a next step; the rep can change the type", async () => {
+  it("without AI set up, says so (the reply is already saved in the conversation)", async () => {
+    vi.stubEnv("AI_FAKE", "");
+    vi.stubEnv("OPENAI_API_KEY", "");
     await fillFacts();
-    const saved = await savePastedReply(t.db, rep, personId, "Tell me more");
-    const r = await suggestReplies(t.db, rep, saved.id);
+    await add("them", "Sounds interesting", "2026-10-21T05:00:00Z");
+    await expect(suggestNext(t.db, rep, personId, NOW)).rejects.toThrow(AI_NOT_SET_UP);
+  });
+
+  it("their message last: a reply type (saved on it), 2–3 replies and a reply-by date", async () => {
+    await fillFacts();
+    await add("me", "Hi Priya, loved your post on survey design.", "2026-10-19T05:00:00Z");
+    const reply = await add("them", "Tell me more", "2026-10-21T05:00:00Z");
+    const r = await suggestNext(t.db, rep, personId, NOW);
+    expect(r.situation).toBe("reply");
+    expect(r.status).toBe("Priya replied on 21 Oct 2026. It's your turn.");
+    expect(r.replyId).toBe(reply!.id);
     expect(r.replyType).toBe("Interested");
     expect(r.suggestions.length).toBeGreaterThanOrEqual(2);
     expect(r.suggestions.length).toBeLessThanOrEqual(3);
-    expect(r.nextStep.stage).toBe("Replied");
-
-    await setReplyType(t.db, rep, saved.id, "Asking for details");
-    const [a] = await t.db.select().from(activity).where(eq(activity.id, saved.id));
-    expect(a.replyType).toBe("Asking for details");
+    expect(r.replyBy).toEqual({ date: "2026-10-23", reason: "Interested: 2 business days." });
+    // The AI's reply type is saved on their message (D-038); the rep can still change it.
+    const [a] = await t.db.select().from(activity).where(eq(activity.id, reply!.id));
+    expect(a.replyType).toBe("Interested");
+    await setReplyType(t.db, rep, reply!.id, "Asking for details");
     const last = (await t.db.select().from(auditLog)).at(-1)!;
-    expect(last.changes).toEqual({ replyType: { before: null, after: "Asking for details" } });
+    expect(last.changes).toEqual({
+      replyType: { before: "Interested", after: "Asking for details" },
+    });
+  });
+
+  it("the rep's message last and no reply due yet: wait, with no messages", async () => {
+    await fillFacts();
+    await add("me", "Hi Priya", "2026-10-20T05:00:00Z");
+    const r = await suggestNext(t.db, rep, personId, NOW);
+    expect(r.situation).toBe("wait");
+    expect(r.status).toBe("You wrote last (20 Oct 2026). A reply is expected by 23 Oct 2026.");
+    expect(r.suggestions).toEqual([]);
+  });
+
+  it("nothing logged: start the conversation", async () => {
+    await fillFacts();
+    const r = await suggestNext(t.db, rep, personId, NOW);
+    expect(r.situation).toBe("start");
+    expect(r.suggestions).toHaveLength(1);
   });
 
   it("Users can't use it on someone else's lead", async () => {
-    await expect(savePastedReply(t.db, other, personId, "x")).rejects.toThrow(PermissionError);
+    await fillFacts();
+    await expect(suggestNext(t.db, other, personId, NOW)).rejects.toThrow(PermissionError);
+  });
+});
+
+describe("Mark as sent with a reply-by date (F18)", () => {
+  it("saves the confirmed date; a nudge counts, needs a date, and a close clears it", async () => {
+    const msg = { suggestion: "Hi Priya", text: "Hi Priya" };
+    await markSent(t.db, rep, personId, { ...msg, replyBy: "2026-10-23", situation: "reply" }, NOW);
+    expect(await personRow()).toMatchObject({ awaitingReplyUntil: "2026-10-23", nudgeCount: 0 });
+    // Outside the Playbook Settings bounds (1–10 days).
+    await expect(
+      markSent(t.db, rep, personId, { ...msg, replyBy: "2026-11-05", situation: "reply" }, NOW),
+    ).rejects.toThrow("Pick a reply-by date 1–10 days after the message.");
+    await expect(
+      markSent(t.db, rep, personId, { ...msg, situation: "nudge" }, NOW),
+    ).rejects.toThrow("Pick the date you expect a reply by.");
+    await markSent(t.db, rep, personId, { ...msg, replyBy: "2026-10-26", situation: "nudge" }, NOW);
+    expect(await personRow()).toMatchObject({ awaitingReplyUntil: "2026-10-26", nudgeCount: 1 });
+    const row = await markSent(
+      t.db,
+      rep,
+      personId,
+      { ...msg, situation: "close", channel: "Email" },
+      NOW,
+    );
+    expect(row).toMatchObject({ type: "Message sent", channel: "Email", direction: "out" });
+    expect(await personRow()).toMatchObject({ awaitingReplyUntil: null, nudgeCount: 1 });
+  });
+
+  it("their reply clears the date and the nudge count", async () => {
+    await markSent(
+      t.db,
+      rep,
+      personId,
+      { suggestion: "x", text: "x", replyBy: "2026-10-26", situation: "nudge" },
+      at("2026-10-21T04:00:00Z"),
+    );
+    // A reply from before the nudge is history: what the rep is waiting for stays.
+    await add("them", "An older message", "2026-10-20T06:00:00Z");
+    expect(await personRow()).toMatchObject({ awaitingReplyUntil: "2026-10-26", nudgeCount: 1 });
+    await add("them", "Sorry, busy week!", "2026-10-21T06:00:00Z");
+    expect(await personRow()).toMatchObject({ awaitingReplyUntil: null, nudgeCount: 0 });
+  });
+
+  it("refuses for someone marked Do not contact", async () => {
+    await t.db.update(person).set({ doNotContact: true }).where(eq(person.id, personId));
+    await expect(
+      markSent(t.db, rep, personId, { suggestion: "x", text: "x" }, NOW),
+    ).rejects.toThrow("Do not contact");
+  });
+});
+
+describe("Split conversation (P05)", () => {
+  it("splits pasted text for review, flags messages already saved and drops future times", async () => {
+    await add("me", "Hi Priya, loved your post.", "2026-10-19T05:00:00Z");
+    const r = await splitConversation(
+      t.db,
+      rep,
+      personId,
+      [
+        "[2026-10-19 10:30] Me: Hi Priya, loved your post.",
+        "[2026-10-20 18:05] Them: Thanks! What does recruitment cost?",
+        "Me: It depends on the audience.",
+        "[2026-10-25 09:00] Them: A future time",
+      ].join("\n"),
+      NOW,
+    );
+    expect(r.rows).toEqual([
+      { from: "me", at: "2026-10-19T10:30", text: "Hi Priya, loved your post.", duplicate: true },
+      {
+        from: "them",
+        at: "2026-10-20T18:05",
+        text: "Thanks! What does recruitment cost?",
+        duplicate: false,
+      },
+      { from: "me", at: "", text: "It depends on the audience.", duplicate: false },
+      { from: "them", at: "", text: "A future time", duplicate: false },
+    ]);
+    await expect(splitConversation(t.db, other, personId, "Me: hi", NOW)).rejects.toThrow(
+      PermissionError,
+    );
   });
 });
 
@@ -195,10 +298,19 @@ describe("Mark as sent and Confirm", () => {
   });
 });
 
-describe("Summarise (F10)", () => {
+describe("Summarise (F10, reads the conversation from R8)", () => {
+  it("needs something in the conversation first", async () => {
+    await fillFacts();
+    await expect(summariseThread(t.db, rep, personId, NOW)).rejects.toThrow(
+      "There's nothing in the conversation yet.",
+    );
+  });
+
   it("returns summary, needs, objections and a next step", async () => {
     await fillFacts();
-    const r = await summariseThread(t.db, rep, personId, "Me: hi\nPriya: interested");
+    await add("me", "Hi Priya", "2026-10-19T05:00:00Z");
+    await add("them", "Interested!", "2026-10-20T05:00:00Z");
+    const r = await summariseThread(t.db, rep, personId, NOW);
     expect(r.summary).toContain("Priya Sharma");
     expect(r.needs.length).toBeGreaterThan(0);
     expect(r.nextStep.stage).toBe("Replied");

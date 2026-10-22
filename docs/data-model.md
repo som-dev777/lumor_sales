@@ -42,6 +42,8 @@ This document must match the code. Update it in the same step as any schema chan
 | Stage              | v2 (D-029): Prospect, Contacted, Connected, Replied, Meeting scheduled, Meeting done, Proposal sent, Trial, Paid, Active customer, Lost                                                                                         |
 | Lost reason        | No budget, Using competitor, Not a priority, No response, Wrong person, Other                                                                                                                                                   |
 | Activity type      | Profile viewed, Post engaged, Request sent, Request accepted, Request withdrawn, Message sent, Reply received, InMail sent, Meeting booked, Meeting held, Meeting note, Stage change, Deal update, Call, Task done, Plan change |
+| Thread channel     | LinkedIn, InMail, Email, WhatsApp, Call, In person (where a conversation message happened, F18)                                                                                                                                 |
+| Direction          | out, in                                                                                                                                                                                                                         |
 | Channel            | LinkedIn, InMail, Email, Call, WhatsApp, In person (In person is for meetings only)                                                                                                                                             |
 | Call outcome       | Connected, No answer, Call back later, Wrong number, Not interested                                                                                                                                                             |
 | Plan type          | Outreach, Meeting follow-up, Trial, Onboarding                                                                                                                                                                                  |
@@ -136,37 +138,38 @@ Unique: the company name, ignoring case and surrounding spaces (`lower(trim(name
 
 ### person
 
-| Column                  | Rules                                                       |
-| ----------------------- | ----------------------------------------------------------- |
-| full_name               | required                                                    |
-| title                   | text                                                        |
-| linkedin_url            | required, must contain `linkedin.com/in/`                   |
-| linkedin_url_normalised | required, **unique**, set by the server (see F02)           |
-| sales_nav_url           | optional                                                    |
-| company_id              | → company                                                   |
-| persona_id              | → persona                                                   |
-| level                   | Leader or Practitioner                                      |
-| account_filter_id       | → account_filter                                            |
-| market                  | text (market/country)                                       |
-| owner_id                | → user, required                                            |
-| stage                   | Stage, default Prospect                                     |
-| opener_template_id      | → template                                                  |
-| opener_template_version | A, B or C                                                   |
-| next_action             | text                                                        |
-| next_action_date        | plain date                                                  |
-| snoozed_until           | plain date; hidden from Today until then (F08)              |
-| lost_reason             | Lost reason. **Required when stage is Lost** (CHECK)        |
-| converted               | 0/1, default 0                                              |
-| converted_date          | plain date                                                  |
-| notes                   | text                                                        |
-| phone                   | optional (v2)                                               |
-| email                   | optional (v2)                                               |
-| seniority               | Seniority, optional; Vice President/CXO get 45 days (D-033) |
-| do_not_contact          | 0/1, default 0; stops plans and blocks outreach             |
-| dnc_reason              | required when do_not_contact is on (form rule)              |
-| dnc_date                | plain date it was set                                       |
-| nurture_until           | plain date; no touches until then (F17)                     |
-| awaiting_reply_until    | plain date; reply deadline (set from R8, F18)               |
+| Column                  | Rules                                                        |
+| ----------------------- | ------------------------------------------------------------ |
+| full_name               | required                                                     |
+| title                   | text                                                         |
+| linkedin_url            | required, must contain `linkedin.com/in/`                    |
+| linkedin_url_normalised | required, **unique**, set by the server (see F02)            |
+| sales_nav_url           | optional                                                     |
+| company_id              | → company                                                    |
+| persona_id              | → persona                                                    |
+| level                   | Leader or Practitioner                                       |
+| account_filter_id       | → account_filter                                             |
+| market                  | text (market/country)                                        |
+| owner_id                | → user, required                                             |
+| stage                   | Stage, default Prospect                                      |
+| opener_template_id      | → template                                                   |
+| opener_template_version | A, B or C                                                    |
+| next_action             | text                                                         |
+| next_action_date        | plain date                                                   |
+| snoozed_until           | plain date; hidden from Today until then (F08)               |
+| lost_reason             | Lost reason. **Required when stage is Lost** (CHECK)         |
+| converted               | 0/1, default 0                                               |
+| converted_date          | plain date                                                   |
+| notes                   | text                                                         |
+| phone                   | optional (v2)                                                |
+| email                   | optional (v2)                                                |
+| seniority               | Seniority, optional; Vice President/CXO get 45 days (D-033)  |
+| do_not_contact          | 0/1, default 0; stops plans and blocks outreach              |
+| dnc_reason              | required when do_not_contact is on (form rule)               |
+| dnc_date                | plain date it was set                                        |
+| nurture_until           | plain date; no touches until then (F17)                      |
+| awaiting_reply_until    | plain date; the reply-by date the rep confirmed (F18)        |
+| nudge_count             | nudges sent since the last reply, default 0 (F18: at most 2) |
 
 `sequence_step` was removed in v2 (D-032); a plan's current step replaces it.
 
@@ -194,6 +197,7 @@ Indexes: owner_id, stage, next_action_date, company_id, persona_id.
 | plan_step_order     | the plan step number                                             |
 | to_stage            | for Stage change: the stage moved to (filled for v1 rows, D-029) |
 | request_note        | 0/1: a connection request sent with a note (counts as a touch)   |
+| direction           | `out` (from the rep), `in` (from the prospect) or empty (F18)    |
 
 Indexes: (person_id, occurred_at), (user_id, occurred_at), (type, occurred_at), plan_enrolment_id.
 
@@ -356,4 +360,5 @@ migration to a local database file, it copies the file to `data/backups/`. After
 `PRAGMA foreign_key_check` and prints the number of people per stage before and after.
 0005 and 0006 move v1 data to v2 (D-029): stages, activity types, `to_stage`, new columns and
 tables, and dropping `sequence_step` and the old follow-up delays. 0007 adds the four AI
-Resources tables (F20).
+Resources tables (F20). 0008 (R8) adds `activity.direction` (filled in for old rows: messages
+and calls `out`, replies `in`) and `person.nudge_count`.

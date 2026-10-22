@@ -106,6 +106,11 @@ describe("PRD permission table", () => {
     expect(can(rep, "record.view")).toBe(true);
   });
 
+  it("only Admins see the Team tab on Today (R8)", () => {
+    expect(can(admin, "today.team")).toBe(true);
+    expect(can(rep, "today.team")).toBe(false);
+  });
+
   it("Approve or reject proposals: Admin yes, User no", () => {
     expect(can(admin, "proposal.decide")).toBe(true);
     expect(can(rep, "proposal.decide")).toBe(false);

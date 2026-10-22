@@ -1,12 +1,20 @@
 // Today planner (F08 v2): driven by plans and deadlines. Rules build the rep's list; AI prompt
 // P01 can then order and explain it. Step tasks carry the exact message or call script.
-import { and, asc, desc, eq, gte, inArray, lte, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, lt, lte, ne } from "drizzle-orm";
 import { z } from "zod";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
-import { accountFilter, activity, company, person, persona } from "@/lib/db/schema";
+import {
+  accountFilter,
+  activity,
+  company,
+  person,
+  persona,
+  planEnrolment,
+  user,
+} from "@/lib/db/schema";
 import { assertCan, type Actor } from "@/lib/permissions";
-import { addDaysIst, formatIstDate, toIstDate, todayIst } from "@/lib/time";
+import { addDaysIst, formatIstDate, istDayRange, toIstDate, todayIst } from "@/lib/time";
 import { SECTIONS, type SectionKey } from "@/lib/today-sections";
 import { aiKnowledge } from "./ai/assist";
 import { runPrompt } from "./ai/client";
@@ -24,6 +32,7 @@ export type TaskKind =
   | "finished" // Nurture or Lost
   | "nurture" // Nurture ended: enrol again or Lost
   | "quick" // a quick-log (Mark replied, Meeting held, Recap sent)
+  | "nudge" // a reply-by date passed (F18): draft a nudge, or close the loop
   | "open"; // nothing to log here: open the lead
 
 export type Task = {
@@ -46,6 +55,8 @@ export type Task = {
   script?: string | null;
   email?: string | null;
   reason?: string;
+  /** Replies waiting: the IST date they replied (for the Team tab). */
+  since?: string;
 };
 
 const QUICK_DONE: Record<string, { log: QuickLog; label: string }> = {
@@ -120,6 +131,7 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
     if (last?.type === "Reply received" && !snoozed) {
       push("reply", "quick", `Replied ${formatIstDate(toIstDate(last.at))}`, {
         doneLabel: QUICK_DONE.reply.label,
+        since: toIstDate(last.at),
       });
       continue;
     }
@@ -135,9 +147,16 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
       });
       continue;
     }
-    // 3. Expired reply deadlines (dates are set from R8, F18).
+    // 3. Expired reply deadlines (F18): nudge, at most twice, then close the loop.
     if (!snoozed && p.awaitingReplyUntil && p.awaitingReplyUntil < today) {
-      push("deadline", "open", `Expected a reply by ${formatIstDate(p.awaitingReplyUntil)}`);
+      const by = formatIstDate(p.awaitingReplyUntil);
+      push(
+        "deadline",
+        "nudge",
+        p.nudgeCount >= 2
+          ? `No reply after 2 nudges (expected by ${by}). Close the loop politely.`
+          : `Expected a reply by ${by} · nudge ${p.nudgeCount + 1} of 2`,
+      );
       continue;
     }
     // 4–7. Plans.
@@ -259,6 +278,76 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
       dailyMessageTarget: settings.dailyMessageTarget,
     },
   };
+}
+
+// --- Team tab (F08, R8: Admins) ---------------------------------------------------------------
+
+/** What counts as "done today" on the Team tab (D-038). */
+const DONE_TYPES = [
+  "Request sent",
+  "Message sent",
+  "InMail sent",
+  "Call",
+  "Task done",
+  "Request withdrawn",
+  "Meeting held",
+] as const;
+
+export type TeamRow = {
+  userId: string;
+  name: string;
+  role: string;
+  dueToday: number;
+  overdue: number;
+  doneToday: number;
+  inPlans: number;
+  repliesWaiting: number;
+};
+
+/** Per active user: today's and overdue tasks, done today, people on plans, old replies. */
+export async function buildTeam(db: DbOrTx, viewer: Actor, now = new Date()): Promise<TeamRow[]> {
+  assertCan(viewer, "today.team");
+  const today = todayIst(now);
+  const { start, end } = istDayRange(today);
+  const users = await db
+    .select({ id: user.id, name: user.name, role: user.role })
+    .from(user)
+    .where(eq(user.active, true))
+    .orderBy(asc(user.name));
+  const rows: TeamRow[] = [];
+  for (const u of users) {
+    const plan = await buildToday(db, { id: u.id, role: u.role, active: true }, now);
+    const [{ n: inPlans }] = await db
+      .select({ n: count() })
+      .from(planEnrolment)
+      .innerJoin(person, eq(person.id, planEnrolment.personId))
+      .where(and(eq(person.ownerId, u.id), eq(planEnrolment.status, "Active")));
+    const [{ n: doneToday }] = await db
+      .select({ n: count() })
+      .from(activity)
+      .where(
+        and(
+          eq(activity.userId, u.id),
+          inArray(activity.type, [...DONE_TYPES]),
+          gte(activity.occurredAt, start),
+          lt(activity.occurredAt, end),
+        ),
+      );
+    const dayBefore = addDaysIst(today, -1);
+    rows.push({
+      userId: u.id,
+      name: u.name,
+      role: u.role,
+      dueToday: plan.tasks.filter((t) => t.section !== "overdue" && t.section !== "stale").length,
+      overdue: plan.tasks.filter((t) => t.section === "overdue").length,
+      doneToday,
+      inPlans,
+      repliesWaiting: plan.tasks.filter(
+        (t) => t.section === "reply" && t.since !== undefined && t.since < dayBefore,
+      ).length,
+    });
+  }
+  return rows;
 }
 
 // --- Quick tasks and Snooze (non-plan tasks) ------------------------------------------------

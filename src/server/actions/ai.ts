@@ -1,6 +1,6 @@
 "use server";
 
-// Server Actions for the AI features (F08–F10) and the changes their panels make. Each one:
+// Server Actions for the AI features (F08, F10, F18) and the changes their panels make. Each one:
 // requireUser() → the permission check and audit inside the rules → refresh the page.
 import { refresh } from "next/cache";
 import { z } from "zod";
@@ -14,11 +14,13 @@ import {
   applyNextStep,
   draftFromTemplate,
   markSent,
-  savePastedReply,
+  SEND_CHANNELS,
   setReplyType,
-  suggestReplies,
+  splitConversation,
+  suggestNext,
   summariseThread,
-  type ReplyResult,
+  type NextSuggestion,
+  type SplitRow,
 } from "../ai/assist";
 import { AiError } from "../ai/client";
 import { LeadError } from "../leads/companies";
@@ -43,35 +45,28 @@ async function run<T>(work: () => Promise<T>): Promise<AiResult<T>> {
 
 const bad = (error: string) => ({ ok: false as const, error });
 
-/** Saves the pasted reply first, then asks P02 (F09). The reply stays saved if the AI fails. */
-export async function assistReply(
+/** P02 v2.0: the next message for wherever the conversation stands (F18). */
+export async function suggestNextMessage(personId: string): Promise<AiResult<NextSuggestion>> {
+  const viewer = await requireUser();
+  if (!id.safeParse(personId).success) return bad("Unknown person.");
+  const now = await appNow();
+  const r = await run(() => suggestNext(getDb(), viewer, personId, now));
+  // The AI's reply type may have been saved on their message.
+  if (r.ok) refresh();
+  return r;
+}
+
+/** P05: splits a pasted conversation for the rep to review. Nothing is saved (F18). */
+export async function splitPasted(
   personId: string,
   text: string,
-): Promise<AiResult<{ activityId: string; result: ReplyResult | null; aiError: string | null }>> {
+): Promise<AiResult<{ rows: SplitRow[]; notes: string[] }>> {
   const viewer = await requireUser();
   const parsed = pasted.safeParse(text);
   if (!id.safeParse(personId).success) return bad("Unknown person.");
   if (!parsed.success) return bad(parsed.error.issues[0].message);
   const now = await appNow();
-  const saved = await run(() => savePastedReply(getDb(), viewer, personId, parsed.data, now));
-  if (!saved.ok) return saved;
-  refresh();
-  const ai = await run(() => suggestReplies(getDb(), viewer, saved.data.id));
-  return {
-    ok: true,
-    data: {
-      activityId: saved.data.id,
-      result: ai.ok ? ai.data : null,
-      aiError: ai.ok ? null : ai.error,
-    },
-  };
-}
-
-/** Try again for a reply that's already saved. */
-export async function retryReply(activityId: string): Promise<AiResult<ReplyResult>> {
-  const viewer = await requireUser();
-  if (!id.safeParse(activityId).success) return bad("Unknown reply.");
-  return run(() => suggestReplies(getDb(), viewer, activityId));
+  return run(() => splitConversation(getDb(), viewer, personId, parsed.data, now));
 }
 
 export async function changeReplyType(activityId: string, replyType: string) {
@@ -88,13 +83,17 @@ const sentSchema = z.object({
   suggestion: z.string().max(10_000),
   approach: z.string().max(100).nullish(),
   templateId: z.uuid().nullish(),
+  channel: z.enum(SEND_CHANNELS).optional(),
+  replyBy: z.string().max(10).nullish(),
+  situation: z.enum(["start", "reply", "wait", "nudge", "close"]).nullish(),
 });
 
 export async function sendAiMessage(personId: string, input: unknown) {
   const viewer = await requireUser();
   const parsed = sentSchema.safeParse(input);
   if (!id.safeParse(personId).success || !parsed.success) return bad("Check the message.");
-  const r = await run(() => markSent(getDb(), viewer, personId, parsed.data));
+  const now = await appNow();
+  const r = await run(() => markSent(getDb(), viewer, personId, parsed.data, now));
   if (r.ok) refresh();
   return r.ok ? { ok: true as const, data: null } : r;
 }
@@ -116,13 +115,11 @@ export async function confirmNextStep(personId: string, input: unknown) {
 
 export async function summarise(
   personId: string,
-  thread: string,
 ): Promise<AiResult<Awaited<ReturnType<typeof summariseThread>>>> {
   const viewer = await requireUser();
-  const parsed = pasted.safeParse(thread);
   if (!id.safeParse(personId).success) return bad("Unknown person.");
-  if (!parsed.success) return bad(parsed.error.issues[0].message);
-  return run(() => summariseThread(getDb(), viewer, personId, parsed.data));
+  const now = await appNow();
+  return run(() => summariseThread(getDb(), viewer, personId, now));
 }
 
 export async function draftMessage(personId: string, templateId: string) {

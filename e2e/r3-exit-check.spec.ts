@@ -121,7 +121,7 @@ test("another User sees 'claimed by', can't edit, but can add a note", async () 
   await expect(shown(other.getByText("Met Priya at the insights meetup."))).toBeVisible();
 });
 
-test("Lost needs a reason; a manual stage change appears on the timeline", async () => {
+test("Lost needs a reason; a manual stage change appears in the conversation", async () => {
   await rep.goto(personUrl);
   await rep.getByRole("button", { name: "Edit" }).click();
   const dialog = rep.getByRole("dialog");
@@ -131,6 +131,8 @@ test("Lost needs a reason; a manual stage change appears on the timeline", async
   await dialog.getByLabel("Lost reason").selectOption("Not a priority");
   await dialog.getByRole("button", { name: "Save changes" }).click();
   await expect(rep.getByRole("dialog")).toBeHidden();
+  // From R8, stage changes sit behind "Show plan and stage events" in the conversation (F18).
+  await shown(rep.getByLabel(/Show plan and stage events/)).check();
   await expect(shown(rep.getByText("Prospect → Lost (Not a priority)"))).toBeVisible();
   // Back to Connected for the rest of the journey
   await rep.getByRole("button", { name: "Edit" }).click();

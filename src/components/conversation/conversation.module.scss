@@ -1,0 +1,175 @@
+@use "../../styles/mixins" as *;
+
+.panel {
+  @include card;
+  padding: var(--space-5);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.title {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+// --- The thread -------------------------------------------------------------------------------
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+}
+
+.bubble {
+  max-width: min(80%, 560px);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-card);
+
+  @include mobile {
+    max-width: 92%;
+  }
+}
+
+.me {
+  justify-content: flex-end;
+
+  .bubble {
+    border-color: transparent;
+    background: var(--color-primary-soft);
+  }
+}
+
+.them {
+  justify-content: flex-start;
+}
+
+.note {
+  justify-content: center;
+
+  .bubble {
+    border-style: dashed;
+    background: var(--color-page);
+  }
+}
+
+.event {
+  justify-content: center;
+
+  .bubble {
+    padding: var(--space-1) var(--space-3);
+    border: 0;
+    background: none;
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+}
+
+.meta {
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+// --- Adding messages --------------------------------------------------------------------------
+
+.composer,
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.composer {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.question {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.list {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rowCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.rowHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}

@@ -7,6 +7,8 @@ import type { Db, DbOrTx } from "@/lib/db/client";
 import {
   STAGES,
   type CallOutcome,
+  type Channel,
+  type Direction,
   type LOST_REASONS,
   type REPLY_TYPES,
   type Stage,
@@ -25,7 +27,7 @@ export type QuickLog =
   | { action: "accepted" }
   | { action: "messageSent"; channel?: MessageChannel; templateId?: string | null }
   | { action: "callLogged"; outcome: CallOutcome }
-  | { action: "gotReply"; replyType: (typeof REPLY_TYPES)[number] | null }
+  | { action: "gotReply"; replyType: (typeof REPLY_TYPES)[number] | null; channel?: Channel }
   | { action: "meetingBooked"; meetingDate: string }
   | { action: "meetingHeld" }
   | { action: "proposalSent" }
@@ -49,6 +51,13 @@ export async function getPlaybookSettings(db: DbOrTx) {
   const [row] = await db.select().from(playbookSettings).where(eq(playbookSettings.id, 1));
   if (!row) throw new Error("Playbook settings are missing. Run npm run db:migrate.");
   return row;
+}
+
+/** Which side of the conversation an activity is on (F18): messages and calls are the rep's. */
+export function directionOf(type: (typeof activity.$inferInsert)["type"]): Direction | null {
+  if (type === "Message sent" || type === "InMail sent" || type === "Call") return "out";
+  if (type === "Reply received") return "in";
+  return null;
 }
 
 const rank = (s: Stage) => STAGES.indexOf(s);
@@ -156,7 +165,7 @@ export async function quickLogTx(
         stage: forwardStage(before.stage, "Replied"),
         nextAction: "Respond",
         nextActionDate: today,
-        extra: { replyType: log.replyType },
+        extra: { replyType: log.replyType, channel: log.channel ?? "LinkedIn" },
       };
       break;
     case "meetingBooked":
@@ -248,6 +257,7 @@ export async function quickLogTx(
       channel: "LinkedIn",
       content,
       toStage: plan.toStage ?? null,
+      direction: directionOf(plan.activityType),
       ...plan.extra,
       ...activityExtra,
     })
