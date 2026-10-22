@@ -78,5 +78,5 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-10-22): AI Resources (F20, v2.1.0) is built and released. The owner runs the QA
-checklist (docs/qa-checklist.md). Fixes are PATCH releases (2.1.1, …); R8 starts on the owner's go-ahead.
+Current (2026-10-22): building R8 Conversations (F18, v2.2.0; D-038) in one go, then stop with a
+summary. The owner runs the QA checklist (docs/qa-checklist.md) after it.

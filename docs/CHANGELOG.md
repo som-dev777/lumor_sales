@@ -10,7 +10,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-R8 Conversations (v2.2.0), on the owner's go-ahead.
+R8 Conversations (v2.2.0), in progress.
+
+- Feature doc written for the conversation thread (F18) with the owner's choices; decision D-038.
 
 ## [2.1.0] - 2026-10-22
 

@@ -498,3 +498,37 @@ replaces it.
     CLAUDE.md follows this record).
 - **Why:** The owner's knowledge base is more complete and better governed than the Product Facts
   form, and reps need one place for decks and videos.
+
+## D-038: Conversations: who, where and when for every message (owner, 2026-10-22)
+
+- **Date:** 2026-10-22 · **Status:** Accepted (owner answered the R8 questions)
+- **Owner's choices:**
+  - Build the conversation thread now, as R8 (v2.2.0), with the Team tab the PRD puts in R8.
+  - Messages can be added **one at a time** and by **pasting a whole conversation**, which the
+    AI splits for the rep to review before saving.
+  - A message dated in the past **re-plans quietly**: no warning.
+  - **Reply Assistant becomes "Suggest next message"**, which also works when the prospect
+    hasn't replied.
+  - Every message records its **source**: LinkedIn, email, phone call or an in-person meeting
+    (plus InMail and WhatsApp, which the app already has), so the order of the whole
+    conversation is clear.
+- **My choices (within the PRD):**
+  - A new `activity.direction` column (`out`/`in`) says which side a message is on; the
+    migration fills it for old rows. "From me" in person is a Meeting note on the rep's side;
+    "From them" on any channel is a Reply received.
+  - An earlier "From me" entry is history: no guardrail warnings (Do not contact still
+    refuses). Today's entries keep the warnings. Pasted conversations never ask "Is this step
+    N?"; their outbound rows are extra touches.
+  - The app, not the AI, works out the situation (reply, wait, nudge, close the loop, start),
+    so the advice is predictable; the AI writes the words.
+  - The AI's reply type is saved on the reply when it had none (before, it was only saved if
+    the rep changed it, so the Dashboard's Interested count missed it).
+  - New prompt **P05 Split conversation** (no knowledge base needed: it only reads the pasted
+    text). The optional AI summary in F19 Reports becomes **P06**. P02 goes to v2.0 (new
+    name and output), P03 and P04 to v1.3 (they read the thread).
+  - The nudge count lives on the person (`nudge_count`), reset by any reply.
+  - "Done today" on the Team tab counts outreach steps and calls, messages, withdrawals and
+    meetings held logged by that rep today.
+- **Why:** The AI could only see what was logged, and messages the rep sent were often logged
+  without their text or time. Recording each message's side, channel and time gives the AI and
+  Today the real conversation.
