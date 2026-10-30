@@ -81,3 +81,4 @@ is clicked. If AI isn't set up, fails, or takes over 30 seconds, the list stays 
 | 2026-10-22 | 2.2.0   | R8: nudge tasks with Draft nudge in Expired reply deadlines; the Admins' Team tab (F18, D-038).                                                                  |
 | 2026-10-22 | 2.2.0   | Released in v2.2.0 (R8 Conversations).                                                                                                                           |
 | 2026-10-30 | 2.4.0   | New outreach today counts each person the rep added today or sent a connection request to today, once ("x of 20 new people today"; D-040).                       |
+| 2026-10-30 | 2.4.0   | Released in v2.4.0 (QA round 1).                                                                                                                                 |

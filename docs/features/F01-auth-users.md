@@ -123,3 +123,4 @@ blocked everywhere at once.
 | 2026-10-16 | 1.0.0   | Released in v1.0.0 (R1 Foundation).                                                                                                                                     |
 | 2026-10-17 | 1.3.0   | Wrong-password pause, emailed invite/reset links and sign-up confirmation through Resend (D-023).                                                                       |
 | 2026-10-30 | 2.4.0   | Fix: after a password reset or change, earlier wrong passwords no longer pause the login, and the email counts as confirmed; login emails are case-insensitive (D-040). |
+| 2026-10-30 | 2.4.0   | Released in v2.4.0 (QA round 1).                                                                                                                                        |

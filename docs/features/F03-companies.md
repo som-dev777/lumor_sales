@@ -63,3 +63,4 @@ deal once they become a customer.
 | 2026-10-17 | 1.2.0   | Companies list and company page (deal, people, combined timeline, mark as customer, history) built.                                            |
 | 2026-10-17 | 1.2.0   | Released in v1.2.0 (R3 Leads).                                                                                                                 |
 | 2026-10-30 | 2.4.0   | Add person from the company page; editable notes; Admins delete (when empty) and merge companies; Industry from the shared list (F21) (D-040). |
+| 2026-10-30 | 2.4.0   | Released in v2.4.0 (QA round 1).                                                                                                               |

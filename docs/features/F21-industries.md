@@ -1,6 +1,6 @@
 # F21: Industries
 
-- **Priority:** P1 · **Release:** v2.4.0 · **Status:** In progress
+- **Priority:** P1 · **Release:** v2.4.0 · **Status:** Done
 - **Decisions:** D-040 (the owner's first live QA round, 2026-10-30)
 
 ## What it does
@@ -42,3 +42,4 @@ filters' industries, on **Settings → Industries**.
 | Date       | Version | Change                                                              |
 | ---------- | ------- | ------------------------------------------------------------------- |
 | 2026-10-30 | 2.4.0   | Feature added from the owner's QA round; doc written with the code. |
+| 2026-10-30 | 2.4.0   | Released in v2.4.0 (QA round 1).                                    |

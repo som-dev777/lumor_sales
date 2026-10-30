@@ -78,5 +78,6 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-10-30): R9 Reports (F19, v2.3.0; D-039) is built and released; version 2 is complete. The
-owner runs the QA checklist (docs/qa-checklist.md). Fixes are PATCH releases (2.3.1, …).
+Done (2026-10-30): v2.4.0, the owner's first live QA round (D-040). The owner checks it on the live
+site (docs/qa-checklist.md section 11). Work through the owner's lists without asking questions;
+report once at the end with a checklist.

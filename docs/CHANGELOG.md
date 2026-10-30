@@ -10,7 +10,11 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-v2.4.0: the owner's first live QA round (D-040), in progress.
+Next: the owner's QA of v2.4.0.
+
+## [2.4.0] - 2026-10-30
+
+QA round 1: people need a company, company page shortcuts, delete and merge, an Industries list, the Lumor icon, new outreach counts added people, and fixes for reset login, the lead tabs and AI.
 
 - People: a company is required, picked from existing companies (or **+ Add a new company**). Admins can delete a person.
 - Company page: **Add person** with the company filled in; notes are editable; Admins can **merge** duplicate companies and **delete** empty ones.
