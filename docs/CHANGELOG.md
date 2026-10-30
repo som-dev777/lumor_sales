@@ -12,6 +12,8 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 R9 Reports (v2.3.0), on the owner's go-ahead.
 
+- Deploy guide: example site addresses are placeholders (they tripped Netlify's secrets scan), and it explains `SECRETS_SCAN_OMIT_KEYS`.
+
 ## [2.2.0] - 2026-10-22
 
 R8 Conversations: every message is recorded with who sent it, where and when, and the AI suggests the next message from the whole conversation, with reply-by dates and nudges on Today.

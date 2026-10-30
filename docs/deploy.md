@@ -60,17 +60,17 @@ themselves, and new sign-ups can log in straight away. With it, links are emaile
 5. Before deploying, open **Add environment variables** (or after creating the site:
    **Site configuration → Environment variables → Add a variable**) and add each of these:
 
-   | Name                  | Value                                                                 |
-   | --------------------- | --------------------------------------------------------------------- |
-   | `DATABASE_URL`        | the Turso URL from Step 1 (`libsql://…`)                              |
-   | `DATABASE_AUTH_TOKEN` | the Turso token from Step 1                                           |
-   | `BETTER_AUTH_SECRET`  | the key from Step 2                                                   |
-   | `BETTER_AUTH_URL`     | the site address, e.g. `https://your-site-url.com` (see step 7) |
-   | `SEED_ADMIN_PASSWORD` | the first password for the three default Admins (10+ characters)      |
-   | `RESEND_API_KEY`      | from Step 3 (leave out if you skipped it)                             |
-   | `EMAIL_FROM`          | from Step 3 (leave out if you skipped it)                             |
-   | `OPENAI_API_KEY`      | for the AI features: platform.openai.com → API keys. Optional.        |
-   | `OPENAI_MODEL`        | optional: another OpenAI model than the default `gpt-5.5`             |
+   | Name                  | Value                                                            |
+   | --------------------- | ---------------------------------------------------------------- |
+   | `DATABASE_URL`        | the Turso URL from Step 1 (`libsql://…`)                         |
+   | `DATABASE_AUTH_TOKEN` | the Turso token from Step 1                                      |
+   | `BETTER_AUTH_SECRET`  | the key from Step 2                                              |
+   | `BETTER_AUTH_URL`     | the site address, e.g. `https://your-site-url.com` (see step 7)  |
+   | `SEED_ADMIN_PASSWORD` | the first password for the three default Admins (10+ characters) |
+   | `RESEND_API_KEY`      | from Step 3 (leave out if you skipped it)                        |
+   | `EMAIL_FROM`          | from Step 3 (leave out if you skipped it)                        |
+   | `OPENAI_API_KEY`      | for the AI features: platform.openai.com → API keys. Optional.   |
+   | `OPENAI_MODEL`        | optional: another OpenAI model than the default `gpt-5.5`        |
 
 6. Click **Deploy**. The first build takes a few minutes. It creates the tables, the three
    default Admins, the starting library, the seed plans and the AI knowledge files.
@@ -123,3 +123,8 @@ Open **Deploys**, click the failed deploy and scroll to the red lines. Common ca
 - `SEED_ADMIN_PASSWORD must be at least 10 characters`: make it longer.
 - A Turso error mentioning the token: create a new token (Step 1.4) and update
   `DATABASE_AUTH_TOKEN`.
+- "Secrets scanning found secrets in build": Netlify found the value of one of your variables
+  in the code. The site address in `BETTER_AUTH_URL` isn't secret, so add a variable
+  `SECRETS_SCAN_OMIT_KEYS` with the value `BETTER_AUTH_URL` (Project configuration →
+  Environment variables), then **Trigger deploy**. Real keys stay checked. If it names any
+  other variable, tell Claude Code: that one may really have leaked.
