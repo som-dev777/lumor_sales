@@ -43,6 +43,9 @@ This document must match the code. Update it in the same step as any schema chan
 | Lost reason        | No budget, Using competitor, Not a priority, No response, Wrong person, Other                                                                                                                                                   |
 | Activity type      | Profile viewed, Post engaged, Request sent, Request accepted, Request withdrawn, Message sent, Reply received, InMail sent, Meeting booked, Meeting held, Meeting note, Stage change, Deal update, Call, Task done, Plan change |
 | Thread channel     | LinkedIn, InMail, Email, WhatsApp, Call, In person (where a conversation message happened, F18)                                                                                                                                 |
+| Report frequency   | Daily, Weekly, Monthly, Quarterly, Half-yearly, Yearly                                                                                                                                                                          |
+| Report scope       | team, person, each-rep (each-rep only on schedules)                                                                                                                                                                             |
+| Report recipients  | admins, emails, each-rep                                                                                                                                                                                                        |
 | Direction          | out, in                                                                                                                                                                                                                         |
 | Channel            | LinkedIn, InMail, Email, Call, WhatsApp, In person (In person is for meetings only)                                                                                                                                             |
 | Call outcome       | Connected, No answer, Call back later, Wrong number, Not interested                                                                                                                                                             |
@@ -177,27 +180,28 @@ Indexes: owner_id, stage, next_action_date, company_id, persona_id.
 
 ### activity
 
-| Column              | Rules                                                            |
-| ------------------- | ---------------------------------------------------------------- |
-| person_id           | → person, required                                               |
-| company_id          | → company                                                        |
-| user_id             | → user, required                                                 |
-| occurred_at         | date-time, required                                              |
-| type                | Activity type                                                    |
-| channel             | Channel, default LinkedIn                                        |
-| content             | text                                                             |
-| reply_type          | Reply type. **Only allowed when type is Reply received** (CHECK) |
-| template_id         | → template                                                       |
-| template_version    | A, B or C                                                        |
-| ai_suggestion_used  | 0/1, default 0                                                   |
-| suggestion_approach | text                                                             |
-| edit_level          | Edit level                                                       |
-| call_outcome        | Call outcome (v2)                                                |
-| plan_enrolment_id   | the plan enrolment this touch or reply belongs to (no FK)        |
-| plan_step_order     | the plan step number                                             |
-| to_stage            | for Stage change: the stage moved to (filled for v1 rows, D-029) |
-| request_note        | 0/1: a connection request sent with a note (counts as a touch)   |
-| direction           | `out` (from the rep), `in` (from the prospect) or empty (F18)    |
+| Column              | Rules                                                                    |
+| ------------------- | ------------------------------------------------------------------------ |
+| person_id           | → person, required                                                       |
+| company_id          | → company                                                                |
+| user_id             | → user, required                                                         |
+| occurred_at         | date-time, required                                                      |
+| type                | Activity type                                                            |
+| channel             | Channel, default LinkedIn                                                |
+| content             | text                                                                     |
+| reply_type          | Reply type. **Only allowed when type is Reply received** (CHECK)         |
+| template_id         | → template                                                               |
+| template_version    | A, B or C                                                                |
+| ai_suggestion_used  | 0/1, default 0                                                           |
+| suggestion_approach | text                                                                     |
+| edit_level          | Edit level                                                               |
+| call_outcome        | Call outcome (v2)                                                        |
+| plan_enrolment_id   | the plan enrolment this touch or reply belongs to (no FK)                |
+| plan_step_order     | the plan step number                                                     |
+| to_stage            | for Stage change: the stage moved to (filled for v1 rows, D-029)         |
+| request_note        | 0/1: a connection request sent with a note (counts as a touch)           |
+| direction           | `out` (from the rep), `in` (from the prospect) or empty (F18)            |
+| plan_due_date       | plain date the plan step was due when it was done (F19; empty before R9) |
 
 Indexes: (person_id, occurred_at), (user_id, occurred_at), (type, occurred_at), plan_enrolment_id.
 
@@ -314,6 +318,21 @@ MP4). Kept apart so the list never loads file bytes. Removing a resource deletes
 
 Indexes: occurred_at, (entity_type, record_id), user_id.
 
+### report_schedule (F19)
+
+name (unique), frequency (Report frequency), time_of_day (`HH:mm` IST, on the hour or half
+hour), day (weekly: 1 Monday … 7 Sunday; monthly and longer: 1–28; empty for daily), scope
+(Report scope), person_user_id (→ user, for scope `person`), recipients (Report recipients),
+emails (JSON list, for recipients `emails`), active (0/1), next_run_at, last_run_at. Index
+(active, next_run_at). `npm run seed:reports` adds the three PRD defaults once.
+
+### report_run (F19)
+
+scope (`team` or `person`), person_user_id (→ user), from_date and to_date (plain IST dates,
+both included), title, data (JSON snapshot of every number, so a saved report never changes),
+ai_summary (P06), generated_by (→ user; empty when a schedule made it), schedule_id (→
+report_schedule), emailed_to (JSON list). Indexes on created_at and person_user_id.
+
 ### app_release
 
 | Column       | Rules            |
@@ -361,4 +380,5 @@ migration to a local database file, it copies the file to `data/backups/`. After
 0005 and 0006 move v1 data to v2 (D-029): stages, activity types, `to_stage`, new columns and
 tables, and dropping `sequence_step` and the old follow-up delays. 0007 adds the four AI
 Resources tables (F20). 0008 (R8) adds `activity.direction` (filled in for old rows: messages
-and calls `out`, replies `in`) and `person.nudge_count`.
+and calls `out`, replies `in`) and `person.nudge_count`. 0009 (R9) adds `report_schedule`, `report_run` and
+`activity.plan_due_date`.

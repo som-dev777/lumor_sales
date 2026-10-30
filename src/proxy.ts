@@ -13,7 +13,8 @@ const PUBLIC_PATHS = [
   "/verify-email",
   "/disabled",
 ];
-const PUBLIC_PREFIXES = ["/register/"];
+// "/api/cron/" checks its own secret (CRON_SECRET) instead of a login (F19).
+const PUBLIC_PREFIXES = ["/register/", "/api/cron/"];
 
 function isPublic(pathname: string) {
   return PUBLIC_PATHS.includes(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));

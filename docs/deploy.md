@@ -60,17 +60,18 @@ themselves, and new sign-ups can log in straight away. With it, links are emaile
 5. Before deploying, open **Add environment variables** (or after creating the site:
    **Site configuration → Environment variables → Add a variable**) and add each of these:
 
-   | Name                  | Value                                                            |
-   | --------------------- | ---------------------------------------------------------------- |
-   | `DATABASE_URL`        | the Turso URL from Step 1 (`libsql://…`)                         |
-   | `DATABASE_AUTH_TOKEN` | the Turso token from Step 1                                      |
-   | `BETTER_AUTH_SECRET`  | the key from Step 2                                              |
-   | `BETTER_AUTH_URL`     | the site address, e.g. `https://your-site-url.com` (see step 7)  |
-   | `SEED_ADMIN_PASSWORD` | the first password for the three default Admins (10+ characters) |
-   | `RESEND_API_KEY`      | from Step 3 (leave out if you skipped it)                        |
-   | `EMAIL_FROM`          | from Step 3 (leave out if you skipped it)                        |
-   | `OPENAI_API_KEY`      | for the AI features: platform.openai.com → API keys. Optional.   |
-   | `OPENAI_MODEL`        | optional: another OpenAI model than the default `gpt-5.5`        |
+   | Name                  | Value                                                                |
+   | --------------------- | -------------------------------------------------------------------- |
+   | `DATABASE_URL`        | the Turso URL from Step 1 (`libsql://…`)                             |
+   | `DATABASE_AUTH_TOKEN` | the Turso token from Step 1                                          |
+   | `BETTER_AUTH_SECRET`  | the key from Step 2                                                  |
+   | `BETTER_AUTH_URL`     | the site address, e.g. `https://your-site-url.com` (see step 7)      |
+   | `SEED_ADMIN_PASSWORD` | the first password for the three default Admins (10+ characters)     |
+   | `RESEND_API_KEY`      | from Step 3 (leave out if you skipped it)                            |
+   | `EMAIL_FROM`          | from Step 3 (leave out if you skipped it)                            |
+   | `OPENAI_API_KEY`      | for the AI features: platform.openai.com → API keys. Optional.       |
+   | `OPENAI_MODEL`        | optional: another OpenAI model than the default `gpt-5.5`            |
+   | `CRON_SECRET`         | for scheduled reports: run `openssl rand -base64 32`, paste the line |
 
 6. Click **Deploy**. The first build takes a few minutes. It creates the tables, the three
    default Admins, the starting library, the seed plans and the AI knowledge files.
@@ -105,6 +106,14 @@ turso db create lumor-sales-backup-2026-10 --from-db lumor-sales
 (Install the Turso command first: `brew install tursodatabase/tap/turso`, then `turso auth
 login`.) On your own Mac, `npm run db:migrate` copies `data/app.db` into `data/backups/` by
 itself before changing anything.
+
+## Scheduled reports
+
+Netlify runs `netlify/functions/report-schedules.mts` every 15 minutes. It calls the app with
+`CRON_SECRET`, and the app makes the reports that are due (Reports page → Scheduled reports).
+Without `CRON_SECRET` nothing runs on a schedule (Run now still works). Without the Resend key,
+scheduled reports are saved in Report history but not emailed. To check it's running: Netlify →
+**Logs → Functions → report-schedules**.
 
 ## Later
 

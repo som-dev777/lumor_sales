@@ -145,3 +145,12 @@
   line-height: 20px;
   text-align: center;
 }
+
+// Reports print or save as PDF without the sidebar (F19).
+@media print {
+  .sidebar,
+  .topbar,
+  .backdrop {
+    display: none;
+  }
+}

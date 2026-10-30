@@ -443,7 +443,12 @@ export async function completeStepTx(
   if (!step) throw new PlanError("All steps are done. Choose Nurture or Lost.");
   const today = todayIst(now);
   const channel = resolveChannel(step.channels, p);
-  const link = { planEnrolmentId: e.id, planStepOrder: step.stepOrder };
+  // The due date is kept with the step, for plan adherence in reports (F19).
+  const link = {
+    planEnrolmentId: e.id,
+    planStepOrder: step.stepOrder,
+    planDueDate: e.nextDueDate,
+  };
   const settings = await getPlaybookSettings(tx);
   let overrides: number[] = [];
   let advance = true;

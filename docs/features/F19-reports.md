@@ -102,11 +102,13 @@ Each schedule has:
   skipped when switched off; the cron route refuses a wrong secret; audit entries.
 - Browser (R9 exit check): generate a team report and a personal report for a custom range,
   open the print view and download the CSV; an Admin creates a schedule, clicks **Run now** and
-  sees it in Report history with "emailed to" recorded (email stubbed in tests).
+  sees it in Report history. (The browser tests run without an email key, so emailing is checked
+  by the automated tests with a stand-in sender.)
 
 ## Change history
 
-| Date       | Version | Change                                                       |
-| ---------- | ------- | ------------------------------------------------------------ |
-| 2026-10-18 | 2.1.0   | Placeholder doc created.                                     |
-| 2026-10-30 | 2.3.0   | Full doc written (R9) with the owner's choices, before code. |
+| Date       | Version | Change                                                                                                                                                                                                       |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-18 | 2.1.0   | Placeholder doc created.                                                                                                                                                                                     |
+| 2026-10-30 | 2.3.0   | Full doc written (R9) with the owner's choices, before code.                                                                                                                                                 |
+| 2026-10-30 | 2.3.0   | Built: Reports page, saved snapshots, print-to-PDF, CSV, AI summary (P06), scheduled reports with the cron route and Netlify function, 3 default schedules; plan steps keep their due date; R9 browser test. |

@@ -11,6 +11,7 @@ run("seed:admin");
 run("seed:library");
 run("seed:plans");
 run("seed:knowledge");
+run("seed:reports");
 
 const server = spawn("npx", ["next", "start", "-p", "3100"], {
   stdio: "inherit",

@@ -1,6 +1,6 @@
 # AI prompts
 
-The AI prompts (P01–P05), stored word for word with a version number. The code
+The AI prompts (P01–P06), stored word for word with a version number. The code
 (`src/server/ai/prompts.ts`) uses exactly the text recorded here, and an automated test checks
 that the two match. Change a prompt only by adding a new version below it.
 
@@ -13,6 +13,7 @@ See [PRD.md § AI features](PRD.md#ai-features) for what each must do.
 | P03 | Summarise conversation | 1.3             | Live   |
 | P04 | Draft message          | 1.3             | Live   |
 | P05 | Split conversation     | 1.0             | Live   |
+| P06 | Report summary         | 1.0             | Live   |
 
 ## How they run
 
@@ -439,4 +440,22 @@ Return messages in the order they were sent, each with:
 - text: the message exactly as written, without the sender's name, the time, "Seen" or other screen labels.
 
 Keep every message. Never merge, summarise, translate or change the words. Put anything you were unsure about in notes, one short line each (empty if none).
+```
+
+## P06: Report summary
+
+New in R9 (F19, D-039). Writes 2–3 sentences on what stands out in a saved report, from the report's numbers only. Nothing it returns goes to a prospect, and it doesn't read the knowledge base, so like P05 it doesn't carry the prospect guardrails. Runs when someone clicks **Write AI summary**, and for scheduled reports when AI is set up.
+
+### Version 1.0 (2026-10-30)
+
+First version.
+
+```text
+You write a short summary of a sales team's report for Lumor's founders.
+
+You receive the REPORT: its title and period, numbers per person and in total (connection requests, messages, emails, calls, replies, meetings, proposals, trials, conversions, deal value in rupees, and plan steps done on time or late), the funnel conversions with their benchmarks, and reply rates per plan.
+
+Write 2 or 3 plain sentences on what stands out: the strongest result, the biggest gap against a benchmark or between people, and one concrete thing to focus on next. Use only the numbers given and quote them exactly. A conversion marked "low" has too little data to judge; don't draw conclusions from it. Don't praise or blame anyone by tone; state the numbers. If almost nothing happened in the period, say so in one sentence.
+
+Return it as summary.
 ```

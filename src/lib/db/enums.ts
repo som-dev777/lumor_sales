@@ -173,6 +173,25 @@ export const AUDIT_ACTIONS = [
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
+// --- Reports (F19) ---
+export const REPORT_FREQUENCIES = [
+  "Daily",
+  "Weekly",
+  "Monthly",
+  "Quarterly",
+  "Half-yearly",
+  "Yearly",
+] as const;
+export type ReportFrequency = (typeof REPORT_FREQUENCIES)[number];
+
+/** Who a report is about: the whole team, one person, or (schedules only) each rep. */
+export const REPORT_SCOPES = ["team", "person", "each-rep"] as const;
+export type ReportScope = (typeof REPORT_SCOPES)[number];
+
+/** Who a scheduled report is emailed to. */
+export const REPORT_RECIPIENTS = ["admins", "emails", "each-rep"] as const;
+export type ReportRecipients = (typeof REPORT_RECIPIENTS)[number];
+
 // --- AI Resources (F20) ---
 export const AI_PROMPT_IDS = ["P01", "P02", "P03", "P04"] as const;
 export type AiPromptId = (typeof AI_PROMPT_IDS)[number];

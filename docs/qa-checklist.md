@@ -22,6 +22,7 @@ npm run seed:admin
 npm run seed:library
 npm run seed:plans
 npm run seed:knowledge
+npm run seed:reports
 npm run releases:sync
 npm run dev
 ```
@@ -208,9 +209,27 @@ Set it back to today when you're done.
 - [ ] 9.6 As Admin, **Today → Team**: one row per person with due, overdue, done today, on plans
       and replies waiting over 1 day. As the rep, there's no Team link.
 
-## 10. Phone check
+## 10. Reports (F19)
 
-- [ ] 10.1 On your phone (or Chrome's device toolbar), Today, People and a person's conversation work: the menu collapses
+- [ ] 10.1 **Reports** (sidebar) → Who **Me**, Period **This month** → **Generate**: the report opens
+      with Activity, Replies and outcomes, Plan adherence, Funnel and Plan performance. It's in
+      **Report history**.
+- [ ] 10.2 **Download PDF**: the print window shows the report without the sidebar or buttons;
+      choose **Save as PDF**. **Download CSV** opens in Excel or Google Sheets with every table.
+- [ ] 10.3 As Admin, **Who → Whole team**, **Custom** From–To: one row per person and a Total.
+      With AI set up, **Write AI summary** adds 2–3 sentences that only quote the report's
+      numbers.
+- [ ] 10.4 As the rep, **Who** only offers **Me**, and opening an Admin's team report link shows
+      "Page not found".
+- [ ] 10.5 **Scheduled reports**: the three defaults are there. **Add schedule** (Weekly, Friday,
+      17:30, Whole team, Admins), then **Run now**: a "Scheduled" report appears in history and,
+      with email set up, arrives in your inbox with a link that opens it after logging in.
+- [ ] 10.6 Online, after adding `CRON_SECRET`: the next day at 19:00 IST the Daily team report
+      arrives by itself (Netlify → Logs → Functions shows report-schedules running).
+
+## 11. Phone check
+
+- [ ] 11.1 On your phone (or Chrome's device toolbar), Today, People and a person's conversation work: the menu collapses
       to a button, nothing runs off the side of the screen.
 
 ---

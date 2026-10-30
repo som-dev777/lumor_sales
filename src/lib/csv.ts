@@ -17,6 +17,11 @@ const BOM = String.fromCharCode(0xfeff);
 
 /** A whole file: a header row, then one row per record. Starts with a BOM so Excel reads UTF-8. */
 export function toCsv(header: string[], rows: unknown[][]): string {
-  const lines = [header, ...rows].map((r) => r.map(csvCell).join(","));
+  return csvFile([header, ...rows]);
+}
+
+/** A whole file from rows of any shape (an empty row is a blank line). */
+export function csvFile(rows: unknown[][]): string {
+  const lines = rows.map((r) => r.map(csvCell).join(","));
   return `${BOM}${lines.join("\r\n")}\r\n`;
 }

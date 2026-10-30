@@ -53,3 +53,10 @@
     background: var(--color-page);
   }
 }
+
+// Pop-ups never end up in a printed or saved PDF report (F19).
+@media print {
+  .viewport {
+    display: none;
+  }
+}

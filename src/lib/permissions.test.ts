@@ -111,6 +111,13 @@ describe("PRD permission table", () => {
     expect(can(rep, "today.team")).toBe(false);
   });
 
+  it("only Admins report on the team and manage scheduled reports (R9)", () => {
+    expect(can(admin, "reports.team")).toBe(true);
+    expect(can(rep, "reports.team")).toBe(false);
+    expect(can(admin, "reports.schedule")).toBe(true);
+    expect(can(rep, "reports.schedule")).toBe(false);
+  });
+
   it("Approve or reject proposals: Admin yes, User no", () => {
     expect(can(admin, "proposal.decide")).toBe(true);
     expect(can(rep, "proposal.decide")).toBe(false);

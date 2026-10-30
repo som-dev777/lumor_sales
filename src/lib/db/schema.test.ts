@@ -76,6 +76,8 @@ describe("migrations", () => {
       "playbook_settings",
       "product_facts",
       "proposal",
+      "report_run",
+      "report_schedule",
       "sales_resource",
       "sales_resource_file",
       "session",

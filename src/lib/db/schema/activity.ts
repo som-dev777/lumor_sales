@@ -48,6 +48,8 @@ export const activity = sqliteTable(
     requestNote: flag("request_note").notNull().default(false),
     // R8 (F18): out = from the rep, in = from the prospect, empty = notes and events.
     direction: text("direction", { enum: DIRECTIONS }),
+    // R9 (F19): the date a plan step was due when it was done (for plan adherence).
+    planDueDate: text("plan_due_date"),
   },
   (t) => [
     check("activity_type_check", oneOf("type", ACTIVITY_TYPES)),

@@ -1,4 +1,4 @@
-// The AI prompts (P01–P05), word for word. docs/ai-prompts.md holds the same text and a
+// The AI prompts (P01–P06), word for word. docs/ai-prompts.md holds the same text and a
 // test checks they match. To change a prompt, add a new version here and in the doc.
 
 export const GUARDRAILS = `Rules for anything you write that a prospect will read:
@@ -12,7 +12,7 @@ export const GUARDRAILS = `Rules for anything you write that a prospect will rea
 - Every follow-up adds something new: a resource, a question or an example. Never write "just following up", "bumping this", "circling back" or anything like them.
 - Write as the sales rep, in the first person. Never mention that you are an AI.`;
 
-export type PromptId = "P01" | "P02" | "P03" | "P04" | "P05";
+export type PromptId = "P01" | "P02" | "P03" | "P04" | "P05" | "P06";
 
 export const PROMPTS: Record<PromptId, { version: string; name: string; system: string }> = {
   P01: {
@@ -100,5 +100,16 @@ Return messages in the order they were sent, each with:
 - text: the message exactly as written, without the sender's name, the time, "Seen" or other screen labels.
 
 Keep every message. Never merge, summarise, translate or change the words. Put anything you were unsure about in notes, one short line each (empty if none).`,
+  },
+  P06: {
+    version: "1.0",
+    name: "Report summary",
+    system: `You write a short summary of a sales team's report for Lumor's founders.
+
+You receive the REPORT: its title and period, numbers per person and in total (connection requests, messages, emails, calls, replies, meetings, proposals, trials, conversions, deal value in rupees, and plan steps done on time or late), the funnel conversions with their benchmarks, and reply rates per plan.
+
+Write 2 or 3 plain sentences on what stands out: the strongest result, the biggest gap against a benchmark or between people, and one concrete thing to focus on next. Use only the numbers given and quote them exactly. A conversion marked "low" has too little data to judge; don't draw conclusions from it. Don't praise or blame anyone by tone; state the numbers. If almost nothing happened in the period, say so in one sentence.
+
+Return it as summary.`,
   },
 };

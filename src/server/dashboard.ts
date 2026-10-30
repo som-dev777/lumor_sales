@@ -377,6 +377,17 @@ export async function dashboard(
   };
 }
 
+/** The funnel for a period, optionally only for some reps' events (F19 reports). */
+export async function funnelTotals(db: DbOrTx, period: Range, repIds: string[] | null = null) {
+  const events = await funnelEvents(db, period);
+  const totals = empty();
+  for (const e of events) {
+    if (repIds && (!e.repId || !repIds.includes(e.repId))) continue;
+    totals[e.stage] += 1;
+  }
+  return { totals, conversions: conversions(totals) };
+}
+
 export type PlanPerformance = {
   planId: string;
   name: string;
@@ -391,7 +402,13 @@ export type PlanPerformance = {
  * Plan reply rates (F17, D-033 F13): people enrolled in the period and how many replied or
  * converted; per step, the touches done in the period and the replies that followed them.
  */
-export async function planPerformance(db: DbOrTx, period: Range): Promise<PlanPerformance[]> {
+export async function planPerformance(
+  db: DbOrTx,
+  period: Range,
+  /** Only people these users own (F19 reports); everyone when empty. */
+  ownerIds: string[] | null = null,
+): Promise<PlanPerformance[]> {
+  const owned = ownerIds ? inArray(person.ownerId, ownerIds.length ? ownerIds : [""]) : undefined;
   const enrolments = await db
     .select({
       id: planEnrolment.id,
@@ -406,7 +423,11 @@ export async function planPerformance(db: DbOrTx, period: Range): Promise<PlanPe
     .innerJoin(plan, eq(plan.id, planEnrolment.planId))
     .innerJoin(person, eq(person.id, planEnrolment.personId))
     .where(
-      and(gte(planEnrolment.startedAt, period.start), lt(planEnrolment.startedAt, period.end)),
+      and(
+        gte(planEnrolment.startedAt, period.start),
+        lt(planEnrolment.startedAt, period.end),
+        owned,
+      ),
     );
   const linked = await db
     .select({
@@ -419,7 +440,8 @@ export async function planPerformance(db: DbOrTx, period: Range): Promise<PlanPe
     })
     .from(activity)
     .innerJoin(planEnrolment, eq(planEnrolment.id, activity.planEnrolmentId))
-    .where(sql`${activity.planEnrolmentId} IS NOT NULL`);
+    .innerJoin(person, eq(person.id, planEnrolment.personId))
+    .where(and(sql`${activity.planEnrolmentId} IS NOT NULL`, owned));
   const repliedIds = new Set(
     linked.filter((a) => a.type === "Reply received").map((a) => a.enrolmentId),
   );

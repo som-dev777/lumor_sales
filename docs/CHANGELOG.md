@@ -13,6 +13,10 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 R9 Reports (v2.3.0), in progress.
 
 - Feature doc written for Reports (F19) with the owner's choices; decision D-039.
+- New **Reports** page (sidebar): make a report on yourself (Admins: the whole team or anyone) for today, this week, month, quarter, half-year, year or a custom range. It shows activity, replies and outcomes with deal value, plan steps done on time or late, plan reply rates and the funnel. Every report is saved in Report history and never changes afterwards.
+- **Download PDF** (a print-ready page saved with the browser's Save as PDF) and **Download CSV**. **Write AI summary** adds 2–3 sentences from the report's numbers (new prompt P06).
+- **Scheduled reports** (Admins): daily, weekly, monthly, quarterly, half-yearly or yearly, at a time in IST, for the whole team, one person or each rep, emailed to Admins, a list or each rep with a link to the saved report. Three defaults: Daily team report, Weekly team report and Daily personal summary. They run online every 15 minutes through a Netlify scheduled function (needs `CRON_SECRET`), and are emailed once the Resend key is set.
+- Plan steps now keep the date they were due, so reports can tell on time from late.
 
 - Deploy guide: example site addresses are placeholders (they tripped Netlify's secrets scan), and it explains `SECRETS_SCAN_OMIT_KEYS`.
 

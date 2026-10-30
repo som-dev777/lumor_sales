@@ -36,6 +36,9 @@ test in `src/lib/permissions.test.ts`.
 | Add messages to the conversation (from me / from them, paste a thread) | `lead.edit` (with the lead): owner or Admin                           | Yes   | Own leads only                              |
 | Add a note to the conversation                                         | `lead.addNote`                                                        | Yes   | Yes                                         |
 | See the Team tab on Today (R8)                                         | `today.team`                                                          | Yes   | No                                          |
+| Make a report on yourself; open your own reports (F19)                 | `record.view`                                                         | Yes   | Yes                                         |
+| Make a report on the team or anyone; open every report                 | `reports.team`                                                        | Yes   | No                                          |
+| Create, change, run now, switch off or delete scheduled reports        | `reports.schedule`                                                    | Yes   | No                                          |
 | Reassign the owner of a lead or company (single or bulk)               | `lead.reassign`                                                       | Yes   | No                                          |
 | Create, edit and delete Official personas, filters and templates       | `library.create` / `library.edit` / `library.delete` (Official item)  | Yes   | No. Official items show a lock icon         |
 | Create, edit and delete own Personal personas, filters and templates   | `library.create` / `library.edit` / `library.delete` (Personal item)  | Yes   | Yes, own items only                         |

@@ -21,3 +21,15 @@
     padding: var(--space-4);
   }
 }
+
+// Reports print or save as PDF without the app's frame (F19).
+@media print {
+  .main {
+    margin-left: 0;
+  }
+
+  .content {
+    max-width: none;
+    padding: 0;
+  }
+}
