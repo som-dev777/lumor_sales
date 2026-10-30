@@ -1,6 +1,6 @@
 # F19: Reports
 
-- **Priority:** P1 · **Release:** R9 (v2.3.0) · **Status:** In progress
+- **Priority:** P1 · **Release:** R9 (v2.3.0) · **Status:** Done
 - **PRD:** [Version 2 scope → F19](../PRD.md#version-2-scope-r7r9)
 - **Decisions:** D-039 (owner's choices on 2026-10-30, and mine)
 
@@ -112,3 +112,4 @@ Each schedule has:
 | 2026-10-18 | 2.1.0   | Placeholder doc created.                                                                                                                                                                                     |
 | 2026-10-30 | 2.3.0   | Full doc written (R9) with the owner's choices, before code.                                                                                                                                                 |
 | 2026-10-30 | 2.3.0   | Built: Reports page, saved snapshots, print-to-PDF, CSV, AI summary (P06), scheduled reports with the cron route and Netlify function, 3 default schedules; plan steps keep their due date; R9 browser test. |
+| 2026-10-30 | 2.3.0   | Released in v2.3.0 (R9 Reports).                                                                                                                                                                             |

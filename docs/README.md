@@ -3,7 +3,7 @@
 Lumor Sales Hub is the internal web app where Lumor's sales team manages LinkedIn
 prospecting, from finding a lead in Sales Navigator to a paying customer.
 
-**Current version:** 2.2.0 (R8 Conversations, released 22 Oct 2026). Next: R9 Reports (2.3.0). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
+**Current version:** 2.3.0 (R9 Reports, released 30 Oct 2026). Version 2 is complete. See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
 
 ## Documents
 
@@ -43,7 +43,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F10 | [Conversation summary and draft](features/F10-summary-draft.md)      | P1       | R6      | Done (1.5.0)     |
 | F17 | [Plans](features/F17-plans.md)                                       | P0       | R7      | Done (2.0.0)     |
 | F18 | [Conversation thread](features/F18-conversation-thread.md)           | P0       | R8      | Done (2.2.0)     |
-| F19 | [Reports](features/F19-reports.md)                                   | P1       | R9      | In progress      |
+| F19 | [Reports](features/F19-reports.md)                                   | P1       | R9      | Done (2.3.0)     |
 | F20 | [AI Resources](features/F20-ai-resources.md)                         | P0       | 2.1.0   | Done             |
 
 ## Releases
@@ -59,7 +59,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | R7 Plans         | 2.0.0   | F17, F08 (v2)      | Released 2026-10-18 |
 | AI Resources     | 2.1.0   | F20                | Released 2026-10-22 |
 | R8 Conversations | 2.2.0   | F18, F08, F09, F10 | Released 2026-10-22 |
-| R9 Reports       | 2.3.0   | F19                | In progress         |
+| R9 Reports       | 2.3.0   | F19                | Released 2026-10-30 |
 
 ## Running the app locally
 

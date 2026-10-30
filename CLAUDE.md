@@ -78,5 +78,5 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Current (2026-10-30): R9 Reports (F19, v2.3.0; D-039). The doc is written; the build starts once
-the owner has set up Resend (email), then runs in one go and stops with a summary.
+Done (2026-10-30): R9 Reports (F19, v2.3.0; D-039) is built and released; version 2 is complete. The
+owner runs the QA checklist (docs/qa-checklist.md). Fixes are PATCH releases (2.3.1, …).

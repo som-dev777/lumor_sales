@@ -10,7 +10,11 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-R9 Reports (v2.3.0), in progress.
+Version 2 is complete. Next: the owner's QA and fixes (2.3.x).
+
+## [2.3.0] - 2026-10-30
+
+R9 Reports: saved reports on anyone's work for any period, with print-to-PDF, CSV, an optional AI summary, and scheduled reports emailed with a link.
 
 - Feature doc written for Reports (F19) with the owner's choices; decision D-039.
 - New **Reports** page (sidebar): make a report on yourself (Admins: the whole team or anyone) for today, this week, month, quarter, half-year, year or a custom range. It shows activity, replies and outcomes with deal value, plan steps done on time or late, plan reply rates and the funnel. Every report is saved in Report history and never changes afterwards.
