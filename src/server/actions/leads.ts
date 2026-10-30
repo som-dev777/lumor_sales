@@ -16,8 +16,16 @@ import {
   personSchema,
   quickLogSchema,
 } from "@/lib/validation/leads";
-import { createCompany, LeadError, markAsCustomer, updateCompany } from "../leads/companies";
-import { addNote, createPerson, reassignPeople, updatePerson } from "../leads/people";
+import {
+  createCompany,
+  deleteCompany,
+  LeadError,
+  markAsCustomer,
+  mergeCompanies,
+  updateCompany,
+  updateCompanyNotes,
+} from "../leads/companies";
+import { addNote, createPerson, deletePerson, reassignPeople, updatePerson } from "../leads/people";
 import { GuardrailWarning, logWithPlan } from "../plans/enrolment";
 import { PlanError } from "../plans/plans";
 
@@ -153,5 +161,55 @@ export async function markCustomer(companyId: string, input: unknown): Promise<A
     const row = await markAsCustomer(getDb(), viewer, companyId, parsed.data);
     refresh();
     return { ok: true, message: `${row.name} is now a customer.` };
+  });
+}
+
+const notesSchema = z.string().max(5000, "The notes are too long.");
+
+/** The company page's Notes box (owner or Admin). */
+export async function saveCompanyNotes(companyId: string, notes: string): Promise<ActionResult> {
+  const viewer = await requireUser();
+  const parsed = notesSchema.safeParse(notes);
+  if (!idSchema.safeParse(companyId).success) return { ok: false, error: "Unknown company." };
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  return run(async () => {
+    await updateCompanyNotes(getDb(), viewer, companyId, parsed.data);
+    refresh();
+    return { ok: true, message: "Notes saved." };
+  });
+}
+
+/** Admins: delete a company with no people. */
+export async function removeCompany(companyId: string): Promise<ActionResult> {
+  const viewer = await requireUser();
+  if (!idSchema.safeParse(companyId).success) return { ok: false, error: "Unknown company." };
+  return run(async () => {
+    const row = await deleteCompany(getDb(), viewer, companyId);
+    return { ok: true, message: `${row.name} deleted.`, link: "/companies" };
+  });
+}
+
+/** Admins: merge a duplicate company into another. */
+export async function mergeCompany(sourceId: string, targetId: string): Promise<ActionResult> {
+  const viewer = await requireUser();
+  if (!idSchema.safeParse(sourceId).success || !idSchema.safeParse(targetId).success)
+    return { ok: false, error: "Choose the company to merge into." };
+  return run(async () => {
+    const { target, moved } = await mergeCompanies(getDb(), viewer, sourceId, targetId);
+    return {
+      ok: true,
+      message: `Merged into ${target.name}. ${moved} ${moved === 1 ? "person" : "people"} moved.`,
+      link: `/companies/${target.id}`,
+    };
+  });
+}
+
+/** Admins: delete a person with their activities and plan history. */
+export async function removePerson(personId: string): Promise<ActionResult> {
+  const viewer = await requireUser();
+  if (!idSchema.safeParse(personId).success) return { ok: false, error: "Unknown person." };
+  return run(async () => {
+    const row = await deletePerson(getDb(), viewer, personId);
+    return { ok: true, message: `${row.fullName} deleted.`, link: "/people" };
   });
 }

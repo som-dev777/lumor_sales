@@ -115,7 +115,8 @@ test("exit check: enrol, on time, wait for acceptance, weekend → Monday, late 
   const add = rep.getByRole("dialog");
   await add.getByLabel("Full name").fill("Ella Plan");
   await add.getByLabel("LinkedIn profile link").fill("linkedin.com/in/ella-plan-r7");
-  await add.getByLabel("Company").fill("Insight Co R7");
+  await add.getByLabel("Company").selectOption({ label: "+ Add a new company" });
+  await add.getByLabel("New company name").fill("Insight Co R7");
   await add.getByRole("button", { name: "Add person" }).click();
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
   personUrl = new URL(rep.url()).pathname;

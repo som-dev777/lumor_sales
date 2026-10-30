@@ -558,3 +558,37 @@ replaces it.
     (manage schedules), both Admin only. Anyone can report on themselves.
 - **Why:** Matches the PRD's F19 with the least new machinery: no PDF service and no file
   storage, and the email key the owner is adding now.
+
+## D-040: The owner's first live QA round (owner, 2026-10-30)
+
+- **Date:** 2026-10-30 · **Status:** Accepted (owner listed the changes; asked for them done
+  without further questions)
+- **Owner's requests, as built:**
+  - **Every person needs a company**, picked from existing companies (with **+ Add a new
+    company**). **Add person** on a company page. **Editable company notes.**
+  - **Delete and merge companies; delete people.**
+  - **An Industries list** with add, edit and delete (new feature F21, on Settings).
+  - **The Lumor icon** in the top-left instead of the full logo (keeping "Sales Hub"), and as
+    the browser tab icon (it was Next.js's default icon). One file, `public/brand-icon.png`.
+  - **Adding people counts as new outreach** on Today.
+  - **Login after a password reset**, **My leads / All leads**, and **AI features** fixed.
+- **My choices:**
+  - Deleting and merging are **Admin only** (`lead.delete`): they remove data. A company can
+    only be deleted once it has no people; merging keeps everything.
+  - "Counts as new outreach": each person a rep **adds** today, or sends a connection request
+    to today, counts **once** toward the daily target (previously only connection requests).
+  - Industries: anyone adds (so reps aren't blocked adding a company); Admins rename and
+    delete, and the change follows through to companies and account filters.
+  - Reset login: a successful reset or change now clears the 15-minute pause from earlier
+    wrong passwords, and counts as confirming the email (with email switched on, unconfirmed
+    accounts were refused even with the right new password).
+  - My leads / All leads worked correctly in a browser test; the slowness on the live site
+    comes from each page's database round trips (the database is in Mumbai). The tabs now show
+    a loading dot at once. Moving the database and the site's functions to the same region is
+    an owner step (docs/deploy.md).
+  - AI: the key was valid, but the OpenAI project only allows `gpt-5.4-nano`, and the app
+    showed that as "key refused". Now the app falls back to the best model the project allows
+    (preference list in `src/server/ai/client.ts`) and logs which one; the owner can allow
+    `gpt-5.5` in OpenAI for better answers.
+  - **Version 2.4.0** (MINOR): this round adds features (merge, delete, industries), not only
+    fixes. The F21 doc was written alongside the code rather than before it.

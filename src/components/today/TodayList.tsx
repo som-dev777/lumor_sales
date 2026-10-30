@@ -46,18 +46,18 @@ export function TodayList({ tasks, outreach, aiReady }: Props) {
         <div className={styles.targetHead}>
           <h2 className={styles.cardTitle}>New outreach</h2>
           <span className={styles.targetCount}>
-            {outreach.sent} of {outreach.target} requests sent
+            {outreach.sent} of {outreach.target} new people today
           </span>
         </div>
         <progress
           className={styles.bar}
-          aria-label="Connection requests sent today"
+          aria-label="New people reached today"
           value={Math.min(outreach.sent, outreach.target)}
           max={Math.max(outreach.target, 1)}
         />
         <p className={styles.muted}>
           {outreach.left > 0
-            ? `${outreach.left} left to send today.`
+            ? `${outreach.left} to go today. Adding a person or sending a connection request counts.`
             : "Target reached for today. Nice work."}
           {outreach.left > 0 && (outreach.persona || outreach.accountFilter) && (
             <>

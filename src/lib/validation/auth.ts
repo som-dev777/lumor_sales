@@ -18,7 +18,8 @@ const confirmed = <T extends { password: string; confirmPassword: string }>(data
 const mismatch = { message: "The two passwords don't match.", path: ["confirmPassword"] };
 
 export const loginSchema = z.object({
-  email: z.email("Enter a valid email address.").trim(),
+  // Emails are stored in lower case; "Somnath@Lumor.tech" logs in too.
+  email: z.email("Enter a valid email address.").trim().toLowerCase(),
   password: z.string().min(1, "Enter your password."),
 });
 export type LoginInput = z.infer<typeof loginSchema>;

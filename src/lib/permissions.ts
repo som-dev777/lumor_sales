@@ -27,6 +27,7 @@ export type PlainAction =
   | "today.team"
   | "reports.team"
   | "reports.schedule"
+  | "lead.delete"
   | "audit.view"
   | "audit.modify";
 
@@ -78,6 +79,7 @@ export function can(actor: Actor, action: Action, record?: Partial<LibraryItem>)
     case "today.team":
     case "reports.team":
     case "reports.schedule":
+    case "lead.delete":
     case "audit.view":
       return isAdmin;
 

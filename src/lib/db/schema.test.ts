@@ -64,6 +64,7 @@ describe("migrations", () => {
       "app_release",
       "audit_log",
       "company",
+      "industry",
       "invite",
       "knowledge_file",
       "knowledge_revision",

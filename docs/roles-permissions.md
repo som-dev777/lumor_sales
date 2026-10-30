@@ -52,6 +52,9 @@ test in `src/lib/permissions.test.ts`.
 | Read Playbook Settings                                                 | `settings.read`                                                       | Yes   | Yes                                         |
 | Edit Playbook Settings                                                 | `settings.edit`                                                       | Yes   | No                                          |
 | Read AI knowledge files and download sales resources (F20)             | `record.view`                                                         | Yes   | Yes                                         |
+| Delete people; delete (empty) and merge companies                      | `lead.delete`                                                         | Yes   | No                                          |
+| Add an industry (F21)                                                  | `lead.create`                                                         | Yes   | Yes                                         |
+| Rename or delete industries (F21)                                      | `settings.edit`                                                       | Yes   | No                                          |
 | Add and edit AI knowledge files; set the demo calendar link            | `knowledge.edit`                                                      | Yes   | No                                          |
 | Add and remove sales resources (files and links)                       | `resources.manage`                                                    | Yes   | No                                          |
 | View the Audit Log                                                     | `audit.view`                                                          | Yes   | No. Users see change history on each record |

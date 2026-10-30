@@ -2,6 +2,7 @@
 import { asc, eq } from "drizzle-orm";
 import type { DbOrTx } from "@/lib/db/client";
 import { accountFilter, company, persona, template } from "@/lib/db/schema";
+import { industryNames } from "../industries";
 import { activeOwners } from "./companies";
 
 export type Choice = { id: string; label: string };
@@ -11,10 +12,11 @@ export type LeadFormOptions = {
   templates: Choice[];
   owners: Choice[];
   companies: string[];
+  industries: string[];
 };
 
 export async function leadFormOptions(db: DbOrTx): Promise<LeadFormOptions> {
-  const [personas, filters, templates, owners, companies] = await Promise.all([
+  const [personas, filters, templates, owners, companies, industries] = await Promise.all([
     db
       .select({ id: persona.id, name: persona.name, type: persona.type })
       .from(persona)
@@ -42,6 +44,7 @@ export async function leadFormOptions(db: DbOrTx): Promise<LeadFormOptions> {
       .orderBy(asc(template.purpose), asc(template.name)),
     activeOwners(db),
     db.select({ name: company.name }).from(company).orderBy(asc(company.name)),
+    industryNames(db),
   ]);
   const personal = (type: string) => (type === "Personal" ? " (Personal)" : "");
   return {
@@ -56,5 +59,6 @@ export async function leadFormOptions(db: DbOrTx): Promise<LeadFormOptions> {
     })),
     owners: owners.map((o) => ({ id: o.id, label: o.name })),
     companies: companies.map((c) => c.name),
+    industries,
   };
 }

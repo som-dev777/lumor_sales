@@ -23,22 +23,28 @@ same LinkedIn profile twice, so two reps never message the same person.
 3. **Duplicates:** the normalised link is unique (the database enforces it). Checked on create
    and edit. A duplicate blocks the save and shows "Already added by {owner}" with a link to
    the existing person.
-4. **Ownership:**
+4. **Company (required, D-040):** every person belongs to a company, chosen from a dropdown of
+   existing companies; **+ Add a new company** at the bottom of the list shows a name box and
+   creates it on save. "Add person" on a company page fills its company in.
+5. **Deleting (Admins, `lead.delete`):** **Delete** on a person's page removes the person with
+   their conversation and plan history, after a confirmation. The Audit Log keeps a copy;
+   saved reports keep their numbers.
+6. **Ownership:**
    - Whoever adds a person owns them. Admins can choose another active owner.
    - Only the owner or an Admin edits a person (`lead.edit`).
    - Anyone can add a note to anyone's lead (`lead.addNote`). A note is a "Meeting note"
      activity on the timeline.
    - Deactivated users are hidden from owner pickers.
-5. **Stage:** the 10 PRD stages, chosen in the edit form.
+7. **Stage:** the 10 PRD stages, chosen in the edit form.
    - Lost requires a lost reason (database CHECK too). Leaving Lost clears the reason.
    - A manual stage change logs a "Stage change" activity.
    - Quick-log buttons that move stages come in R4 (F15).
-6. **Company:** type a company name. An existing company (same name, any case) is linked;
+8. **Company:** type a company name. An existing company (same name, any case) is linked;
    otherwise a new company is created, owned by the lead's owner.
-7. **Bulk reassign (Admin):** select rows, choose a new owner, confirm. Each person gets its own
+9. **Bulk reassign (Admin):** select rows, choose a new owner, confirm. Each person gets its own
    "Reassigned" audit entry.
-8. **CSV export:** the current filtered view, all matching rows (up to 10,000).
-9. Every create, edit, note, stage change and reassignment is audited.
+10. **CSV export:** the current filtered view, all matching rows (up to 10,000).
+11. Every create, edit, note, stage change and reassignment is audited.
 
 ## v2 fields (R7)
 
@@ -84,12 +90,13 @@ same LinkedIn profile twice, so two reps never message the same person.
 
 ## Change history
 
-| Date       | Version | Change                                                                                                                                        |
-| ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | 1.2.0   | Placeholder doc created.                                                                                                                      |
-| 2026-10-17 | 1.2.0   | Full doc written (R3).                                                                                                                        |
-| 2026-10-17 | 1.2.0   | Rules built: link normalising, duplicates, ownership, notes, stage changes, bulk reassign, filters; with tests.                               |
-| 2026-10-17 | 1.2.0   | People list (filters, My/All, bulk reassign, CSV) and person page (header, claimed message, notes, timeline, history) built; R3 browser test. |
-| 2026-10-17 | 1.2.0   | Released in v1.2.0 (R3 Leads).                                                                                                                |
-| 2026-10-18 | 2.0.0   | v2 (R7): phone, email, seniority, Do not contact; v2 stages; plan shown in the list and export.                                               |
-| 2026-10-18 | 2.0.0   | Released in v2.0.0 (R7 Plans).                                                                                                                |
+| Date       | Version | Change                                                                                                                                                                       |
+| ---------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.2.0   | Placeholder doc created.                                                                                                                                                     |
+| 2026-10-17 | 1.2.0   | Full doc written (R3).                                                                                                                                                       |
+| 2026-10-17 | 1.2.0   | Rules built: link normalising, duplicates, ownership, notes, stage changes, bulk reassign, filters; with tests.                                                              |
+| 2026-10-17 | 1.2.0   | People list (filters, My/All, bulk reassign, CSV) and person page (header, claimed message, notes, timeline, history) built; R3 browser test.                                |
+| 2026-10-17 | 1.2.0   | Released in v1.2.0 (R3 Leads).                                                                                                                                               |
+| 2026-10-18 | 2.0.0   | v2 (R7): phone, email, seniority, Do not contact; v2 stages; plan shown in the list and export.                                                                              |
+| 2026-10-18 | 2.0.0   | Released in v2.0.0 (R7 Plans).                                                                                                                                               |
+| 2026-10-30 | 2.4.0   | A company is required (dropdown of existing companies, or + Add a new company); Admins can delete a person; My leads / All leads show a loading dot while switching (D-040). |

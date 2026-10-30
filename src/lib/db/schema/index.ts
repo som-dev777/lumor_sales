@@ -15,3 +15,4 @@ export * from "./login-attempt";
 export * from "./plan";
 export * from "./ai-resources";
 export * from "./report";
+export * from "./industry";

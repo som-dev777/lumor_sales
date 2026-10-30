@@ -6,6 +6,7 @@ import type { Db, DbOrTx } from "@/lib/db/client";
 import { accountFilter, activity, company, person, user } from "@/lib/db/schema";
 import { assertCan, type Actor } from "@/lib/permissions";
 import type { CompanyData, CustomerData } from "@/lib/validation/leads";
+import { ensureIndustries } from "../industry-list";
 
 export class LeadError extends Error {
   constructor(
@@ -57,6 +58,7 @@ async function insertCompany(
   const existing = await findCompanyByName(tx, data.name);
   if (existing)
     throw new LeadError(`${existing.name} already exists.`, `/companies/${existing.id}`);
+  await ensureIndustries(tx, actor, [data.industry ?? null]);
   const [row] = await tx
     .insert(company)
     .values({ ...data, country: data.country ?? "India", ownerId, createdBy: actor.id })
@@ -119,6 +121,7 @@ export async function updateCompany(db: Db, actor: Actor, id: string, data: Comp
       throw new LeadError(`${clash.name} already exists.`, `/companies/${clash.id}`);
 
     const { ownerId: _o, ...fields } = data;
+    await ensureIndustries(tx, actor, [fields.industry]);
     const [after] = await tx
       .update(company)
       .set({ ...fields, ownerId })
@@ -167,6 +170,128 @@ export async function markAsCustomer(db: Db, actor: Actor, id: string, data: Cus
       },
     });
     return after;
+  });
+}
+
+/** Saves just the notes (the company page's Notes box). Owner or Admin. */
+export async function updateCompanyNotes(db: Db, actor: Actor, id: string, notes: string | null) {
+  return db.transaction(async (tx) => {
+    const before = await loadCompany(tx, id);
+    assertCan(actor, "lead.edit", before);
+    const [after] = await tx
+      .update(company)
+      .set({ notes: notes?.trim() || null })
+      .where(eq(company.id, id))
+      .returning();
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Company",
+      recordId: id,
+      recordName: after.name,
+      action: "Updated",
+      before: { notes: before.notes },
+      after: { notes: after.notes },
+    });
+    return after;
+  });
+}
+
+/** Admins delete a company that has no people left (move or merge them first). */
+export async function deleteCompany(db: Db, actor: Actor, id: string) {
+  assertCan(actor, "lead.delete");
+  return db.transaction(async (tx) => {
+    const before = await loadCompany(tx, id);
+    const [{ n }] = await tx.select({ n: count() }).from(person).where(eq(person.companyId, id));
+    if (n > 0) {
+      throw new LeadError(
+        `${before.name} still has ${n} ${n === 1 ? "person" : "people"}. Merge it into another company, or delete them first.`,
+      );
+    }
+    await tx.update(activity).set({ companyId: null }).where(eq(activity.companyId, id));
+    await tx.delete(company).where(eq(company.id, id));
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Company",
+      recordId: id,
+      recordName: before.name,
+      action: "Deleted",
+      before: companyAudit(before),
+    });
+    return before;
+  });
+}
+
+const STATUS_RANK = { Lost: 0, Target: 1, Engaged: 2, Customer: 3 } as const;
+const FILLABLE = [
+  "website",
+  "linkedinUrl",
+  "industry",
+  "headcountBand",
+  "city",
+  "country",
+  "accountFilterId",
+] as const;
+
+/**
+ * Admins merge a duplicate company into another: its people and their activities move across,
+ * empty details are filled from it, notes are kept, the further status (and its deal) wins, and
+ * the duplicate is deleted. One audit entry for each company.
+ */
+export async function mergeCompanies(db: Db, actor: Actor, sourceId: string, targetId: string) {
+  assertCan(actor, "lead.delete");
+  if (sourceId === targetId) throw new LeadError("Choose a different company to merge into.");
+  return db.transaction(async (tx) => {
+    const source = await loadCompany(tx, sourceId);
+    const target = await loadCompany(tx, targetId);
+    const moved = await tx
+      .update(person)
+      .set({ companyId: targetId })
+      .where(eq(person.companyId, sourceId))
+      .returning({ id: person.id });
+    await tx.update(activity).set({ companyId: targetId }).where(eq(activity.companyId, sourceId));
+
+    const filled: Partial<CompanyRow> = {};
+    for (const k of FILLABLE)
+      if (!target[k] && source[k]) Object.assign(filled, { [k]: source[k] });
+    if (STATUS_RANK[source.status] > STATUS_RANK[target.status]) {
+      Object.assign(filled, {
+        status: source.status,
+        planTier: source.planTier,
+        dealValueInr: source.dealValueInr,
+        customerStartDate: source.customerStartDate,
+      });
+    }
+    const notes = [
+      target.notes,
+      source.notes ? `Merged from ${source.name}:\n${source.notes}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    const [after] = await tx
+      .update(company)
+      .set({ ...filled, notes: notes || null })
+      .where(eq(company.id, targetId))
+      .returning();
+    await tx.delete(company).where(eq(company.id, sourceId));
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Company",
+      recordId: targetId,
+      recordName: after.name,
+      action: "Updated",
+      before: companyAudit(target),
+      after: { ...companyAudit(after), mergedFrom: source.name, peopleMoved: moved.length },
+    });
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Company",
+      recordId: sourceId,
+      recordName: source.name,
+      action: "Deleted",
+      before: companyAudit(source),
+      after: { mergedInto: after.name },
+    });
+    return { target: after, moved: moved.length };
   });
 }
 

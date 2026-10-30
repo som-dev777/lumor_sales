@@ -3,6 +3,7 @@
 // writes an audit entry in the same transaction.
 import { and, count, eq } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit";
+import { ensureIndustries } from "../industry-list";
 import type { Db, DbOrTx } from "@/lib/db/client";
 import {
   accountFilter,
@@ -158,6 +159,7 @@ export async function createItem(
         .returning();
     } else if (item.kind === "accountFilter") {
       if (type === "Official") await assertOfficialCodeFree(tx, item.data.code);
+      await ensureIndustries(tx, actor, item.data.industries);
       [row] = await tx
         .insert(accountFilter)
         .values({ ...item.data, ...base })
@@ -193,6 +195,7 @@ export async function updateItem(db: Db, actor: Actor, id: string, item: NewItem
       [after] = await tx.update(persona).set(item.data).where(eq(persona.id, id)).returning();
     } else if (item.kind === "accountFilter") {
       if (before.type === "Official") await assertOfficialCodeFree(tx, item.data.code, id);
+      await ensureIndustries(tx, actor, item.data.industries);
       [after] = await tx
         .update(accountFilter)
         .set(item.data)

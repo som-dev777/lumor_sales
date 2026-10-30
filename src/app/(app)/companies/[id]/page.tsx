@@ -5,7 +5,10 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { ExternalLink } from "lucide-react";
 import { ChangeHistory } from "@/components/audit/ChangeHistory";
+import { CompanyAdminActions } from "@/components/leads/CompanyAdminActions";
 import { CompanyDialogButton } from "@/components/leads/CompanyDialogButton";
+import { CompanyNotes } from "@/components/leads/CompanyNotes";
+import { PersonDialogButton } from "@/components/leads/PersonDialogButton";
 import { MarkCustomerButton } from "@/components/leads/MarkCustomerButton";
 import { StageBadge } from "@/components/leads/StageBadge";
 import { Timeline } from "@/components/leads/Timeline";
@@ -18,6 +21,8 @@ import { formatInr } from "@/lib/money";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { formatIstDate, todayIst } from "@/lib/time";
+import { asc, ne } from "drizzle-orm";
+import { company } from "@/lib/db/schema";
 import { companyTimeline, getCompany } from "@/server/leads/companies";
 import { leadFormOptions } from "@/server/leads/options";
 
@@ -46,7 +51,18 @@ async function Company({ params }: Pick<PageProps<"/companies/[id]">, "params">)
   const db = getDb();
   const c = await getCompany(db, id);
   if (!c) notFound();
-  const [events, options] = await Promise.all([companyTimeline(db, id), leadFormOptions(db)]);
+  const mayDelete = can(viewer, "lead.delete");
+  const [events, options, others] = await Promise.all([
+    companyTimeline(db, id),
+    leadFormOptions(db),
+    mayDelete
+      ? db
+          .select({ id: company.id, name: company.name })
+          .from(company)
+          .where(ne(company.id, id))
+          .orderBy(asc(company.name))
+      : Promise.resolve([]),
+  ]);
   const mayEdit = can(viewer, "lead.edit", { ownerId: c.ownerId });
   const fact = (label: string, value: React.ReactNode) => (
     <div>
@@ -132,6 +148,14 @@ async function Company({ params }: Pick<PageProps<"/companies/[id]">, "params">)
               />
             </>
           )}
+          {mayDelete && (
+            <CompanyAdminActions
+              companyId={c.id}
+              companyName={c.name}
+              peopleCount={c.people.length}
+              others={others}
+            />
+          )}
         </div>
       </section>
 
@@ -156,7 +180,16 @@ async function Company({ params }: Pick<PageProps<"/companies/[id]">, "params">)
             )}
           </section>
           <section className={styles.panel} aria-label="People">
-            <h2 className={styles.panelTitle}>People ({c.people.length})</h2>
+            <div className={styles.panelHead}>
+              <h2 className={styles.panelTitle}>People ({c.people.length})</h2>
+              {can(viewer, "lead.create") && (
+                <PersonDialogButton
+                  options={options}
+                  canChooseOwner={can(viewer, "lead.reassign")}
+                  companyName={c.name}
+                />
+              )}
+            </div>
             {c.people.length === 0 ? (
               <p className={styles.muted}>No people linked yet.</p>
             ) : (
@@ -176,12 +209,10 @@ async function Company({ params }: Pick<PageProps<"/companies/[id]">, "params">)
               </ul>
             )}
           </section>
-          {c.notes && (
-            <section className={styles.panel}>
-              <h2 className={styles.panelTitle}>Notes</h2>
-              <p className={styles.eventBody}>{c.notes}</p>
-            </section>
-          )}
+          <section className={styles.panel} aria-label="Notes">
+            <h2 className={styles.panelTitle}>Notes</h2>
+            <CompanyNotes key={c.notes ?? ""} companyId={c.id} notes={c.notes} canEdit={mayEdit} />
+          </section>
           <section className={styles.panel}>
             <Suspense fallback={<StatusMessage title="Loading history…" />}>
               <ChangeHistory entityType="Company" recordId={c.id} />

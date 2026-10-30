@@ -58,7 +58,8 @@ test("a User adds a person; a new company is created from the name", async () =>
   await dialog
     .getByLabel("LinkedIn profile link")
     .fill("https://www.LinkedIn.com/in/Priya-S/?utm_source=x");
-  await dialog.getByLabel("Company").fill("Acme Insights");
+  await dialog.getByLabel("Company").selectOption({ label: "+ Add a new company" });
+  await dialog.getByLabel("New company name").fill("Acme Insights");
   await dialog.getByLabel("Persona").selectOption({ label: "Research & Insights" });
   await dialog.getByLabel("Next action", { exact: true }).fill("Send connection request");
   await dialog.getByLabel("Next action date").fill("2026-01-05");
@@ -82,6 +83,8 @@ test("exit check: five URL variants and a Sales Navigator link are all refused",
     const dialog = await openAddPerson(other);
     await dialog.getByLabel("Full name").fill("Priya S");
     await dialog.getByLabel("LinkedIn profile link").fill(url);
+    await dialog.getByLabel("Company").selectOption({ label: "+ Add a new company" });
+    await dialog.getByLabel("New company name").fill("E2E Co");
     await dialog.getByRole("button", { name: "Add person" }).click();
     await expect(shown(dialog.getByText("Already added by Meera Rep."))).toBeVisible();
     await expect(dialog.getByRole("link", { name: "Open the existing person" })).toHaveAttribute(
@@ -95,6 +98,8 @@ test("exit check: five URL variants and a Sales Navigator link are all refused",
   await dialog
     .getByLabel("LinkedIn profile link")
     .fill("https://www.linkedin.com/sales/lead/ACwAAA123,NAME_SEARCH");
+  await dialog.getByLabel("Company").selectOption({ label: "+ Add a new company" });
+  await dialog.getByLabel("New company name").fill("E2E Co");
   await dialog.getByRole("button", { name: "Add person" }).click();
   await expect(
     shown(dialog.getByText("Paste the public profile link (linkedin.com/in/…)")),
@@ -154,7 +159,8 @@ test("an Admin bulk-reassigns leads", async () => {
   const dialog = await openAddPerson(rep);
   await dialog.getByLabel("Full name").fill("Arjun Mehta");
   await dialog.getByLabel("LinkedIn profile link").fill("https://www.linkedin.com/in/arjun-mehta/");
-  await dialog.getByLabel("Company").fill("acme insights");
+  // Existing companies are picked from the list.
+  await dialog.getByLabel("Company").selectOption({ label: "Acme Insights" });
   await dialog.getByRole("button", { name: "Add person" }).click();
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
 

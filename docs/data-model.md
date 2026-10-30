@@ -318,6 +318,12 @@ MP4). Kept apart so the list never loads file bytes. Removing a resource deletes
 
 Indexes: occurred_at, (entity_type, record_id), user_id.
 
+### industry (F21)
+
+name (unique ignoring case; index on `lower(name)`). The shared list behind companies'
+industry and account filters' industries. `npm run seed:industries` starts it from the values
+already in use.
+
 ### report_schedule (F19)
 
 name (unique), frequency (Report frequency), time_of_day (`HH:mm` IST, on the hour or half
@@ -381,4 +387,4 @@ migration to a local database file, it copies the file to `data/backups/`. After
 tables, and dropping `sequence_step` and the old follow-up delays. 0007 adds the four AI
 Resources tables (F20). 0008 (R8) adds `activity.direction` (filled in for old rows: messages
 and calls `out`, replies `in`) and `person.nudge_count`. 0009 (R9) adds `report_schedule`, `report_run` and
-`activity.plan_due_date`.
+`activity.plan_due_date`. 0010 adds `industry`.

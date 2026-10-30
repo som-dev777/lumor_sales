@@ -87,3 +87,4 @@ A new **AI Resources** page in the sidebar with two parts:
 | 2026-10-22 | 2.1.0   | Feature doc written, before code.                                                                                                                                             |
 | 2026-10-22 | 2.1.0   | Built: knowledge files with versions, calendar link, sales resources (5 MB uploads and links), downloads for signed-in users, prompts v1.2; seed:knowledge; F20 browser test. |
 | 2026-10-22 | 2.1.0   | Released in v2.1.0 (AI Resources).                                                                                                                                            |
+| 2026-10-30 | 2.4.0   | Fix: when the OpenAI project can't use the configured model, the app switches to the best model it can use, and says so plainly instead of "key refused" (D-040).             |

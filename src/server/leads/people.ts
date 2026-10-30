@@ -206,6 +206,33 @@ export async function updatePerson(db: Db, actor: Actor, id: string, data: Perso
   });
 }
 
+/**
+ * Admins delete a person, with their activities and plan history (the audit log keeps a copy of
+ * the record). Saved reports keep their numbers.
+ */
+export async function deletePerson(db: Db, actor: Actor, id: string) {
+  assertCan(actor, "lead.delete");
+  return db.transaction(async (tx) => {
+    const before = await loadPerson(tx, id);
+    const acts = await tx
+      .delete(activity)
+      .where(eq(activity.personId, id))
+      .returning({ id: activity.id });
+    await tx.delete(planEnrolment).where(eq(planEnrolment.personId, id));
+    await tx.delete(person).where(eq(person.id, id));
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Person",
+      recordId: id,
+      recordName: before.fullName,
+      action: "Deleted",
+      before: personAudit(before),
+      after: { activitiesDeleted: acts.length },
+    });
+    return before;
+  });
+}
+
 /** Anyone can add a note to anyone's lead (PRD); it's a "Meeting note" on the timeline. */
 export async function addNote(db: Db, actor: Actor, personId: string, text: string) {
   assertCan(actor, "lead.addNote");

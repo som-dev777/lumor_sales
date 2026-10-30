@@ -23,6 +23,7 @@ npm run seed:library
 npm run seed:plans
 npm run seed:knowledge
 npm run seed:reports
+npm run seed:industries
 npm run releases:sync
 npm run dev
 ```
@@ -227,9 +228,33 @@ Set it back to today when you're done.
 - [ ] 10.6 Online, after adding `CRON_SECRET`: the next day at 19:00 IST the Daily team report
       arrives by itself (Netlify → Logs → Functions shows report-schedules running).
 
-## 11. Phone check
+## 11. QA round 1 fixes (v2.4.0)
 
-- [ ] 11.1 On your phone (or Chrome's device toolbar), Today, People and a person's conversation work: the menu collapses
+- [ ] 11.1 The top-left shows the Lumor icon with "Sales Hub", and the browser tab shows the
+      same icon (refresh with Cmd + Shift + R if the old one sticks).
+- [ ] 11.2 **People → Add person** without a company: "Choose the company." The Company list
+      shows your companies; **+ Add a new company** shows a name box.
+- [ ] 11.3 On a company page, **People → Add person**: the company is already filled in. Save;
+      the person appears under People.
+- [ ] 11.4 Company page **Notes → Add notes / Edit notes**: the text saves and stays after a
+      reload.
+- [ ] 11.5 As Admin, on a duplicate company, **Merge** into the right one: its people move
+      across and the duplicate disappears. **Delete** on a company with people says to merge
+      or delete them first; on an empty company it deletes.
+- [ ] 11.6 As Admin, **Delete** on a person's page removes them (with a confirmation). As a rep,
+      there's no Delete or Merge.
+- [ ] 11.7 **Settings → Industries**: add one; as Admin, rename it (companies using it follow)
+      and delete it. The company form's Industry picks from this list.
+- [ ] 11.8 **Today**: after adding 2 people, the bar says "2 of 20 new people today".
+- [ ] 11.9 **People → My leads / All leads** switch lists (a small dot shows while loading). If
+      you own every lead, both lists are the same; that's expected.
+- [ ] 11.10 Password reset: as the rep, type a wrong password 5 times; as Admin, create a reset
+      link; the rep sets a new password and logs in straight away.
+- [ ] 11.11 AI: **Suggest next message** on a person page gives suggestions (no "key refused").
+
+## 12. Phone check
+
+- [ ] 12.1 On your phone (or Chrome's device toolbar), Today, People and a person's conversation work: the menu collapses
       to a button, nothing runs off the side of the screen.
 
 ---

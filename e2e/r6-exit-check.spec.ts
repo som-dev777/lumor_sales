@@ -25,7 +25,8 @@ async function addLead(name: string, slug: string) {
   const d = rep.getByRole("dialog");
   await d.getByLabel("Full name").fill(name);
   await d.getByLabel("LinkedIn profile link").fill(`linkedin.com/in/${slug}`);
-  await d.getByLabel("Company").fill("Insight Co R6");
+  await d.getByLabel("Company").selectOption({ label: "+ Add a new company" });
+  await d.getByLabel("New company name").fill("Insight Co R6");
   await d.getByRole("button", { name: "Add person" }).click();
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
   leadUrls.push(new URL(rep.url()).pathname);
@@ -112,7 +113,7 @@ test("exit check: Today shows the rep's list and ranks it; Done and Snooze clear
   await rep.goto("/");
   const replies = shown(rep.getByRole("region", { name: "Replies waiting" }));
   await expect(replies.getByRole("listitem")).toHaveCount(2);
-  await expect(shown(rep.getByText(/0 of 20 requests sent/))).toBeVisible();
+  await expect(shown(rep.getByText(/of 20 new people today/))).toBeVisible();
 
   await rep.getByRole("button", { name: "Rank with AI" }).click();
   await expect(shown(rep.getByRole("region", { name: "Your week" }))).toContainText(

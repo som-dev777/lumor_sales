@@ -8,6 +8,7 @@ import { ChangeHistory } from "@/components/audit/ChangeHistory";
 import { AiPanel } from "@/components/ai/AiPanel";
 import { PlanPanel } from "@/components/plans/PlanPanel";
 import { Conversation, type ThreadView } from "@/components/conversation/Conversation";
+import { DeletePersonButton } from "@/components/leads/DeletePersonButton";
 import { MarkCustomerButton } from "@/components/leads/MarkCustomerButton";
 import { PersonDialogButton } from "@/components/leads/PersonDialogButton";
 import { QuickLogBar } from "@/components/leads/QuickLogBar";
@@ -196,7 +197,9 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
                 dncReason: p.dncReason ?? "",
               }}
             />
-          ) : (
+          ) : null}
+          {can(viewer, "lead.delete") && <DeletePersonButton personId={p.id} name={p.fullName} />}
+          {!mayEdit && (
             <p className={styles.claimed}>
               This lead is claimed by {p.ownerName ?? "someone else"}. You can add notes.
             </p>

@@ -21,8 +21,19 @@ deal once they become a customer.
 3. **Mark as customer:** records plan, deal value and start date and sets status to Customer,
    in one audited step. Offered from the company page, and after "Mark converted" on a
    person (R4).
-4. **Deleting** isn't offered; companies are kept for history (their people point to them).
-5. Every change is audited.
+4. **Notes** are edited in place on the company page (**Add notes** / **Edit notes**) by the
+   owner or an Admin (D-040).
+5. **Add person** in the company page's People panel opens the person form with this company
+   filled in.
+6. **Deleting and merging (Admins, `lead.delete`; D-040):**
+   - **Delete** only works when the company has no people ("Merge it into another company, or
+     delete them first").
+   - **Merge** (for duplicates) moves its people and their history to the chosen company,
+     fills that company's empty details from it, keeps its notes ("Merged from …"), keeps the
+     further status (Customer > Engaged > Target > Lost) with its deal, then deletes it. Both
+     companies get an audit entry.
+7. **Industry** is picked from the Industries list (F21), with **+ Add a new industry**.
+8. Every change is audited.
 
 ## Screens
 
@@ -44,10 +55,11 @@ deal once they become a customer.
 
 ## Change history
 
-| Date       | Version | Change                                                                                              |
-| ---------- | ------- | --------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | 1.2.0   | Placeholder doc created.                                                                            |
-| 2026-10-17 | 1.2.0   | Full doc written (R3).                                                                              |
-| 2026-10-17 | 1.2.0   | Rules built: unique names, create/edit, mark as customer, lists, combined timeline; with tests.     |
-| 2026-10-17 | 1.2.0   | Companies list and company page (deal, people, combined timeline, mark as customer, history) built. |
-| 2026-10-17 | 1.2.0   | Released in v1.2.0 (R3 Leads).                                                                      |
+| Date       | Version | Change                                                                                                                                         |
+| ---------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.2.0   | Placeholder doc created.                                                                                                                       |
+| 2026-10-17 | 1.2.0   | Full doc written (R3).                                                                                                                         |
+| 2026-10-17 | 1.2.0   | Rules built: unique names, create/edit, mark as customer, lists, combined timeline; with tests.                                                |
+| 2026-10-17 | 1.2.0   | Companies list and company page (deal, people, combined timeline, mark as customer, history) built.                                            |
+| 2026-10-17 | 1.2.0   | Released in v1.2.0 (R3 Leads).                                                                                                                 |
+| 2026-10-30 | 2.4.0   | Add person from the company page; editable notes; Admins delete (when empty) and merge companies; Industry from the shared list (F21) (D-040). |

@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { useServerResult } from "@/components/auth/useServerResult";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -40,19 +40,30 @@ type Props = {
   onDone: () => void;
 };
 
+const NEW_INDUSTRY = "__new__";
+
 export function CompanyForm({ companyId, defaultValues, options, canChooseOwner, onDone }: Props) {
   const notify = useToast();
   const router = useRouter();
   const [existingLink, setExistingLink] = useState<string | null>(null);
   const {
     register,
+    control,
     handleSubmit,
+    setValue,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<CompanyInput, unknown, CompanyData>({
     resolver: zodResolver(companySchema),
     defaultValues,
   });
+  const industry = useWatch({ control, name: "industry" }) ?? "";
+  // Picked from the Industries list; "Add a new industry" shows a name box (added on save).
+  const listed = (name: string) =>
+    options.industries.find((i) => i.toLowerCase() === name.trim().toLowerCase());
+  const [newIndustry, setNewIndustry] = useState(
+    Boolean(defaultValues.industry) && !listed(defaultValues.industry ?? ""),
+  );
   const { formError, apply } = useServerResult(setError);
 
   const onSubmit = handleSubmit(async (values) => {
@@ -100,7 +111,30 @@ export function CompanyForm({ companyId, defaultValues, options, canChooseOwner,
         />
       </div>
       <div className={styles.row2}>
-        <TextField label="Industry" error={errors.industry?.message} {...register("industry")} />
+        <div className={styles.stackTight}>
+          <SelectField
+            label="Industry"
+            value={newIndustry ? NEW_INDUSTRY : (listed(industry) ?? "")}
+            onChange={(e) => {
+              const v = e.target.value;
+              setNewIndustry(v === NEW_INDUSTRY);
+              setValue("industry", v === NEW_INDUSTRY ? "" : v);
+            }}
+            options={[
+              { value: "", label: "Not set" },
+              ...options.industries.map((i) => ({ value: i, label: i })),
+              { value: NEW_INDUSTRY, label: "+ Add a new industry" },
+            ]}
+          />
+          {newIndustry && (
+            <TextField
+              label="New industry"
+              autoFocus
+              error={errors.industry?.message}
+              {...register("industry")}
+            />
+          )}
+        </div>
         <TextField
           label="Headcount band"
           placeholder="e.g. 51–200"

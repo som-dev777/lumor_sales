@@ -432,3 +432,24 @@
   font-weight: var(--weight-semibold);
   color: var(--color-success-text);
 }
+
+// A panel title with a button beside it (company page → People → Add person).
+.panelHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+
+  .panelTitle {
+    margin-bottom: 0;
+  }
+}
+
+// Fields stacked closely in one grid cell (a dropdown and its "new …" box).
+.stackTight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpenCheck, SlidersHorizontal, Users } from "lucide-react";
+import { BookOpenCheck, Factory, SlidersHorizontal, Users } from "lucide-react";
 import { PageHeader } from "@/components/shell/PageHeader";
 import styles from "./settings.module.scss";
 
@@ -18,6 +18,12 @@ const SECTIONS = [
     title: "AI Resources",
     description: "What the AI knows about Lumor (replaces Product Facts), plus decks and videos.",
     icon: BookOpenCheck,
+  },
+  {
+    href: "/settings/industries",
+    title: "Industries",
+    description: "The industry list for companies and account filters. Add, rename or delete.",
+    icon: Factory,
   },
   {
     href: "/settings/playbook",

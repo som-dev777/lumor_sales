@@ -1,6 +1,14 @@
 import { readFileSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AI_NOT_SET_UP, aiMode, aiModel, DEFAULT_AI_MODEL, formatInput, runPrompt } from "./client";
+import {
+  AI_NOT_SET_UP,
+  aiMode,
+  aiModel,
+  DEFAULT_AI_MODEL,
+  formatInput,
+  pickModel,
+  runPrompt,
+} from "./client";
 import { editDistance, editLevel } from "./assist";
 import { GUARDRAILS, PROMPTS } from "./prompts";
 import { z } from "zod";
@@ -32,6 +40,13 @@ describe("edit level (PRD)", () => {
 
 describe("AI client", () => {
   const schema = z.object({ ok: z.boolean() });
+
+  it("falls back to the best model the OpenAI project allows (D-040)", () => {
+    expect(pickModel(["gpt-5.4-nano", "whisper-1"], "gpt-5.5")).toBe("gpt-5.4-nano");
+    expect(pickModel(["gpt-5.4-nano", "gpt-5-mini", "gpt-5.5"], "gpt-5.5")).toBe("gpt-5-mini");
+    expect(pickModel(["gpt-9-turbo", "gpt-4o-audio-preview"], "gpt-5.5")).toBe("gpt-9-turbo");
+    expect(pickModel(["whisper-1", "dall-e-3"], "gpt-5.5")).toBeNull();
+  });
 
   it("without a key, says AI isn't set up (and never calls out)", async () => {
     vi.stubEnv("OPENAI_API_KEY", "");

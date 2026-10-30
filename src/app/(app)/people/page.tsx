@@ -7,6 +7,7 @@ import { PeopleTable } from "@/components/leads/PeopleTable";
 import { PersonDialogButton } from "@/components/leads/PersonDialogButton";
 import styles from "@/components/leads/leads.module.scss";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { PendingHint } from "@/components/ui/PendingHint";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { getDb } from "@/lib/db/client";
 import { can } from "@/lib/permissions";
@@ -77,6 +78,7 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
             aria-current={filters.mine ? "page" : undefined}
           >
             My leads
+            <PendingHint />
           </Link>
           <Link
             href={viewHref("all")}
@@ -84,6 +86,7 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
             aria-current={!filters.mine ? "page" : undefined}
           >
             All leads
+            <PendingHint />
           </Link>
         </nav>
         <div className={styles.topActions}>

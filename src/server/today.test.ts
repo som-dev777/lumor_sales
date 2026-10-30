@@ -51,6 +51,7 @@ async function lead(name: string, extra: Record<string, unknown> = {}, owner = r
     t.db,
     owner,
     personSchema.parse({
+      companyName: "Acme",
       fullName: name,
       linkedinUrl: `linkedin.com/in/today-${n}`,
       stage: "Prospect",

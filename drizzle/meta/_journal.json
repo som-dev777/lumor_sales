@@ -71,6 +71,13 @@
       "when": 1793370866740,
       "tag": "0009_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1793381712702,
+      "tag": "0010_industries",
+      "breakpoints": true
     }
   ]
 }

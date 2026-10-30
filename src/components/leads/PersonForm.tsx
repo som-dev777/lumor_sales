@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useServerResult } from "@/components/auth/useServerResult";
 import { Alert } from "@/components/ui/Alert";
@@ -16,7 +16,6 @@ import { LEVELS, LOST_REASONS, SENIORITIES, STAGES } from "@/lib/db/enums";
 import { personSchema, type PersonData, type PersonInput } from "@/lib/validation/leads";
 import { savePerson } from "@/server/actions/leads";
 import type { LeadFormOptions } from "@/server/leads/options";
-import fieldStyles from "@/components/ui/TextField.module.scss";
 import styles from "./leads.module.scss";
 
 export const EMPTY_PERSON: PersonInput = {
@@ -43,6 +42,8 @@ export const EMPTY_PERSON: PersonInput = {
   dncReason: "",
 };
 
+const NEW_COMPANY = "__new__";
+
 const choices = (items: { id: string; label: string }[], none: string) => [
   { value: "", label: none },
   ...items.map((i) => ({ value: i.id, label: i.label })),
@@ -64,12 +65,18 @@ type Props = {
 export function PersonForm({ personId, defaultValues, options, canChooseOwner, onDone }: Props) {
   const notify = useToast();
   const router = useRouter();
-  const companiesId = useId();
   const [duplicateLink, setDuplicateLink] = useState<string | null>(null);
+  // The company is picked from the list; "Add a new company" shows a name box instead.
+  const known = (name: string | null | undefined) =>
+    Boolean(name) && options.companies.some((c) => c.toLowerCase() === name!.trim().toLowerCase());
+  const [newCompany, setNewCompany] = useState(
+    Boolean(defaultValues.companyName) && !known(defaultValues.companyName),
+  );
   const {
     register,
     control,
     handleSubmit,
+    setValue,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<PersonInput, unknown, PersonData>({
@@ -78,6 +85,7 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
   });
   const { formError, apply } = useServerResult(setError);
   const stage = useWatch({ control, name: "stage" });
+  const companyName = useWatch({ control, name: "companyName" });
   const dnc = useWatch({ control, name: "doNotContact" });
 
   const onSubmit = handleSubmit(async (values) => {
@@ -127,20 +135,38 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
         error={errors.salesNavUrl?.message}
         {...register("salesNavUrl")}
       />
-      <div className={fieldStyles.field}>
-        <TextField
+      <div className={styles.row2}>
+        <SelectField
           label="Company"
-          list={companiesId}
-          autoComplete="off"
-          hint="Pick an existing company or type a new one."
-          error={errors.companyName?.message}
-          {...register("companyName")}
+          value={
+            newCompany
+              ? NEW_COMPANY
+              : (options.companies.find(
+                  (c) => c.toLowerCase() === (companyName ?? "").trim().toLowerCase(),
+                ) ?? "")
+          }
+          error={newCompany ? undefined : errors.companyName?.message}
+          onChange={(e) => {
+            const v = e.target.value;
+            setNewCompany(v === NEW_COMPANY);
+            setValue("companyName", v === NEW_COMPANY ? "" : v, {
+              shouldValidate: v !== NEW_COMPANY,
+            });
+          }}
+          options={[
+            { value: "", label: "Choose a company…" },
+            ...options.companies.map((c) => ({ value: c, label: c })),
+            { value: NEW_COMPANY, label: "+ Add a new company" },
+          ]}
         />
-        <datalist id={companiesId}>
-          {options.companies.map((c) => (
-            <option key={c} value={c} />
-          ))}
-        </datalist>
+        {newCompany && (
+          <TextField
+            label="New company name"
+            autoFocus
+            error={errors.companyName?.message}
+            {...register("companyName")}
+          />
+        )}
       </div>
       <div className={styles.row2}>
         <SelectField

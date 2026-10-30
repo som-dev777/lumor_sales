@@ -37,6 +37,7 @@ beforeEach(async () => {
     t.db,
     rep,
     personSchema.parse({
+      companyName: "Acme",
       fullName: "Priya Sharma",
       linkedinUrl: "linkedin.com/in/priya-ai",
       stage: "Connected",
@@ -242,14 +243,14 @@ describe("Mark as sent and Confirm", () => {
         purpose: "Message 1",
         level: "Any",
         version: "B",
-        body: "Hi {Name}, saw your work at {Company}.",
+        body: "Hi {Name}, saw your work at {Company} on {topic}.",
       })
       .returning();
     const draft = await draftFromTemplate(t.db, rep, personId, tpl.id);
     // Unknown placeholders stay visible and the rep is told (guardrails file, D-037).
     expect(draft).toEqual({
-      message: "Hi Priya, saw your work at {Company}.",
-      notes: ["Fill in {Company}."],
+      message: "Hi Priya, saw your work at Acme on {topic}.",
+      notes: ["Fill in {topic}."],
     });
     await expect(
       markSent(t.db, rep, personId, {
@@ -257,14 +258,14 @@ describe("Mark as sent and Confirm", () => {
         text: draft.message,
         templateId: tpl.id,
       }),
-    ).rejects.toThrow("Fill in {Company} first.");
-    const text = "Hi Priya, saw your work at Acme.";
+    ).rejects.toThrow("Fill in {topic} first.");
+    const text = "Hi Priya, saw your work at Acme on research.";
     const row = await markSent(t.db, rep, personId, {
       suggestion: draft.message,
       text,
       templateId: tpl.id,
     });
-    expect(row).toMatchObject({ templateId: tpl.id, templateVersion: "B", editLevel: "Heavy" });
+    expect(row).toMatchObject({ templateId: tpl.id, templateVersion: "B", editLevel: "Light" });
   });
 
   it("Confirm sets stage and next action, logs the stage change; never Lost or Paid", async () => {

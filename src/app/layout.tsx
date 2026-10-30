@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   title: { default: "Lumor Sales Hub", template: "%s · Lumor Sales Hub" },
   description: "Lumor's internal sales hub for LinkedIn prospecting.",
   robots: { index: false, follow: false },
+  // The browser tab icon: the same file as the logo in the top-left (public/brand-icon.png).
+  icons: { icon: "/brand-icon.png", apple: "/brand-icon.png" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

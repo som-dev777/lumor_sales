@@ -60,7 +60,8 @@ test.beforeAll(async ({ browser }) => {
   const d = rep.getByRole("dialog");
   await d.getByLabel("Full name").fill("Nadia Thread");
   await d.getByLabel("LinkedIn profile link").fill("linkedin.com/in/nadia-thread-r8");
-  await d.getByLabel("Company").fill("Insight Co R8");
+  await d.getByLabel("Company").selectOption({ label: "+ Add a new company" });
+  await d.getByLabel("New company name").fill("Insight Co R8");
   await d.getByRole("button", { name: "Add person" }).click();
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
   personUrl = new URL(rep.url()).pathname;

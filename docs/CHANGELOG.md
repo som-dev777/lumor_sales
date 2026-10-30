@@ -10,7 +10,14 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-Version 2 is complete. Next: the owner's QA and fixes (2.3.x).
+v2.4.0: the owner's first live QA round (D-040), in progress.
+
+- People: a company is required, picked from existing companies (or **+ Add a new company**). Admins can delete a person.
+- Company page: **Add person** with the company filled in; notes are editable; Admins can **merge** duplicate companies and **delete** empty ones.
+- New **Settings → Industries** (F21): add, rename and delete industries; the company form picks from the list.
+- The Lumor icon now sits in the top-left with "Sales Hub", and is the browser tab icon (it was Next.js's default).
+- Today: each person added today counts toward the daily new-outreach target.
+- Fixes: logging in after a password reset (earlier wrong passwords and email confirmation no longer get in the way); My leads / All leads show a loading dot; AI features switch to a model the OpenAI project allows and explain model problems clearly.
 
 ## [2.3.0] - 2026-10-30
 

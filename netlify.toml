@@ -4,7 +4,7 @@
 # releases for the About page, then builds the app.
 
 [build]
-  command = "npm run db:migrate && npm run seed:admin && npm run seed:library -- --first-time && npm run seed:plans && npm run seed:knowledge && npm run seed:reports && npm run releases:sync && npm run build"
+  command = "npm run db:migrate && npm run seed:admin && npm run seed:library -- --first-time && npm run seed:plans && npm run seed:knowledge && npm run seed:reports && npm run seed:industries && npm run releases:sync && npm run build"
   publish = ".next"
 
 [build.environment]

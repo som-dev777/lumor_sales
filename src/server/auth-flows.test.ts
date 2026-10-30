@@ -4,7 +4,9 @@ import { ACCESS_DISABLED_MESSAGE, createAuth, type Auth } from "@/lib/auth";
 import { auditLog, invite, user } from "@/lib/db/schema";
 import { createTestDb } from "@/lib/db/test-db";
 import { acceptInvite, createInvite, findUsableInvite, InviteError } from "./invites";
-import { createResetLink, userIdForResetToken } from "./password-reset";
+import { createVerification } from "./email-verification";
+import { loginPausedUntil, recordLoginAttempt } from "./login-limit";
+import { afterPasswordSet, createResetLink, userIdForResetToken } from "./password-reset";
 import { createUserWithPassword } from "./users";
 
 let t: Awaited<ReturnType<typeof createTestDb>>;
@@ -164,6 +166,34 @@ describe("password reset links", () => {
     await expect(
       auth.api.resetPassword({ body: { token, newPassword: "yet-another-password" } }),
     ).rejects.toThrow();
+  });
+
+  it("after a reset, the person can log in even after wrong guesses or an unconfirmed email", async () => {
+    const u = await createUserWithPassword(t.db, {
+      name: "Pat",
+      email: "pat@lumor.tech",
+      role: "User",
+      password: "old-password-1",
+      createdBy: null,
+    });
+    // An email confirmation still waiting, and 5 wrong guesses (the login pause).
+    await createVerification(t.db, u.id);
+    for (let i = 0; i < 5; i++) await recordLoginAttempt(t.db, "pat@lumor.tech", false);
+    expect(await loginPausedUntil(t.db, "pat@lumor.tech")).not.toBeNull();
+
+    const { link } = await createResetLink(auth, u.id);
+    await auth.api.resetPassword({
+      body: { token: tokenFrom(link), newPassword: "new-password-1" },
+    });
+    await afterPasswordSet(t.db, u.id, u.id);
+
+    expect(await loginPausedUntil(t.db, "pat@lumor.tech")).toBeNull();
+    const signedIn = await auth.api.signInEmail({
+      body: { email: "Pat@Lumor.tech", password: "new-password-1" },
+    });
+    expect(signedIn.user.id).toBe(u.id);
+    const [row] = await t.db.select().from(user).where(eq(user.id, u.id));
+    expect(row).toMatchObject({ emailVerified: true, mustChangePassword: false });
   });
 
   it("refuse passwords shorter than 10 characters", async () => {

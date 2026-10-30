@@ -95,6 +95,8 @@ test("exit check: a new guardrail value is used by the next quick-log", async ()
   const add = rep.getByRole("dialog");
   await add.getByLabel("Full name").fill("Delay Test");
   await add.getByLabel("LinkedIn profile link").fill("linkedin.com/in/delay-test-r5");
+  await add.getByLabel("Company").selectOption({ label: "+ Add a new company" });
+  await add.getByLabel("New company name").fill("E2E Co");
   await add.getByRole("button", { name: "Add person" }).click();
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
   await shown(rep.getByRole("button", { name: "Accepted", exact: true })).click();

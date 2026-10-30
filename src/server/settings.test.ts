@@ -72,6 +72,7 @@ describe("Playbook Settings (F13)", () => {
       t.db,
       rep,
       personSchema.parse({
+        companyName: "Acme",
         fullName: "Priya",
         linkedinUrl: "linkedin.com/in/priya-x",
         stage: "Prospect",

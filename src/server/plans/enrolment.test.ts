@@ -325,6 +325,7 @@ describe("replies, resume, versions, Do not contact", () => {
       rep,
       p.id,
       personSchema.parse({
+        companyName: "Acme",
         fullName: p.fullName,
         linkedinUrl: p.linkedinUrl,
         stage: p.stage,

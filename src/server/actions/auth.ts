@@ -1,15 +1,12 @@
 "use server";
 
 // Login, logout, registration and password Server Actions (F01).
-import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { errorMessage, fieldErrorsFrom, type ActionResult } from "@/lib/action-result";
-import { writeAudit } from "@/lib/audit";
 import { ACCESS_DISABLED_MESSAGE, getAuth } from "@/lib/auth";
 import { EMAIL_NOT_CONFIRMED_MESSAGE } from "@/lib/auth-rules";
 import { getDb } from "@/lib/db/client";
-import { user } from "@/lib/db/schema";
 import { requireUser } from "@/lib/session";
 import {
   changePasswordSchema,
@@ -27,7 +24,7 @@ import { emailConfigured, emails, sendEmail } from "../email";
 import { confirmEmail, renewIfExpired, VerificationError } from "../email-verification";
 import { acceptInvite, InviteError } from "../invites";
 import { LOGIN_PAUSED_MESSAGE, loginPausedUntil, recordLoginAttempt } from "../login-limit";
-import { userIdForResetToken } from "../password-reset";
+import { afterPasswordSet, userIdForResetToken } from "../password-reset";
 import { SignupError, signUpWithCompanyEmail } from "../signup";
 import { findUserByEmail } from "../users";
 
@@ -187,22 +184,7 @@ export async function changePassword(input: ChangePasswordInput): Promise<Action
   redirect("/");
 }
 
-/** Clears a pending forced change (D-006) and records that the password changed. */
+/** Clears a pending forced change (D-006), the login pause and email confirmation; audited. */
 async function recordPasswordChange(userId: string, actorId: string) {
-  const db = getDb();
-  await db.transaction(async (tx) => {
-    const [before] = await tx.select().from(user).where(eq(user.id, userId));
-    if (!before) return;
-    await tx.update(user).set({ mustChangePassword: false }).where(eq(user.id, userId));
-    await writeAudit(tx, {
-      userId: actorId,
-      entityType: "User",
-      recordId: userId,
-      recordName: before.name,
-      action: "Updated",
-      // The password itself is never logged, only the fact that it changed.
-      before: { passwordChanged: false, mustChangePassword: before.mustChangePassword },
-      after: { passwordChanged: true, mustChangePassword: false },
-    });
-  });
+  await afterPasswordSet(getDb(), userId, actorId);
 }

@@ -115,6 +115,23 @@ Without `CRON_SECRET` nothing runs on a schedule (Run now still works). Without 
 scheduled reports are saved in Report history but not emailed. To check it's running: Netlify →
 **Logs → Functions → report-schedules**.
 
+## Speed: keep the database and the site close
+
+Every page reads the database several times. If the database (Turso, Mumbai) and the site's
+functions (Netlify) are on different continents, each read crosses the world and pages feel
+slow. Two fixes, either is enough:
+
+- **Netlify:** Project configuration → **Build & deploy → Functions region** → choose
+  **Asia Pacific (Mumbai)** if your plan offers it, then **Trigger deploy**.
+- **Or Turso:** create the database in the same region as Netlify's functions (shown on that
+  same Netlify page), copy the data across (`turso db create lumor-sales-us --from-db
+lumor-sales --location <region>`), and update `DATABASE_URL` and `DATABASE_AUTH_TOKEN`.
+
+## The logo and tab icon
+
+Both use one file: `public/brand-icon.png` (a square PNG, ideally 512 × 512). To change it,
+replace that file with the new icon (same name), commit and push; Netlify redeploys.
+
 ## Later
 
 - **New code:** each push to `main` on GitHub redeploys the site automatically.

@@ -50,7 +50,12 @@ export const personSchema = z
       const r = checkSalesNavUrl(v ?? "");
       if (!r.ok) ctx.addIssue({ code: "custom", message: r.error });
     }),
-    companyName: optionalText(200),
+    // Every person belongs to a company (owner, 2026-10-30): an existing one, or a new name.
+    companyName: z
+      .string({ error: "Choose the company." })
+      .trim()
+      .min(1, "Choose the company.")
+      .max(200, "Name is too long."),
     personaId: optionalId,
     level: z
       .enum(LEVELS)

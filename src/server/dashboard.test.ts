@@ -30,6 +30,7 @@ async function lead(actor: Actor, extra: Record<string, unknown> = {}) {
     t.db,
     actor,
     personSchema.parse({
+      companyName: "Acme",
       fullName: `Lead ${n}`,
       linkedinUrl: `linkedin.com/in/lead-${n}`,
       stage: "Prospect",
@@ -69,6 +70,7 @@ describe("funnel counts", () => {
       rep,
       p.id,
       personSchema.parse({
+        companyName: "Acme",
         fullName: p.fullName,
         linkedinUrl: p.linkedinUrl,
         stage: "Trial",
@@ -115,6 +117,7 @@ describe("funnel counts", () => {
       rep,
       p.id,
       personSchema.parse({
+        companyName: "Acme",
         fullName: p.fullName,
         linkedinUrl: p.linkedinUrl,
         stage: "Trial",

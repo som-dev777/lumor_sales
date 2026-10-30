@@ -28,6 +28,7 @@ const newLead = (extra: Record<string, unknown> = {}) =>
     t.db,
     rep,
     personSchema.parse({
+      companyName: "Acme",
       fullName: "Priya Sharma",
       linkedinUrl: "linkedin.com/in/priya-s",
       stage: "Prospect",

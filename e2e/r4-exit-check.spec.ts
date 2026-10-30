@@ -50,7 +50,8 @@ test("exit check: one lead walked from Contacted to Paid", async () => {
   const add = rep.getByRole("dialog");
   await add.getByLabel("Full name").fill("Dev Walker");
   await add.getByLabel("LinkedIn profile link").fill("linkedin.com/in/dev-walker-r4");
-  await add.getByLabel("Company").fill("Zen Labs R4");
+  await add.getByLabel("Company").selectOption({ label: "+ Add a new company" });
+  await add.getByLabel("New company name").fill("Zen Labs R4");
   await add.getByRole("button", { name: "Add person" }).click();
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
   personUrl = new URL(rep.url()).pathname;
@@ -143,6 +144,8 @@ test("a lost lead needs a reason", async () => {
   const add = rep.getByRole("dialog");
   await add.getByLabel("Full name").fill("Lost Lead");
   await add.getByLabel("LinkedIn profile link").fill("linkedin.com/in/lost-lead-r4");
+  await add.getByLabel("Company").selectOption({ label: "+ Add a new company" });
+  await add.getByLabel("New company name").fill("E2E Co");
   await add.getByRole("button", { name: "Add person" }).click();
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
   await rep.getByRole("button", { name: "Mark lost" }).click();

@@ -118,6 +118,11 @@ describe("PRD permission table", () => {
     expect(can(rep, "reports.schedule")).toBe(false);
   });
 
+  it("only Admins delete people and delete or merge companies (D-040)", () => {
+    expect(can(admin, "lead.delete")).toBe(true);
+    expect(can(rep, "lead.delete")).toBe(false);
+  });
+
   it("Approve or reject proposals: Admin yes, User no", () => {
     expect(can(admin, "proposal.decide")).toBe(true);
     expect(can(rep, "proposal.decide")).toBe(false);

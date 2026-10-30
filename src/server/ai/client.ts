@@ -49,6 +49,46 @@ export function formatInput(input: Record<string, unknown>): string {
 }
 
 let client: OpenAI | null = null;
+/** The model actually used, once a fallback was needed (see modelFor). */
+let fallbackModel: string | null = null;
+
+/**
+ * Best first. When the configured model isn't allowed for the OpenAI project (D-040), the first
+ * of these the project can use is taken instead, then any other GPT model it can use.
+ */
+export const MODEL_PREFERENCE = [
+  "gpt-5.5",
+  "gpt-5.4",
+  "gpt-5.4-mini",
+  "gpt-5-mini",
+  "gpt-5.4-nano",
+  "gpt-5-nano",
+  "gpt-4.1",
+  "gpt-4.1-mini",
+  "gpt-4o",
+  "gpt-4o-mini",
+];
+
+/** The model to fall back to from the ones the project can use, or null if there's none. */
+export function pickModel(available: string[], unavailable: string): string | null {
+  const usable = available.filter((m) => m !== unavailable);
+  return (
+    MODEL_PREFERENCE.find((m) => usable.includes(m)) ??
+    usable
+      .filter((m) => /^gpt-/.test(m) && !/audio|realtime|image|tts|transcribe|search/.test(m))
+      .sort()
+      .at(-1) ??
+    null
+  );
+}
+
+/** The project can't use this model (OpenAI answers 403 or 404 "model_not_found"). */
+function modelNotAllowed(e: unknown) {
+  return (
+    (e instanceof OpenAI.PermissionDeniedError || e instanceof OpenAI.NotFoundError) &&
+    (e.code === "model_not_found" || /model/i.test(e.message))
+  );
+}
 
 /**
  * Runs one prompt. `fake` answers instead of the AI in the browser tests. Throws AiError with
@@ -64,19 +104,33 @@ export async function runPrompt<T>(
   if (mode === "off") throw new AiError(AI_NOT_SET_UP);
   if (mode === "fake") return schema.parse(fake());
 
-  client ??= new OpenAI({ timeout: AI_TIMEOUT_MS, maxRetries: 0 });
-  let response;
-  try {
-    response = await client.responses.parse({
-      model: aiModel(),
+  const ai = (client ??= new OpenAI({ timeout: AI_TIMEOUT_MS, maxRetries: 0 }));
+  const call = (model: string) =>
+    ai.responses.parse({
+      model,
       instructions: PROMPTS[id].system,
       input: formatInput(input),
       // Low reasoning effort keeps answers well inside the 30-second limit.
       reasoning: { effort: "low" },
       text: { format: zodTextFormat(schema, `${id.toLowerCase()}_result`) },
     });
+  let response;
+  try {
+    response = await call(fallbackModel ?? aiModel());
   } catch (e) {
-    throw new AiError(explain(e));
+    if (!modelNotAllowed(e) || fallbackModel) throw new AiError(explain(e));
+    // The configured model isn't allowed for this OpenAI project: use the best one that is.
+    try {
+      const available: string[] = [];
+      for await (const m of ai.models.list()) available.push(m.id);
+      const next = pickModel(available, aiModel());
+      if (!next) throw e;
+      console.warn(`AI: ${aiModel()} isn't allowed for this OpenAI project; using ${next}.`);
+      fallbackModel = next;
+      response = await call(next);
+    } catch (e2) {
+      throw new AiError(explain(e2));
+    }
   }
   const refused = response.output.some(
     (item) => item.type === "message" && item.content.some((c) => c.type === "refusal"),
@@ -98,6 +152,9 @@ function explain(e: unknown): string {
   if (e instanceof OpenAI.APIConnectionTimeoutError) {
     return "The AI took longer than 30 seconds. Try again.";
   }
+  if (modelNotAllowed(e)) {
+    return `The OpenAI project behind this key can't use the model ${fallbackModel ?? aiModel()}. An Admin should allow it in OpenAI (Project → Limits → Model usage) or set OPENAI_MODEL to one it can use.`;
+  }
   if (e instanceof OpenAI.AuthenticationError || e instanceof OpenAI.PermissionDeniedError) {
     return "The AI key was refused. An Admin should check OPENAI_API_KEY.";
   }
@@ -105,7 +162,7 @@ function explain(e: unknown): string {
     return "The AI is busy right now (or the account is out of credit). Wait a minute and try again.";
   }
   if (e instanceof OpenAI.NotFoundError) {
-    return "The AI model wasn't found. An Admin should check OPENAI_MODEL.";
+    return "The AI service couldn't find what it was asked for. Try again.";
   }
   if (e instanceof OpenAI.APIConnectionError) {
     return "Couldn't reach the AI service. Check the internet connection and try again.";

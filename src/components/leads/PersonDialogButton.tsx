@@ -13,10 +13,18 @@ type Props = {
   defaults?: PersonInput;
   options: LeadFormOptions;
   canChooseOwner: boolean;
+  /** "Add person" from a company page: the company is filled in. */
+  companyName?: string;
 };
 
 /** "Add person" (no personId) or "Edit" (with personId). */
-export function PersonDialogButton({ personId, defaults, options, canChooseOwner }: Props) {
+export function PersonDialogButton({
+  personId,
+  defaults,
+  options,
+  canChooseOwner,
+  companyName,
+}: Props) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -45,7 +53,7 @@ export function PersonDialogButton({ personId, defaults, options, canChooseOwner
         {open && (
           <PersonForm
             personId={personId ?? null}
-            defaultValues={defaults ?? EMPTY_PERSON}
+            defaultValues={defaults ?? { ...EMPTY_PERSON, companyName: companyName ?? "" }}
             options={options}
             canChooseOwner={canChooseOwner}
             onDone={() => setOpen(false)}

@@ -241,7 +241,35 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
         lte(activity.occurredAt, new Date(startOfDay.getTime() + 86_400_000)),
       ),
     );
-  const sent = mine.filter((a) => a.type === "Request sent" && a.at >= startOfDay).length;
+  // New outreach today (owner, 2026-10-30): each person the rep added today or sent a connection
+  // request to today, counted once.
+  const reached = new Set(
+    (
+      await db
+        .select({ personId: activity.personId })
+        .from(activity)
+        .where(
+          and(
+            eq(activity.userId, viewer.id),
+            eq(activity.type, "Request sent"),
+            gte(activity.occurredAt, startOfDay),
+            lt(activity.occurredAt, new Date(startOfDay.getTime() + 86_400_000)),
+          ),
+        )
+    ).map((a) => a.personId),
+  );
+  const added = await db
+    .select({ id: person.id })
+    .from(person)
+    .where(
+      and(
+        eq(person.createdBy, viewer.id),
+        gte(person.createdAt, startOfDay),
+        lt(person.createdAt, new Date(startOfDay.getTime() + 86_400_000)),
+      ),
+    );
+  for (const p of added) reached.add(p.id);
+  const sent = reached.size;
   const [suggestedPersona] = await db
     .select({ name: persona.name })
     .from(persona)
