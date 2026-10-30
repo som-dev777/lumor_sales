@@ -10,7 +10,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-R9 Reports (v2.3.0), on the owner's go-ahead.
+R9 Reports (v2.3.0), in progress.
+
+- Feature doc written for Reports (F19) with the owner's choices; decision D-039.
 
 - Deploy guide: example site addresses are placeholders (they tripped Netlify's secrets scan), and it explains `SECRETS_SCAN_OMIT_KEYS`.
 

@@ -532,3 +532,29 @@ replaces it.
 - **Why:** The AI could only see what was logged, and messages the rep sent were often logged
   without their text or time. Recording each message's side, channel and time gives the AI and
   Today the real conversation.
+
+## D-039: Reports: email first, print-to-PDF, AI summary on request (owner, 2026-10-30)
+
+- **Date:** 2026-10-30 · **Status:** Accepted (owner answered the R9 questions)
+- **Owner's choices:**
+  - **Set up email (Resend) before building**, so scheduled reports are tested end to end.
+  - **PDF = a print-ready report page** saved with the browser's Save as PDF. No PDF library is
+    added; emails link to the saved report instead of attaching a file.
+  - **AI summary on request:** a "Write AI summary" button; scheduled reports include it
+    automatically when AI is set up.
+- **My choices (within the PRD):**
+  - Reports are **saved snapshots** (JSON), so a saved or emailed report never changes later.
+  - Quarters and half-years follow the **calendar** (Jan–Mar, Jan–Jun). Easy to switch to the
+    Indian financial year (Apr–Mar) if the owner prefers.
+  - Scheduled runs: a Netlify scheduled function every 15 minutes calls `/api/cron/reports`
+    with a new secret, `CRON_SECRET`, so the app code runs inside Next.js and the route is
+    closed to everyone else. Daily schedules cover that day; the others cover the previous
+    full period.
+  - Plan adherence needs each step's due date, which wasn't stored: `activity.plan_due_date` is
+    saved from R9; older steps show as "not recorded".
+  - The AI summary is **P06** (P05 is Split conversation, D-038). It reads only the report's
+    numbers, nothing goes to a prospect, so like P05 it carries no prospect guardrails.
+  - New permissions: `reports.team` (report on the team or anyone) and `reports.schedule`
+    (manage schedules), both Admin only. Anyone can report on themselves.
+- **Why:** Matches the PRD's F19 with the least new machinery: no PDF service and no file
+  storage, and the email key the owner is adding now.
