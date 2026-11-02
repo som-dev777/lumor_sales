@@ -324,6 +324,18 @@ name (unique ignoring case; index on `lower(name)`). The shared list behind comp
 industry and account filters' industries. `npm run seed:industries` starts it from the values
 already in use.
 
+### ai_chat (F23)
+
+person_id (→ person), user_id (→ user: the rep who started it; only they see it), title (the
+first words of their first message). Index (person_id, user_id, updated_at). Deleted with the
+person.
+
+### ai_chat_message (F23)
+
+chat_id (→ ai_chat), role (`rep` or `ai`), content, drafts (JSON list of {approach, text}: the
+AI's ready-to-send messages), flags (JSON list), reply_by (JSON {date, reason} or empty),
+created_at. Index (chat_id, created_at). At most 200 per chat.
+
 ### report_schedule (F19)
 
 name (unique), frequency (Report frequency), time_of_day (`HH:mm` IST, on the hour or half
@@ -387,4 +399,5 @@ migration to a local database file, it copies the file to `data/backups/`. After
 tables, and dropping `sequence_step` and the old follow-up delays. 0007 adds the four AI
 Resources tables (F20). 0008 (R8) adds `activity.direction` (filled in for old rows: messages
 and calls `out`, replies `in`) and `person.nudge_count`. 0009 (R9) adds `report_schedule`, `report_run` and
-`activity.plan_due_date`. 0010 adds `industry`.
+`activity.plan_due_date`. 0010 adds `industry`. 0011 adds `ai_chat` and
+`ai_chat_message` (F23).

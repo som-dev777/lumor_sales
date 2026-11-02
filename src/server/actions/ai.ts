@@ -1,6 +1,6 @@
 "use server";
 
-// Server Actions for the AI features (F08, F10, F18) and the changes their panels make. Each one:
+// Server Actions for the AI features (F08, F10, F18, F23) and the changes their panels make. Each one:
 // requireUser() → the permission check and audit inside the rules → refresh the page.
 import { refresh } from "next/cache";
 import { z } from "zod";
@@ -22,6 +22,16 @@ import {
   type NextSuggestion,
   type SplitRow,
 } from "../ai/assist";
+import {
+  CHAT_MESSAGE_MAX,
+  deleteChat,
+  listChats,
+  loadChat,
+  sendChatMessage,
+  type ChatSummary,
+  type ChatView,
+  type SavedReply,
+} from "../ai/chat";
 import { AiError } from "../ai/client";
 import { LeadError } from "../leads/companies";
 import { completeTask, rankToday, snoozeLead, type Task } from "../today";
@@ -154,4 +164,63 @@ export async function snoozeTask(personId: string) {
   const r = await run(() => snoozeLead(getDb(), viewer, personId, now));
   if (r.ok) refresh();
   return r.ok ? { ok: true as const, data: null } : r;
+}
+
+// --- AI chat (F23) ---------------------------------------------------------------------------
+
+const chatText = z
+  .string()
+  .trim()
+  .min(1, "Type a message first.")
+  .max(CHAT_MESSAGE_MAX, "That message is too long.");
+
+/** Sends a chat message; starts a new chat when chatId is null. Returns the whole chat. */
+export async function chatSend(
+  personId: string,
+  chatId: string | null,
+  text: string,
+): Promise<AiResult<{ chat: ChatView; chats: ChatSummary[]; savedReply: SavedReply | null }>> {
+  const viewer = await requireUser();
+  const parsed = chatText.safeParse(text);
+  if (!id.safeParse(personId).success) return bad("Unknown person.");
+  if (chatId !== null && !id.safeParse(chatId).success) return bad("Unknown chat.");
+  if (!parsed.success) return bad(parsed.error.issues[0].message);
+  const now = await appNow();
+  const db = getDb();
+  return run(async () => {
+    const { savedReply, ...chat } = await sendChatMessage(
+      db,
+      viewer,
+      personId,
+      chatId,
+      parsed.data,
+      now,
+    );
+    // A reply type the AI saved shows on the conversation.
+    if (savedReply) refresh();
+    return { chat, chats: await listChats(db, viewer, personId), savedReply };
+  });
+}
+
+/** Opens one of the rep's earlier chats. */
+export async function chatOpen(chatId: string): Promise<AiResult<ChatView>> {
+  const viewer = await requireUser();
+  if (!id.safeParse(chatId).success) return bad("Unknown chat.");
+  return run(() => loadChat(getDb(), viewer, chatId));
+}
+
+/** Deletes one of the rep's own chats; returns the chats left on this person. */
+export async function chatDelete(
+  personId: string,
+  chatId: string,
+): Promise<AiResult<ChatSummary[]>> {
+  const viewer = await requireUser();
+  if (!id.safeParse(chatId).success || !id.safeParse(personId).success) {
+    return bad("Unknown chat.");
+  }
+  const db = getDb();
+  return run(async () => {
+    await deleteChat(db, viewer, chatId);
+    return listChats(db, viewer, personId);
+  });
 }

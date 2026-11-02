@@ -174,7 +174,7 @@ test("exit check: a reply pauses the plan; Resume brings it back", async () => {
   await conversation.getByLabel("What Ella sent or said").fill("Interesting, tell me more.");
   await conversation.getByRole("button", { name: "Add to conversation" }).click();
   await expect(shown(rep.getByText("Added to the conversation."))).toBeVisible();
-  await shown(rep.getByRole("button", { name: "Suggest next message" })).click();
+  await shown(rep.getByRole("button", { name: "Suggest my next message" })).click();
   await expect(shown(rep.getByLabel("Reply type", { exact: true }))).toHaveValue("Interested");
   await rep.reload();
   await expect(panel(rep)).toContainText("Paused");

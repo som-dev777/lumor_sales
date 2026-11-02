@@ -123,3 +123,128 @@
   color: var(--color-text-muted);
   font-size: var(--text-sm);
 }
+
+// AI chat (F23)
+.chatBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.chatLog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: 560px;
+  padding: var(--space-4);
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-page);
+}
+
+.chatEmpty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.starter {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-card);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.bubbleRep,
+.bubbleAi {
+  max-width: 85%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-card);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bubbleRep {
+  align-self: flex-end;
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+.aiTurn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  max-width: 100%;
+}
+
+.bubbleAi {
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+}
+
+.aiMark {
+  margin-right: var(--space-1);
+  color: var(--color-primary);
+  vertical-align: -2px;
+}
+
+.draft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 85%;
+  padding: var(--space-3);
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius-control);
+  background: var(--color-primary-soft);
+
+  @include mobile {
+    max-width: 100%;
+  }
+}
+
+.draftText {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chatForm {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+
+  > :first-child {
+    flex: 1;
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}

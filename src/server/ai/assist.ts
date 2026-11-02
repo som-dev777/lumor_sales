@@ -65,7 +65,7 @@ export function editLevel(suggestion: string, sent: string): "None" | "Light" | 
 
 // --- What the AI is told ---------------------------------------------------------------------
 
-async function leadContext(db: DbOrTx, personId: string, prompt: AiPromptId) {
+export async function leadContext(db: DbOrTx, personId: string, prompt: AiPromptId) {
   const [row] = await db
     .select({ p: person, companyName: company.name, persona })
     .from(person)
@@ -123,7 +123,7 @@ export async function aiKnowledge(db: DbOrTx, prompt: AiPromptId) {
   };
 }
 
-async function loadOwnLead(db: DbOrTx, actor: Actor, personId: string) {
+export async function loadOwnLead(db: DbOrTx, actor: Actor, personId: string) {
   const p = await loadPerson(db, personId);
   // Same rule as quick-log: the lead's owner or an Admin.
   assertCan(actor, "lead.edit", p);
@@ -156,7 +156,7 @@ export const nextResultSchema = z.object({
 export type NextResult = z.infer<typeof nextResultSchema>;
 
 /** The PRD's deadline guidance, given to the AI with the Playbook Settings bounds (F18). */
-async function deadlineRules(db: DbOrTx, today: string) {
+export async function deadlineRules(db: DbOrTx, today: string) {
   const s = await getPlaybookSettings(db);
   return {
     allowed: `between ${addDaysIst(today, s.replyDeadlineMinDays)} and ${addDaysIst(today, s.replyDeadlineMaxDays)} (${s.replyDeadlineMinDays}–${s.replyDeadlineMaxDays} days after TODAY)`,
@@ -172,7 +172,7 @@ async function deadlineRules(db: DbOrTx, today: string) {
 }
 
 /** Keeps the AI's reply-by date inside the bounds (or drops it when it isn't a date). */
-async function boundedReplyBy(db: DbOrTx, r: NextResult["replyBy"], today: string) {
+export async function boundedReplyBy(db: DbOrTx, r: NextResult["replyBy"], today: string) {
   if (!r || !isIstDate(r.date)) return null;
   const s = await getPlaybookSettings(db);
   const min = addDaysIst(today, s.replyDeadlineMinDays);

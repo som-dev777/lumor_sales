@@ -131,9 +131,10 @@ One button. It reads the whole thread and works out the situation first:
 
 ## Change history
 
-| Date       | Version | Change                                                                                                                                                      |
-| ---------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-18 | 2.1.0   | Placeholder doc created.                                                                                                                                    |
-| 2026-10-22 | 2.2.0   | Full doc written (R8) with the owner's choices, before code.                                                                                                |
-| 2026-10-22 | 2.2.0   | Built: conversation thread, one-at-a-time and pasted messages (P05), Suggest next message (P02 v2.0), reply-by dates and nudges, Team tab; R8 browser test. |
-| 2026-10-22 | 2.2.0   | Released in v2.2.0 (R8 Conversations).                                                                                                                      |
+| Date       | Version    | Change                                                                                                                                                      |
+| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-18 | 2.1.0      | Placeholder doc created.                                                                                                                                    |
+| 2026-10-22 | 2.2.0      | Full doc written (R8) with the owner's choices, before code.                                                                                                |
+| 2026-10-22 | 2.2.0      | Built: conversation thread, one-at-a-time and pasted messages (P05), Suggest next message (P02 v2.0), reply-by dates and nudges, Team tab; R8 browser test. |
+| 2026-10-22 | 2.2.0      | Released in v2.2.0 (R8 Conversations).                                                                                                                      |
+| 2026-11-02 | Unreleased | On the person page, the AI chat (F23) replaces the Suggest next message tab; Today keeps its one-click suggestion.                                          |

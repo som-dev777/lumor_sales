@@ -22,6 +22,8 @@ import type { Stage } from "@/lib/db/enums";
 import {
   accountFilter,
   activity,
+  aiChat,
+  aiChatMessage,
   company,
   person,
   persona,
@@ -219,6 +221,10 @@ export async function deletePerson(db: Db, actor: Actor, id: string) {
       .where(eq(activity.personId, id))
       .returning({ id: activity.id });
     await tx.delete(planEnrolment).where(eq(planEnrolment.personId, id));
+    // Their AI chats (F23) go too.
+    const chats = tx.select({ id: aiChat.id }).from(aiChat).where(eq(aiChat.personId, id));
+    await tx.delete(aiChatMessage).where(inArray(aiChatMessage.chatId, chats));
+    await tx.delete(aiChat).where(eq(aiChat.personId, id));
     await tx.delete(person).where(eq(person.id, id));
     await writeAudit(tx, {
       userId: actor.id,

@@ -57,6 +57,7 @@ It replaces the **Suggest next message** tab on the person page. Today keeps its
 
 ## Change history
 
-| Date       | Version    | Change                             |
-| ---------- | ---------- | ---------------------------------- |
-| 2026-11-02 | Unreleased | Feature doc written (before code). |
+| Date       | Version    | Change                                                                                 |
+| ---------- | ---------- | -------------------------------------------------------------------------------------- |
+| 2026-11-02 | Unreleased | Feature doc written (before code).                                                     |
+| 2026-11-02 | Unreleased | Built: chat tables (migration 0011), P07, the Chat tab, reply-type picker kept; tests. |

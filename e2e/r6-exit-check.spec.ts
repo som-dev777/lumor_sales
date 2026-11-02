@@ -51,7 +51,7 @@ test.beforeAll(async ({ browser }) => {
   await expect(rep).toHaveURL("/");
 });
 
-test("exit check: a reply gets a reply type, 2–3 suggestions and a stage suggestion", async () => {
+test("exit check: a reply gets a reply type and a message from the AI chat, marked as sent", async () => {
   await addLead("Asha Verma", "asha-verma-r6");
   const conversation = shown(rep.getByRole("region", { name: "Conversation" }));
   await conversation.getByLabel("From Asha").check();
@@ -60,21 +60,22 @@ test("exit check: a reply gets a reply type, 2–3 suggestions and a stage sugge
     .fill("Sounds interesting. How does it work?");
   await conversation.getByRole("button", { name: "Add to conversation" }).click();
   await expect(shown(rep.getByText("Added to the conversation."))).toBeVisible();
-  await rep.getByRole("button", { name: "Suggest next message" }).click();
+  // The AI chat (F23) replaced the one-shot suggestions on the person page.
+  await rep.getByRole("button", { name: "Suggest my next message" }).click();
   await expect(rep.getByLabel("Reply type", { exact: true })).toHaveValue("Interested");
+  const chat = rep.getByRole("log", { name: "AI chat" });
+  await expect(chat).toContainText("Here's a message for Asha.");
+  await chat.getByRole("button", { name: "Use this message" }).click();
   const cards = rep.getByLabel(/^Reply: /);
-  await expect(cards).toHaveCount(2);
+  await expect(cards).toHaveCount(1);
   await expect(cards.first()).toHaveValue(/20-minute demo/);
-  await expect(rep.getByText("Suggested next step")).toBeVisible();
   await rep.screenshot({ path: "test-results/r6-assistant.png", fullPage: true });
   await expect(rep.locator("dl").getByText("Replied", { exact: true })).toBeVisible();
 
-  // The rep edits a suggestion lightly and marks it as sent.
+  // The rep edits the draft lightly and marks it as sent.
   await cards.first().fill((await cards.first().inputValue()) + " Thanks!");
   await rep.getByRole("button", { name: "Mark as sent" }).first().click();
   await expect(shown(rep.getByText("Logged as sent."))).toBeVisible();
-  await rep.getByRole("button", { name: "Confirm" }).click();
-  await expect(shown(rep.getByText("Next step saved."))).toBeVisible();
   await rep.reload();
   await expect(shown(rep.getByText("Sounds interesting. How does it work?"))).toBeVisible();
   await expect(shown(rep.getByText(/Thanks!$/))).toBeVisible();
@@ -87,6 +88,8 @@ test("summarise the conversation and save it as a note; draft from a template", 
   await expect(rep.getByText(/Asha Verma is interested/)).toBeVisible();
   await rep.getByRole("button", { name: "Save as note" }).click();
   await expect(shown(rep.getByText("Saved as a note."))).toBeVisible();
+  await rep.getByRole("button", { name: "Confirm" }).click();
+  await expect(shown(rep.getByText("Next step saved."))).toBeVisible();
 
   await rep.getByRole("tab", { name: "Draft message" }).click();
   await rep.getByLabel("Template").selectOption({ index: 1 });

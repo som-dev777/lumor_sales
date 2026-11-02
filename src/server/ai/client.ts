@@ -1,7 +1,8 @@
-// Calling the AI for every AI feature (F08 Rank with AI, F18 Suggest next message and split conversation, F10 summary and
-// draft). OpenAI since D-036. Server-side only: the API key never reaches the browser. Each
-// call sends one prompt from prompts.ts plus labelled data, and gets back a JSON answer in a
-// fixed shape (structured outputs), checked with Zod before use.
+// Calling the AI for every AI feature (F08 Rank with AI, F18 Suggest next message and split
+// conversation, F10 summary and draft, F19 report summary, F23 chat, F24 Fill with AI).
+// OpenAI since D-036. Server-side only: the API key never reaches the browser. Each call sends
+// one prompt from prompts.ts plus labelled data, and gets back a JSON answer in a fixed shape
+// (structured outputs), checked with Zod before use.
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import type { z } from "zod";
@@ -90,6 +91,28 @@ function modelNotAllowed(e: unknown) {
   );
 }
 
+/** Web search takes longer than other AI answers (F24). */
+export const AI_SEARCH_TIMEOUT_MS = 60_000;
+
+/** Searches as if from Bangalore, where the team is selling now (F24). */
+const WEB_SEARCH_TOOL = {
+  type: "web_search" as const,
+  user_location: {
+    type: "approximate" as const,
+    country: "IN",
+    city: "Bangalore",
+    region: "Karnataka",
+    timezone: "Asia/Kolkata",
+  },
+};
+
+/** The model can't use the web search tool (OpenAI answers 400 about the tool). */
+function searchNotSupported(e: unknown) {
+  return e instanceof OpenAI.BadRequestError && /tool|web_search|search/i.test(e.message);
+}
+
+type RunOptions = { webSearch?: boolean };
+
 /**
  * Runs one prompt. `fake` answers instead of the AI in the browser tests. Throws AiError with
  * a message that can be shown to the rep as-is.
@@ -100,25 +123,64 @@ export async function runPrompt<T>(
   input: Record<string, unknown>,
   fake: () => T,
 ): Promise<T> {
+  return (await callAi(id, schema, input, fake, {})).data;
+}
+
+/**
+ * Runs a prompt that searches the web first (F24). `searched` is false when the model couldn't
+ * search, so the answer comes from what the model already knows.
+ */
+export async function runSearchPrompt<T>(
+  id: PromptId,
+  schema: z.ZodType<T>,
+  input: Record<string, unknown>,
+  fake: () => T,
+): Promise<{ data: T; searched: boolean }> {
+  return callAi(id, schema, input, fake, { webSearch: true });
+}
+
+async function callAi<T>(
+  id: PromptId,
+  schema: z.ZodType<T>,
+  input: Record<string, unknown>,
+  fake: () => T,
+  { webSearch = false }: RunOptions,
+): Promise<{ data: T; searched: boolean }> {
   const mode = aiMode();
   if (mode === "off") throw new AiError(AI_NOT_SET_UP);
-  if (mode === "fake") return schema.parse(fake());
+  if (mode === "fake") return { data: schema.parse(fake()), searched: webSearch };
 
   const ai = (client ??= new OpenAI({ timeout: AI_TIMEOUT_MS, maxRetries: 0 }));
+  let searched = webSearch;
   const call = (model: string) =>
-    ai.responses.parse({
-      model,
-      instructions: PROMPTS[id].system,
-      input: formatInput(input),
-      // Low reasoning effort keeps answers well inside the 30-second limit.
-      reasoning: { effort: "low" },
-      text: { format: zodTextFormat(schema, `${id.toLowerCase()}_result`) },
-    });
+    ai.responses.parse(
+      {
+        model,
+        instructions: PROMPTS[id].system,
+        input: formatInput(input),
+        // Low reasoning effort keeps answers well inside the time limit.
+        reasoning: { effort: "low" },
+        ...(searched ? { tools: [WEB_SEARCH_TOOL] } : {}),
+        text: { format: zodTextFormat(schema, `${id.toLowerCase()}_result`) },
+      },
+      webSearch ? { timeout: AI_SEARCH_TIMEOUT_MS } : undefined,
+    );
+  // Tries the model; if it can't search, once more without searching.
+  const attempt = async (model: string) => {
+    try {
+      return await call(model);
+    } catch (e) {
+      if (!searched || !searchNotSupported(e)) throw e;
+      console.warn(`AI: ${model} can't search the web; answering without searching.`);
+      searched = false;
+      return call(model);
+    }
+  };
   let response;
   try {
-    response = await call(fallbackModel ?? aiModel());
+    response = await attempt(fallbackModel ?? aiModel());
   } catch (e) {
-    if (!modelNotAllowed(e) || fallbackModel) throw new AiError(explain(e));
+    if (!modelNotAllowed(e) || fallbackModel) throw new AiError(explain(e, webSearch));
     // The configured model isn't allowed for this OpenAI project: use the best one that is.
     try {
       const available: string[] = [];
@@ -127,9 +189,9 @@ export async function runPrompt<T>(
       if (!next) throw e;
       console.warn(`AI: ${aiModel()} isn't allowed for this OpenAI project; using ${next}.`);
       fallbackModel = next;
-      response = await call(next);
+      response = await attempt(next);
     } catch (e2) {
-      throw new AiError(explain(e2));
+      throw new AiError(explain(e2, webSearch));
     }
   }
   const refused = response.output.some(
@@ -145,12 +207,14 @@ export async function runPrompt<T>(
   if (!checked.success) {
     throw new AiError("The AI's answer wasn't in the expected shape. Try again.");
   }
-  return checked.data;
+  return { data: checked.data, searched };
 }
 
-function explain(e: unknown): string {
+function explain(e: unknown, search = false): string {
   if (e instanceof OpenAI.APIConnectionTimeoutError) {
-    return "The AI took longer than 30 seconds. Try again.";
+    return search
+      ? "The AI search took longer than a minute. Try again."
+      : "The AI took longer than 30 seconds. Try again.";
   }
   if (modelNotAllowed(e)) {
     return `The OpenAI project behind this key can't use the model ${fallbackModel ?? aiModel()}. An Admin should allow it in OpenAI (Project → Limits → Model usage) or set OPENAI_MODEL to one it can use.`;

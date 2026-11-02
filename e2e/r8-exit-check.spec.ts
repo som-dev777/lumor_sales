@@ -95,10 +95,11 @@ test("paste a whole conversation: the AI splits it, the rep checks it and saves 
 
 test("exit check: suggest the next message and accept it with a 2-day reply-by date", async () => {
   await expect(shown(rep.getByText("Nadia replied on 1 Nov 2026. It's your turn."))).toBeVisible();
-  await rep.getByRole("button", { name: "Suggest next message" }).click();
+  await rep.getByRole("button", { name: "Suggest my next message" }).click();
   await expect(rep.getByLabel("Reply type", { exact: true })).toHaveValue("Interested");
+  await rep.getByRole("button", { name: "Use this message" }).click();
   const cards = rep.getByLabel(/^Reply: /);
-  await expect(cards).toHaveCount(2);
+  await expect(cards).toHaveCount(1);
   const replyBy = shown(rep.getByLabel("Expect a reply by"));
   await expect(replyBy).toHaveValue("2026-11-04");
   await rep.getByRole("button", { name: "Mark as sent" }).first().click();

@@ -78,6 +78,13 @@
       "when": 1793381712702,
       "tag": "0010_industries",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1793614536926,
+      "tag": "0011_ai_chat",
+      "breakpoints": true
     }
   ]
 }

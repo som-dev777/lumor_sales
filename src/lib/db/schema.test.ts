@@ -61,6 +61,8 @@ describe("migrations", () => {
       "account",
       "account_filter",
       "activity",
+      "ai_chat",
+      "ai_chat_message",
       "app_release",
       "audit_log",
       "company",

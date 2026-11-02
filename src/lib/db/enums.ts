@@ -194,6 +194,9 @@ export type ReportRecipients = (typeof REPORT_RECIPIENTS)[number];
 
 // --- AI Resources (F20) ---
 export const AI_PROMPT_IDS = ["P01", "P02", "P03", "P04"] as const;
+
+/** Who wrote a message in an AI chat (F23). */
+export const CHAT_ROLES = ["rep", "ai"] as const;
 export type AiPromptId = (typeof AI_PROMPT_IDS)[number];
 
 export const RESOURCE_CATEGORIES = [
