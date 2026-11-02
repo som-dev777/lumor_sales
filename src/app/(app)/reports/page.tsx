@@ -18,7 +18,7 @@ import { requireUser } from "@/lib/session";
 import { formatIst } from "@/lib/time";
 import { emailConfigured } from "@/server/email";
 import { listSchedules } from "@/server/report-schedules";
-import { listReports } from "@/server/reports";
+import { listReports, type ReportTab } from "@/server/reports";
 
 export const metadata: Metadata = { title: "Reports" };
 
@@ -29,7 +29,7 @@ const SEND_TO: Record<string, string> = {
   "each-rep": "Each rep",
 };
 
-export default function ReportsPage() {
+export default function ReportsPage({ searchParams }: PageProps<"/reports">) {
   return (
     <>
       <PageHeader
@@ -37,26 +37,30 @@ export default function ReportsPage() {
         description="Activity, outcomes, plan adherence and the funnel for any period. Saved, printable and downloadable."
       />
       <Suspense fallback={<StatusMessage title="Loading…" />}>
-        <Reports />
+        <Reports searchParams={searchParams} />
       </Suspense>
     </>
   );
 }
 
-async function Reports() {
+async function Reports({ searchParams }: Pick<PageProps<"/reports">, "searchParams">) {
   const viewer = await requireUser();
   await connection();
   const db = getDb();
   const isAdmin = can(viewer, "reports.team");
-  const people = isAdmin
-    ? await db
-        .select({ id: user.id, name: user.name })
-        .from(user)
-        .where(eq(user.active, true))
-        .orderBy(asc(user.name))
-    : null;
+  const everyone = await db
+    .select({ id: user.id, name: user.name })
+    .from(user)
+    .where(eq(user.active, true))
+    .orderBy(asc(user.name));
+  const people = isAdmin ? everyone : null;
+  const teammates = everyone.filter((u) => u.id !== viewer.id);
+  const q = await searchParams;
+  const asked = Array.isArray(q.tab) ? q.tab[0] : q.tab;
+  // Report history (D-043): made by me, shared with me, or (Admins) all.
+  const tab: ReportTab = asked === "shared" || (asked === "all" && isAdmin) ? asked : "mine";
   const [history, schedules] = await Promise.all([
-    listReports(db, viewer),
+    listReports(db, viewer, tab),
     can(viewer, "reports.schedule") ? listSchedules(db) : Promise.resolve(null),
   ]);
 
@@ -64,13 +68,34 @@ async function Reports() {
     <>
       <section className={styles.card} aria-label="Make a report">
         <h2 className={styles.cardTitle}>Make a report</h2>
-        <ReportForm people={people} />
+        <ReportForm people={people} teammates={teammates} />
       </section>
 
       <section className={styles.card} aria-label="Report history">
         <h2 className={styles.cardTitle}>Report history</h2>
+        <nav className={styles.tabs} aria-label="Which reports">
+          {(
+            [
+              ["mine", "Made by me"],
+              ["shared", "Shared with me"],
+              ...(isAdmin ? [["all", "All reports"]] : []),
+            ] as [ReportTab, string][]
+          ).map(([key, label]) => (
+            <Link
+              key={key}
+              href={key === "mine" ? "/reports" : `/reports?tab=${key}`}
+              aria-current={tab === key ? "page" : undefined}
+            >
+              {tab === key ? <strong>{label}</strong> : label}
+            </Link>
+          ))}
+        </nav>
         {history.length === 0 ? (
-          <p className={styles.muted}>No reports yet. Make one above.</p>
+          <p className={styles.muted}>
+            {tab === "shared"
+              ? "Nothing shared with you yet. When someone emails you a report, it shows here."
+              : "No reports yet. Make one above."}
+          </p>
         ) : (
           <div className={styles.tableWrap}>
             <table className={styles.table}>
@@ -79,7 +104,7 @@ async function Reports() {
                   <th>Report</th>
                   <th>Period</th>
                   <th>Made</th>
-                  <th>Emailed to</th>
+                  <th>Sent to</th>
                 </tr>
               </thead>
               <tbody>

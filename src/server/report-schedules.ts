@@ -10,11 +10,11 @@ import { nextRunAt, scheduleSpan } from "@/lib/report-periods";
 import { formatIst, todayIst } from "@/lib/time";
 import type { ScheduleData } from "@/lib/validation/reports";
 import { aiMode } from "./ai/client";
-import { emailConfigured, sendEmail, type Email } from "./email";
+import { sendEmail, type Email } from "./email";
 import { LeadError } from "./leads/companies";
+import { emailReport } from "./report-share";
 import {
   createReport,
-  saveEmailedTo,
   saveSummary,
   summariseReport,
   type ReportData,
@@ -193,14 +193,19 @@ async function targetsFor(db: DbOrTx, s: ScheduleRow) {
   return reps.map((r) => ({ target: { scope: "person", userId: r.id } as ReportTarget, rep: r }));
 }
 
-async function recipientsFor(db: DbOrTx, s: ScheduleRow, rep: { email: string } | null) {
-  if (s.recipients === "emails") return s.emails;
-  if (s.recipients === "each-rep") return rep ? [rep.email] : [];
+/** Who a schedule's report goes to: teammates (shared with them too, D-043) and addresses. */
+async function recipientsFor(
+  db: DbOrTx,
+  s: ScheduleRow,
+  rep: { id: string; email: string } | null,
+): Promise<{ userIds: string[]; emails: string[] }> {
+  if (s.recipients === "emails") return { userIds: [], emails: s.emails };
+  if (s.recipients === "each-rep") return { userIds: rep ? [rep.id] : [], emails: [] };
   const admins = await db
-    .select({ email: user.email })
+    .select({ id: user.id })
     .from(user)
     .where(and(eq(user.active, true), eq(user.role, "Admin")));
-  return admins.map((a) => a.email);
+  return { userIds: admins.map((a) => a.id), emails: [] };
 }
 
 /** Makes one schedule's report(s) for the period ending `now`, with summary and emails. */
@@ -220,13 +225,8 @@ export async function runSchedule(db: Db, s: ScheduleRow, now: Date, send: Sende
         console.error(`AI summary for "${run.title}" failed:`, e instanceof Error ? e.message : e);
       }
     }
-    const sent: string[] = [];
-    if (emailConfigured()) {
-      for (const to of await recipientsFor(db, s, rep)) {
-        if (await send(reportEmail(to, run.id, data, summary))) sent.push(to);
-      }
-    }
-    await saveEmailedTo(db, run.id, run.title, sent);
+    const to = await recipientsFor(db, s, rep);
+    if (to.userIds.length + to.emails.length > 0) await emailReport(db, null, run.id, to, send);
     made.push(run.id);
   }
   return made;

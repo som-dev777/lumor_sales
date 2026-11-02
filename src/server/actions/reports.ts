@@ -11,7 +11,9 @@ import { PermissionError } from "@/lib/permissions";
 import { presetSpan, type ReportPreset } from "@/lib/report-periods";
 import { requireUser } from "@/lib/session";
 import { todayIst } from "@/lib/time";
-import { reportRequestSchema, scheduleSchema } from "@/lib/validation/reports";
+import { emailReportSchema, reportRequestSchema, scheduleSchema } from "@/lib/validation/reports";
+import { emailConfigured } from "../email";
+import { emailReport } from "../report-share";
 import { AiError } from "../ai/client";
 import { LeadError } from "../leads/companies";
 import {
@@ -59,9 +61,18 @@ export async function generateReport(input: unknown): Promise<ActionResult> {
   return run(async () => {
     const now = await appNow();
     const span = presetSpan(r.preset as ReportPreset, todayIst(now), { from: r.from, to: r.to });
-    const row = await createReport(getDb(), viewer, target, span, { now });
+    const db = getDb();
+    const row = await createReport(db, viewer, target, span, { now });
+    let message = "Report saved.";
+    if (r.shareWith.length + r.emails.length > 0) {
+      const sent = await emailReport(db, viewer, row.id, {
+        userIds: r.shareWith,
+        emails: r.emails,
+      });
+      message = sentMessage(sent);
+    }
     refresh();
-    return { ok: true, message: "Report saved.", link: `/reports/${row.id}` };
+    return { ok: true, message, link: `/reports/${row.id}` };
   });
 }
 
@@ -137,5 +148,34 @@ export async function runNow(scheduleId: string): Promise<ActionResult> {
       ok: true,
       message: `${made.length} ${made.length === 1 ? "report" : "reports"} made. See Report history.`,
     };
+  });
+}
+
+function sentMessage(r: { sent: string[]; shared: number; addresses: string[] }) {
+  const shared = r.shared ? ` Shared with ${r.shared} teammate${r.shared === 1 ? "" : "s"}.` : "";
+  if (!emailConfigured())
+    return `Report saved.${shared} Email isn't set up, so nothing was emailed.`;
+  return `Report saved and emailed to ${r.sent.length} of ${r.addresses.length}.${shared}`;
+}
+
+/** Email a saved report again, to teammates and other addresses (D-043). */
+export async function emailReportAction(reportId: string, input: unknown): Promise<ActionResult> {
+  const viewer = await requireUser();
+  if (!id.safeParse(reportId).success) return { ok: false, error: "Unknown report." };
+  const parsed = emailReportSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0].message,
+      fieldErrors: fieldErrorsFrom(parsed.error.issues),
+    };
+  }
+  return run(async () => {
+    const r = await emailReport(getDb(), viewer, reportId, {
+      userIds: parsed.data.shareWith,
+      emails: parsed.data.emails,
+    });
+    refresh();
+    return { ok: true, message: sentMessage(r).replace("Report saved and emailed", "Emailed") };
   });
 }

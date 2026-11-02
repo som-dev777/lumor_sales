@@ -19,6 +19,8 @@ Owner's list of 2026-11-03 (D-043), aiming for 2.7.0:
 - Team tab: the counters follow each person's My day exactly (Backlog and Meetings today added); click any number to see the list behind it.
 - Plans: "Channel" is now "Task", with a Custom task (type your own name, offered again next time) and a custom template purpose; Remove step is labelled; saving changed steps can move the people already on the plan to the new version.
 - No more approvals: anyone creates Official or Personal plans, personas, account filters and templates; "Propose as Official" is now "Make Official"; the Approvals page is gone.
+- Reports: choose who gets it (tick teammates, type any email addresses) and it's emailed with the PDF attached; Email this report on any saved report; Report history has Made by me, Shared with me and (Admins) All, and teammates get a notification when a report is sent to them.
+- Reports now start with a Pipeline section per rep: people and companies added, new outreach, replied, converted, no response yet, and where their people stand by stage, with charts. Download PDF gives a real PDF with charts and every table.
 
 ## [2.6.0] - 2026-11-02
 

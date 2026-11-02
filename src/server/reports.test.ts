@@ -178,8 +178,10 @@ describe("who may make and open reports", () => {
     const aboutRavi = await createReport(t.db, admin, { scope: "person", userId: ravi.id }, OCT);
 
     expect((await listReports(t.db, asha)).map((r) => r.id)).toEqual([mine.id]);
-    expect((await listReports(t.db, ravi)).map((r) => r.id)).toEqual([aboutRavi.id]);
-    expect(await listReports(t.db, admin)).toHaveLength(3);
+    // A report about Ravi that someone else made is under Shared with me (D-043).
+    expect(await listReports(t.db, ravi)).toEqual([]);
+    expect((await listReports(t.db, ravi, "shared")).map((r) => r.id)).toEqual([aboutRavi.id]);
+    expect(await listReports(t.db, admin, "all")).toHaveLength(3);
     expect(await getReport(t.db, asha, team.id)).toBeNull();
     expect((await getReport(t.db, admin, mine.id))?.title).toBe(mine.title);
 
@@ -255,12 +257,13 @@ describe("scheduled reports (D-039)", () => {
     ]);
     const team = sent.find((e) => e.to === "somnath@lumor.tech")!;
     expect(team.subject).toBe("Report: Team · 30 Oct 2026");
-    expect(team.text).toMatch(
-      /Open the full report \(log in first\): https:\/\/hub\.example\/reports\//,
-    );
+    expect(team.text).toMatch(/\[ Open the full report \] → https:\/\/hub\.example\/reports\//);
     const runs = await t.db.select().from(reportRun);
     expect(runs).toHaveLength(3);
-    expect(runs.find((r) => r.scope === "team")!.emailedTo).toEqual(["somnath@lumor.tech"]);
+    const teamRun = runs.find((r) => r.scope === "team")!;
+    expect(teamRun.emailedTo).toEqual(["somnath@lumor.tech"]);
+    // Shared with the Admins it went to (D-043), so it's under their Shared with me.
+    expect(teamRun.sharedWith).toEqual([admin.id]);
     // Running again at the same time does nothing: the next run moved to tomorrow.
     expect(await runDueSchedules(t.db, at, send)).toEqual([]);
   });

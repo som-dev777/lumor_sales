@@ -11,7 +11,7 @@ export type Email = {
   /** An HTML version (booking emails, D-042); `text` stays for plain-text mail apps. */
   html?: string;
   /** Files sent with it, e.g. a calendar invite (F22). */
-  attachments?: { filename: string; content: string; contentType?: string }[];
+  attachments?: { filename: string; content: string | Buffer; contentType?: string }[];
   /** Where a reply goes (e.g. the rep, for booking emails). */
   replyTo?: string;
 };
@@ -42,7 +42,9 @@ export async function sendEmail(email: Email, fetcher: typeof fetch = fetch): Pr
           ? {
               attachments: email.attachments.map((a) => ({
                 filename: a.filename,
-                content: Buffer.from(a.content).toString("base64"),
+                content: (Buffer.isBuffer(a.content) ? a.content : Buffer.from(a.content)).toString(
+                  "base64",
+                ),
                 ...(a.contentType ? { content_type: a.contentType } : {}),
               })),
             }

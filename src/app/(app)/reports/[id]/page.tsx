@@ -12,7 +12,10 @@ import { spanLabel } from "@/lib/report-periods";
 import { requireUser } from "@/lib/session";
 import { formatIst } from "@/lib/time";
 import { aiMode } from "@/server/ai/client";
-import { getReport, REPORT_COLUMNS } from "@/server/reports";
+import { asc, eq } from "drizzle-orm";
+import { OutreachChart, StageChart } from "@/components/reports/ReportCharts";
+import { user } from "@/lib/db/schema";
+import { getReport, PIPELINE_COLUMNS, REPORT_COLUMNS } from "@/server/reports";
 
 export const metadata: Metadata = { title: "Report" };
 
@@ -63,6 +66,14 @@ async function Report({ params }: Pick<PageProps<"/reports/[id]">, "params">) {
   if (!run) notFound();
   const r = run.data;
   const rows = [...r.people, r.total];
+  const teammates = (
+    await getDb()
+      .select({ id: user.id, name: user.name })
+      .from(user)
+      .where(eq(user.active, true))
+      .orderBy(asc(user.name))
+  ).filter((u) => u.id !== viewer.id);
+  const p = r.pipeline;
   const label = (key: string) => REPORT_COLUMNS.find((c) => c.key === key)!.label;
 
   return (
@@ -76,12 +87,82 @@ async function Report({ params }: Pick<PageProps<"/reports/[id]">, "params">) {
           run.scheduleId ? " by a schedule" : ""
         }`}
       />
-      <ReportButtons id={run.id} canSummarise={!run.aiSummary && aiMode() !== "off"} />
+      <ReportButtons
+        id={run.id}
+        canSummarise={!run.aiSummary && aiMode() !== "off"}
+        teammates={teammates}
+      />
 
       {run.aiSummary && (
         <section className={styles.card} aria-label="AI summary">
           <h2 className={styles.cardTitle}>AI summary</h2>
           <p className={styles.summary}>{run.aiSummary}</p>
+        </section>
+      )}
+
+      {p && (
+        <section className={styles.card} aria-label="Pipeline">
+          <h2 className={styles.cardTitle}>Pipeline</h2>
+          <OutreachChart
+            data={p.people.map((x, i) => ({
+              name: x.name,
+              outreach: x.newOutreach,
+              replied: x.replied,
+              meetings: r.people[i]?.meetingsBooked ?? 0,
+            }))}
+          />
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Person</th>
+                  {PIPELINE_COLUMNS.map((c) => (
+                    <th key={c.key} className={styles.number}>
+                      {c.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {p.people.map((x) => (
+                  <tr key={x.userId ?? x.name}>
+                    <td>{x.name}</td>
+                    {PIPELINE_COLUMNS.map((c) => (
+                      <td key={c.key} className={styles.number}>
+                        {x[c.key]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+              {r.scope === "team" && (
+                <tfoot>
+                  <tr>
+                    <td>Total</td>
+                    {PIPELINE_COLUMNS.map((c) => (
+                      <td key={c.key} className={styles.number}>
+                        {p.total[c.key]}
+                      </td>
+                    ))}
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+          <p className={styles.muted}>
+            New outreach: people contacted for the first time in the period. No response yet: of
+            those, the ones who haven&rsquo;t replied.
+          </p>
+          {Object.keys(p.total.stages).length > 0 && (
+            <>
+              <h3 className={styles.cardTitle}>Where their people stand now</h3>
+              <StageChart
+                data={Object.entries(p.total.stages)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([stage, count]) => ({ stage, count }))}
+              />
+            </>
+          )}
         </section>
       )}
 

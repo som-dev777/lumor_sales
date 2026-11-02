@@ -1,7 +1,7 @@
 // Reports (F19): a snapshot of a person's or the team's work over a period, saved so it never
 // changes later. Anyone can report on themselves; Admins on the team or anyone. Each report is
 // audited when made and when its AI summary is written.
-import { and, desc, eq, gte, inArray, lt, or } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { writeAudit } from "@/lib/audit";
 import { csvFile } from "@/lib/csv";
@@ -35,8 +35,26 @@ export type PersonNumbers = {
   stepsNotRecorded: number;
 };
 
+/** The consolidated view per rep (D-043): what they added, who they reached, and the outcome. */
+export type PipelineRow = {
+  userId: string | null;
+  name: string;
+  peopleAdded: number;
+  companiesAdded: number;
+  /** People contacted for the first time in the period. */
+  newOutreach: number;
+  /** People who replied in the period. */
+  replied: number;
+  converted: number;
+  /** Contacted for the first time in the period, no reply so far. */
+  noResponse: number;
+  /** Where their people stand now, by stage. */
+  stages: Record<string, number>;
+};
+
 export type ReportData = {
-  version: 1;
+  /** 2 from v2.7.0 (adds the Pipeline section); older saved reports are 1. */
+  version: 1 | 2;
   title: string;
   scope: "team" | "person";
   personName: string | null;
@@ -47,7 +65,126 @@ export type ReportData = {
   total: PersonNumbers;
   funnel: { totals: Counts; conversions: Conversion[] };
   plans: Awaited<ReturnType<typeof planPerformance>>;
+  pipeline?: { people: PipelineRow[]; total: PipelineRow };
 };
+
+export const PIPELINE_COLUMNS: {
+  key: Exclude<keyof PipelineRow, "userId" | "name" | "stages">;
+  label: string;
+}[] = [
+  { key: "peopleAdded", label: "People added" },
+  { key: "companiesAdded", label: "Companies added" },
+  { key: "newOutreach", label: "New outreach" },
+  { key: "replied", label: "Replied" },
+  { key: "converted", label: "Converted" },
+  { key: "noResponse", label: "No response yet" },
+];
+
+const OUTREACH_TYPES = ["Request sent", "Message sent", "InMail sent", "Call"] as const;
+
+/** The Pipeline section (D-043) for the people in a report. */
+async function buildPipeline(
+  db: DbOrTx,
+  people: PersonNumbers[],
+  range: { start: Date; end: Date },
+): Promise<{ people: PipelineRow[]; total: PipelineRow }> {
+  const ids = people.map((p) => p.userId!).filter(Boolean);
+  const rows = new Map<string, PipelineRow>(
+    people.map((p) => [
+      p.userId!,
+      {
+        userId: p.userId,
+        name: p.name,
+        peopleAdded: 0,
+        companiesAdded: 0,
+        newOutreach: 0,
+        replied: 0,
+        converted: p.conversions,
+        noResponse: 0,
+        stages: {},
+      },
+    ]),
+  );
+  if (ids.length > 0) {
+    const inRange = (col: typeof person.createdAt) =>
+      and(gte(col, range.start), lt(col, range.end));
+    for (const r of await db
+      .select({ by: person.createdBy })
+      .from(person)
+      .where(and(inRange(person.createdAt), inArray(person.createdBy, ids)))) {
+      if (r.by) rows.get(r.by)!.peopleAdded += 1;
+    }
+    for (const r of await db
+      .select({ by: company.createdBy })
+      .from(company)
+      .where(
+        and(
+          gte(company.createdAt, range.start),
+          lt(company.createdAt, range.end),
+          inArray(company.createdBy, ids),
+        ),
+      )) {
+      if (r.by) rows.get(r.by)!.companiesAdded += 1;
+    }
+    // First outreach touch per person (ever), and replies after it.
+    const touches = await db
+      .select({ personId: activity.personId, userId: activity.userId, at: activity.occurredAt })
+      .from(activity)
+      .where(and(inArray(activity.type, [...OUTREACH_TYPES]), lt(activity.occurredAt, range.end)))
+      .orderBy(activity.occurredAt);
+    const first = new Map<string, { userId: string; at: Date }>();
+    for (const t of touches) {
+      if (t.personId && !first.has(t.personId)) first.set(t.personId, t);
+    }
+    const replies = await db
+      .select({ personId: activity.personId, userId: activity.userId, at: activity.occurredAt })
+      .from(activity)
+      .where(eq(activity.type, "Reply received"));
+    const repliedInRange = new Map<string, Set<string>>();
+    for (const r of replies) {
+      if (!r.personId || r.at < range.start || r.at >= range.end) continue;
+      const set = repliedInRange.get(r.userId) ?? new Set<string>();
+      set.add(r.personId);
+      repliedInRange.set(r.userId, set);
+    }
+    for (const [userId, set] of repliedInRange) {
+      const row = rows.get(userId);
+      if (row) row.replied = set.size;
+    }
+    for (const [personId, t] of first) {
+      if (t.at < range.start || t.at >= range.end) continue;
+      const row = rows.get(t.userId);
+      if (!row) continue;
+      row.newOutreach += 1;
+      if (!replies.some((r) => r.personId === personId && r.at >= t.at)) row.noResponse += 1;
+    }
+    // Where their people stand now.
+    for (const r of await db
+      .select({ ownerId: person.ownerId, stage: person.stage })
+      .from(person)
+      .where(inArray(person.ownerId, ids))) {
+      const row = rows.get(r.ownerId);
+      if (row) row.stages[r.stage] = (row.stages[r.stage] ?? 0) + 1;
+    }
+  }
+  const list = [...rows.values()];
+  const total: PipelineRow = {
+    userId: null,
+    name: "Total",
+    peopleAdded: 0,
+    companiesAdded: 0,
+    newOutreach: 0,
+    replied: 0,
+    converted: 0,
+    noResponse: 0,
+    stages: {},
+  };
+  for (const r of list) {
+    for (const c of PIPELINE_COLUMNS) total[c.key] += r[c.key];
+    for (const [k, n] of Object.entries(r.stages)) total.stages[k] = (total.stages[k] ?? 0) + n;
+  }
+  return { people: list, total };
+}
 
 export type ReportTarget = { scope: "team" } | { scope: "person"; userId: string };
 
@@ -179,7 +316,7 @@ export async function buildReport(
   const personName = target.scope === "person" ? people[0].name : null;
   const repIds = target.scope === "person" ? [target.userId] : null;
   return {
-    version: 1,
+    version: 2,
     title: `${personName ?? "Team"} · ${spanLabel(span)}`,
     scope: target.scope,
     personName,
@@ -190,6 +327,7 @@ export async function buildReport(
     total,
     funnel: await funnelTotals(db, range, repIds),
     plans: await planPerformance(db, range, repIds),
+    pipeline: await buildPipeline(db, people, range),
   };
 }
 
@@ -244,14 +382,37 @@ export async function createReport(
   });
 }
 
-/** Saved reports a user may open: Admins all; Users the ones they made or that are about them. */
+/**
+ * Saved reports a user may open: Admins all; Users the ones they made, the ones about them,
+ * and the ones sent to them (D-043).
+ */
 function visibleTo(viewer: Actor) {
   return can(viewer, "reports.team")
     ? undefined
-    : or(eq(reportRun.personUserId, viewer.id), eq(reportRun.generatedBy, viewer.id));
+    : or(
+        eq(reportRun.personUserId, viewer.id),
+        eq(reportRun.generatedBy, viewer.id),
+        sharedWithUser(viewer.id),
+      );
 }
 
-export async function listReports(db: DbOrTx, viewer: Actor, limit = 100) {
+const sharedWithUser = (userId: string) =>
+  sql`exists (select 1 from json_each(${reportRun.sharedWith}) where value = ${userId})`;
+
+export const REPORT_TABS = ["mine", "shared", "all"] as const;
+export type ReportTab = (typeof REPORT_TABS)[number];
+
+/** Report history (D-043): made by me, shared with me (or about me), or all (Admins). */
+export async function listReports(db: DbOrTx, viewer: Actor, tab: ReportTab = "mine", limit = 100) {
+  const where =
+    tab === "mine"
+      ? eq(reportRun.generatedBy, viewer.id)
+      : tab === "shared"
+        ? and(
+            or(sharedWithUser(viewer.id), eq(reportRun.personUserId, viewer.id)),
+            or(isNull(reportRun.generatedBy), ne(reportRun.generatedBy, viewer.id)),
+          )
+        : visibleTo(viewer);
   return db
     .select({
       id: reportRun.id,
@@ -266,7 +427,7 @@ export async function listReports(db: DbOrTx, viewer: Actor, limit = 100) {
     })
     .from(reportRun)
     .leftJoin(user, eq(user.id, reportRun.generatedBy))
-    .where(visibleTo(viewer))
+    .where(where)
     .orderBy(desc(reportRun.createdAt))
     .limit(limit);
 }

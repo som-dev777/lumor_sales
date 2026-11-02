@@ -6,6 +6,37 @@ import { isIstDate } from "@/lib/time";
 
 const date = z.string().refine((v) => v === "" || isIstDate(v), "Pick a valid date.");
 
+/** "a@x.com, b@y.in" → a clean list of valid addresses (up to 20). */
+export const reportEmails = z
+  .string()
+  .max(2000)
+  .optional()
+  .default("")
+  .transform((v) => [
+    ...new Set(
+      v
+        .split(/[,;\s]+/)
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  ])
+  .pipe(
+    z
+      .array(z.email("One of the email addresses isn't valid."))
+      .max(20, "At most 20 email addresses."),
+  );
+
+/** Email a saved report (D-043). */
+export const emailReportSchema = z
+  .object({
+    shareWith: z.array(z.string().max(100)).max(20).optional().default([]),
+    emails: reportEmails,
+  })
+  .refine((r) => r.shareWith.length + r.emails.length > 0, {
+    message: "Tick a teammate or type an email address.",
+    path: ["emails"],
+  });
+
 export const reportRequestSchema = z
   .object({
     // "me", "team", or a user id (Admins).
@@ -13,6 +44,9 @@ export const reportRequestSchema = z
     preset: z.enum(REPORT_PRESETS.map((p) => p.key) as [string, ...string[]]),
     from: date.optional().default(""),
     to: date.optional().default(""),
+    // Email to (D-043): teammates ticked and other addresses, comma separated.
+    shareWith: z.array(z.string().max(100)).max(20).optional().default([]),
+    emails: reportEmails,
   })
   .refine((r) => r.preset !== "custom" || (r.from && r.to && r.from <= r.to), {
     message: "Pick a From date on or before the To date.",
