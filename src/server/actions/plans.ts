@@ -10,6 +10,7 @@ import { getDb } from "@/lib/db/client";
 import { CALL_OUTCOMES } from "@/lib/db/enums";
 import { PermissionError } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
+import { formatIstDate } from "@/lib/time";
 import { planSchema } from "@/lib/validation/plans";
 import {
   completeStep,
@@ -25,6 +26,7 @@ import {
   withdrawInvite,
 } from "../plans/enrolment";
 import type { Finding } from "../plans/guardrails";
+import { snoozeDate } from "../today";
 import { LeadError } from "../leads/companies";
 import {
   createPlan,
@@ -193,7 +195,12 @@ export async function doStep(personId: string, input: unknown): Promise<StepResu
 type PlanCommand =
   "pause" | "resume" | "stop" | "withdraw" | "nurture" | "lost" | "nurtureLost" | "snooze";
 
-export async function planCommand(personId: string, command: PlanCommand): Promise<PlanResult> {
+export async function planCommand(
+  personId: string,
+  command: PlanCommand,
+  /** Snooze: the date to snooze to (D-043); empty = tomorrow. */
+  until?: string | null,
+): Promise<PlanResult> {
   const viewer = await requireUser();
   if (!idSchema.safeParse(personId).success) return { ok: false, error: "Unknown person." };
   return run(async () => {
@@ -207,7 +214,7 @@ export async function planCommand(personId: string, command: PlanCommand): Promi
       nurture: "Moved to Nurture: no touches for 60 days.",
       lost: "Marked Lost (No response).",
       nurtureLost: "Marked Lost (No response).",
-      snooze: "Snoozed to tomorrow.",
+      snooze: "Snoozed.",
     };
     if (command === "pause") await pausePlan(db, viewer, personId, now);
     else if (command === "resume") await resumePlan(db, viewer, personId, now);
@@ -216,8 +223,14 @@ export async function planCommand(personId: string, command: PlanCommand): Promi
     else if (command === "nurture") await finishPlan(db, viewer, personId, "nurture", now);
     else if (command === "lost") await finishPlan(db, viewer, personId, "lost", now);
     else if (command === "nurtureLost") await nurtureLost(db, viewer, personId, now);
-    else if (command === "snooze") await snoozeStep(db, viewer, personId, now);
-    else return { ok: false, error: "Unknown command." };
+    else if (command === "snooze") {
+      const e = await snoozeStep(db, viewer, personId, now, snoozeDate(until, now));
+      refresh();
+      return {
+        ok: true,
+        message: `Snoozed. The step comes back on ${formatIstDate(e.nextDueDate!, "EEE d MMM")}.`,
+      };
+    } else return { ok: false, error: "Unknown command." };
     refresh();
     return { ok: true, message: messages[command] };
   });

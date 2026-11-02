@@ -158,11 +158,13 @@ export async function doneTask(taskId: string) {
   return r.ok ? { ok: true as const, data: null } : r;
 }
 
-export async function snoozeTask(personId: string) {
+/** Snooze a non-plan task to a date (D-043); empty = tomorrow. */
+export async function snoozeTask(personId: string, until?: string | null) {
   const viewer = await requireUser();
   if (!id.safeParse(personId).success) return bad("Unknown person.");
+  if (until != null && (typeof until !== "string" || until.length > 10)) return bad("Pick a date.");
   const now = await appNow();
-  const r = await run(() => snoozeLead(getDb(), viewer, personId, now));
+  const r = await run(() => snoozeLead(getDb(), viewer, personId, now, until));
   if (r.ok) refresh();
   return r.ok ? { ok: true as const, data: null } : r;
 }

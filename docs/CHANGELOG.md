@@ -14,6 +14,9 @@ Owner's list of 2026-11-03 (D-043), aiming for 2.7.0:
 - Fixed: a required checkbox question refused ticked answers ("Pick from the choices given"), which stopped the booking, so nothing reached the calendar, notifications or email.
 - Bookings update the person: Meeting booked with the answers, Meeting scheduled, plan paused; a cancel returns them to Replied and resumes the plan; a reschedule is one Meeting moved. Someone new is added (no LinkedIn needed) with a Check details flag.
 - Calendly (F27): a verified webhook applies the same rules to Calendly bookings.
+- Today: a Backlog section at the top for anything due on an earlier day (a reply not answered, a meeting not marked held, a nudge, a plan step, a withdraw), with how many days late. Snooze asks for a date and the task comes back that day.
+- People and Companies show a red Backlog badge; People has a "Backlog only" filter. A person added by a booking shows "Check details" until someone clicks Done checking.
+- Team tab: the counters follow each person's My day exactly (Backlog and Meetings today added); click any number to see the list behind it.
 
 ## [2.6.0] - 2026-11-02
 

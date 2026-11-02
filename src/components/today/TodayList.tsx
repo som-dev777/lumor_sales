@@ -7,6 +7,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { TextArea } from "@/components/ui/TextArea";
+import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { SECTIONS } from "@/lib/today-sections";
 import { SuggestionCard } from "@/components/ai/SuggestionCard";
@@ -72,7 +73,11 @@ export function TodayList({ tasks, outreach, aiReady }: Props) {
         <p className={styles.muted}>
           {tasks.length === 0
             ? "Nothing due. Time for new outreach."
-            : `${tasks.length} ${tasks.length === 1 ? "task" : "tasks"} for today.`}
+            : `${tasks.length} ${tasks.length === 1 ? "task" : "tasks"} for today${
+                tasks.some((t) => t.section === "backlog")
+                  ? `, ${tasks.filter((t) => t.section === "backlog").length} of them from earlier days`
+                  : ""
+              }.`}
         </p>
         {tasks.length > 0 && (
           <Button variant="secondary" onClick={rank} loading={busy} disabled={!aiReady}>
@@ -114,8 +119,16 @@ export function TodayList({ tasks, outreach, aiReady }: Props) {
           return (
             <section key={s.key} className={styles.section} aria-label={s.label}>
               <h2 className={styles.sectionTitle}>
-                {s.label} <span className={styles.badge}>{items.length}</span>
+                {s.label}{" "}
+                <span className={s.key === "backlog" ? styles.badgeLate : styles.badge}>
+                  {items.length}
+                </span>
               </h2>
+              {s.key === "backlog" && (
+                <p className={styles.muted}>
+                  Due on an earlier day and not done yet. Do it, or snooze it to a date.
+                </p>
+              )}
               <ul className={styles.list}>
                 {items.map((t) => (
                   <TaskRow key={t.id} task={t} aiReady={aiReady} />
@@ -174,10 +187,16 @@ function TaskRow({
       setWarnings(null);
       say(r);
     });
-  const snooze = () =>
-    task.kind === "step"
-      ? act(() => planCommand(task.personId, "snooze"), `${task.name} snoozed to tomorrow.`)
-      : act(() => snoozeTask(task.personId), `${task.name} snoozed to tomorrow.`);
+  const [snoozing, setSnoozing] = useState(false);
+  const snooze = (until: string) =>
+    start(async () => {
+      const r =
+        task.kind === "step"
+          ? await planCommand(task.personId, "snooze", until)
+          : await snoozeTask(task.personId, until);
+      say(r, `${task.name} snoozed to ${niceDate(until)}.`);
+      if (r.ok) setSnoozing(false);
+    });
   const isMessage = task.kind === "step" && task.channel && MESSAGE_CHANNELS.includes(task.channel);
 
   return (
@@ -332,13 +351,21 @@ function TaskRow({
           <Button
             variant="ghost"
             disabled={busy}
-            onClick={snooze}
-            aria-label={`Snooze ${task.name} to tomorrow`}
+            onClick={() => setSnoozing(true)}
+            aria-label={`Snooze ${task.name}`}
           >
             <Clock size={16} aria-hidden /> Snooze
           </Button>
         )}
       </div>
+      {snoozing && (
+        <SnoozeDialog
+          name={task.name}
+          busy={busy}
+          onClose={() => setSnoozing(false)}
+          onSnooze={snooze}
+        />
+      )}
       <Dialog
         open={warnings !== null}
         onOpenChange={(o) => !o && setWarnings(null)}
@@ -367,5 +394,84 @@ function TaskRow({
         </div>
       </Dialog>
     </li>
+  );
+}
+
+/** Today's date in India, "YYYY-MM-DD". */
+const istToday = () =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
+
+const plusDays = (date: string, n: number) => {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+};
+
+/** "Tue 4 Nov". */
+const niceDate = (date: string) =>
+  new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T00:00:00Z`));
+
+/** Snooze until a date (D-043): quick choices or any day in the next 60. */
+function SnoozeDialog({
+  name,
+  busy,
+  onClose,
+  onSnooze,
+}: {
+  name: string;
+  busy: boolean;
+  onClose: () => void;
+  onSnooze: (until: string) => void;
+}) {
+  const today = istToday();
+  const weekday = new Date(`${today}T00:00:00Z`).getUTCDay();
+  const nextMonday = plusDays(today, (8 - weekday) % 7 || 7);
+  const choices = [
+    { label: "Tomorrow", date: plusDays(today, 1) },
+    { label: "In 2 days", date: plusDays(today, 2) },
+    { label: "Next Monday", date: nextMonday },
+  ];
+  const [date, setDate] = useState(plusDays(today, 1));
+  return (
+    <Dialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title={`Snooze ${name}`}
+      description="It comes back on Today that day, as due that day."
+    >
+      <div className={styles.dialogBody}>
+        <div className={styles.snoozeChoices} role="group" aria-label="Quick choices">
+          {choices.map((c) => (
+            <Button
+              key={c.label}
+              variant={date === c.date ? "primary" : "secondary"}
+              onClick={() => setDate(c.date)}
+            >
+              {c.label} · {niceDate(c.date)}
+            </Button>
+          ))}
+        </div>
+        <TextField
+          label="Or pick a date"
+          type="date"
+          min={plusDays(today, 1)}
+          max={plusDays(today, 60)}
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+        <div className={styles.taskActions}>
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button loading={busy} disabled={!date} onClick={() => onSnooze(date)}>
+            Snooze to {date ? niceDate(date) : "…"}
+          </Button>
+        </div>
+      </div>
+    </Dialog>
   );
 }

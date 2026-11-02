@@ -77,6 +77,7 @@ export function PeopleFilters({ filters, options, markets, exportHref }: Props) 
           { value: "overdue", label: "Overdue" },
           { value: "today", label: "Today" },
           { value: "week", label: "This week" },
+          { value: "backlog", label: "Backlog only" },
         ],
         "Any date",
       )}

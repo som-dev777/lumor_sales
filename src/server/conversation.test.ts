@@ -26,7 +26,7 @@ import {
   touchHistory,
 } from "./plans/enrolment";
 import { seedPlans } from "./plans/seed";
-import { buildTeam, buildToday } from "./today";
+import { buildTeam, buildToday, teamDetail } from "./today";
 
 let t: Awaited<ReturnType<typeof createTestDb>>;
 let admin: Actor;
@@ -326,7 +326,18 @@ describe("Team tab (F08, R8)", () => {
     });
     await add(entry("them", on("2026-10-21", "05:00")), rep, on("2026-10-23"));
     rows = await buildTeam(t.db, admin, on("2026-10-23"));
-    expect(rows.find((r) => r.name === "Asha")).toMatchObject({ repliesWaiting: 1, dueToday: 1 });
+    // A reply from 2 days ago is a backlog now (D-043), counted the same as on her My day.
+    expect(rows.find((r) => r.name === "Asha")).toMatchObject({
+      repliesWaiting: 1,
+      backlog: 1,
+      dueToday: 0,
+    });
+    const mine = await buildToday(t.db, rep, on("2026-10-23"));
+    expect(mine.tasks.filter((x) => x.section === "backlog")).toHaveLength(1);
+    const detail = await teamDetail(t.db, admin, rep.id, "backlog", on("2026-10-23"));
+    expect(detail.rows).toHaveLength(1);
+    expect(detail.rows[0].name).toBe("Priya Sharma");
+    await expect(teamDetail(t.db, rep, rep.id, "backlog", NOW)).rejects.toThrow(PermissionError);
     expect(rows.map((r) => r.name)).toEqual(["Asha", "Ravi", "Somnath"]);
     await expect(buildTeam(t.db, rep, NOW)).rejects.toThrow(PermissionError);
   });

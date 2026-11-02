@@ -13,7 +13,9 @@ import { getDb } from "@/lib/db/client";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { formatIstDate, todayIst } from "@/lib/time";
+import { appNow } from "@/lib/clock";
 import { usablePlans } from "@/server/plans/plans";
+import { backlogByPerson } from "@/server/today";
 import { leadFormOptions } from "@/server/leads/options";
 import {
   listPeople,
@@ -47,6 +49,9 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
   const filters = parsePeopleFilters(params, viewer);
   const page = Math.max(1, Number.parseInt(String(params.page ?? "1"), 10) || 1);
   const db = getDb();
+  // Backlogs (D-043): the same rules as Today, for the badge and the "Backlog only" filter.
+  const backlog = await backlogByPerson(db, await appNow());
+  if (filters.next === "backlog") filters.backlogIds = [...backlog.keys()];
   const [{ rows, total }, options, markets, plans] = await Promise.all([
     listPeople(db, filters, { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
     leadFormOptions(db),
@@ -142,6 +147,9 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
                 r.stage !== "Lost",
               ),
               ownerName: r.ownerName,
+              backlog: backlog.has(r.id)
+                ? `Backlog · ${backlog.get(r.id)!.daysLate} day${backlog.get(r.id)!.daysLate === 1 ? "" : "s"}`
+                : null,
             }))}
           />
           {pages > 1 && (

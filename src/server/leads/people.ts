@@ -322,7 +322,7 @@ export async function reassignPeople(db: Db, actor: Actor, ids: string[], ownerI
 
 // --- Reading -------------------------------------------------------------------------------
 
-export type NextActionBucket = "overdue" | "today" | "week";
+export type NextActionBucket = "overdue" | "today" | "week" | "backlog";
 export type PeopleFilters = {
   mine?: boolean;
   viewerId?: string;
@@ -334,6 +334,8 @@ export type PeopleFilters = {
   stage?: string;
   market?: string;
   next?: NextActionBucket;
+  /** For "Backlog only" (D-043): the people with a backlog, worked out by the page. */
+  backlogIds?: string[];
 };
 
 const CLOSED: Stage[] = ["Paid", "Lost"];
@@ -361,6 +363,9 @@ export function peopleWhere(f: PeopleFilters, now = new Date()): SQL | undefined
     const today = todayIst(now);
     parts.push(notInArray(person.stage, CLOSED));
     if (f.next === "overdue") parts.push(lt(person.nextActionDate, today));
+    if (f.next === "backlog") {
+      parts.push(f.backlogIds?.length ? inArray(person.id, f.backlogIds) : sql`0`);
+    }
     if (f.next === "today") parts.push(eq(person.nextActionDate, today));
     if (f.next === "week") {
       const week = istWeekRange(now);
@@ -462,6 +467,30 @@ export async function getPerson(db: DbOrTx, id: string) {
   };
 }
 
+/** "Done checking": clears the Check details flag a booking left (D-043). Audited. */
+export async function clearReviewNote(db: Db, actor: Actor, id: string) {
+  return db.transaction(async (tx) => {
+    const before = await loadPerson(tx, id);
+    assertCan(actor, "lead.edit", before);
+    if (!before.reviewNote) return before;
+    const [after] = await tx
+      .update(person)
+      .set({ reviewNote: null })
+      .where(eq(person.id, id))
+      .returning();
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Person",
+      recordId: id,
+      recordName: after.fullName,
+      action: "Updated",
+      before: { reviewNote: before.reviewNote },
+      after: { reviewNote: null },
+    });
+    return after;
+  });
+}
+
 /** Every activity on one person, newest first. */
 export async function personTimeline(db: DbOrTx, id: string) {
   return db
@@ -522,7 +551,10 @@ export function parsePeopleFilters(
     accountFilterId: one("filter"),
     stage: one("stage"),
     market: one("market"),
-    next: next === "overdue" || next === "today" || next === "week" ? next : undefined,
+    next:
+      next === "overdue" || next === "today" || next === "week" || next === "backlog"
+        ? next
+        : undefined,
   };
 }
 

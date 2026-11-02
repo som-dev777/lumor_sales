@@ -9,6 +9,7 @@ import { AiPanel } from "@/components/ai/AiPanel";
 import { PlanPanel } from "@/components/plans/PlanPanel";
 import { Conversation, type ThreadView } from "@/components/conversation/Conversation";
 import { DeletePersonButton } from "@/components/leads/DeletePersonButton";
+import { DoneCheckingButton } from "@/components/leads/DoneCheckingButton";
 import { MarkCustomerButton } from "@/components/leads/MarkCustomerButton";
 import { PersonDialogButton } from "@/components/leads/PersonDialogButton";
 import { QuickLogBar } from "@/components/leads/QuickLogBar";
@@ -33,6 +34,7 @@ import { planState } from "@/server/plans/enrolment";
 import { usablePlans } from "@/server/plans/plans";
 import { appNow } from "@/lib/clock";
 import { knowledgeFor } from "@/server/knowledge";
+import { backlogOf } from "@/server/today";
 
 export const metadata: Metadata = { title: "Person" };
 
@@ -63,9 +65,10 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
     usablePlans(db, viewer),
     listChats(db, viewer, id),
   ]);
-  const [links, bookings] = await Promise.all([
+  const [links, bookings, backlog] = await Promise.all([
     canLogOutreach(viewer, p.ownerId) ? bookingLinksFor(db, viewer.id) : [],
     bookingsOfPerson(db, id),
+    backlogOf(db, id, now),
   ]);
   // The rep's latest AI chat on this person (F23); chats are private to their author.
   const chat = chats[0] ? await loadChat(db, viewer, chats[0].id) : null;
@@ -117,9 +120,27 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
       <p className={styles.muted}>
         <Link href="/people">← People</Link>
       </p>
+      {p.reviewNote && (
+        <div className={styles.reviewBanner}>
+          <Alert tone="warning">
+            {p.reviewNote}. They were added automatically: check the company, persona and details.
+          </Alert>
+          {mayEdit && <DoneCheckingButton personId={p.id} />}
+        </div>
+      )}
       <section className={styles.detailHeader} aria-label={p.fullName}>
         <div className={styles.detailMain}>
-          <h1 className={styles.detailTitle}>{p.fullName}</h1>
+          <h1 className={styles.detailTitle}>
+            {p.fullName}{" "}
+            {backlog && (
+              <span
+                className={styles.backlogBadge}
+                title={`${backlog.what} · due ${formatIstDate(backlog.dueDate)}`}
+              >
+                Backlog · {backlog.daysLate} day{backlog.daysLate === 1 ? "" : "s"}
+              </span>
+            )}
+          </h1>
           <p className={styles.muted}>
             {p.title ?? "No title"}
             {p.companyName && (

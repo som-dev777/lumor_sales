@@ -25,7 +25,14 @@ import {
   updateCompany,
   updateCompanyNotes,
 } from "../leads/companies";
-import { addNote, createPerson, deletePerson, reassignPeople, updatePerson } from "../leads/people";
+import {
+  addNote,
+  clearReviewNote,
+  createPerson,
+  deletePerson,
+  reassignPeople,
+  updatePerson,
+} from "../leads/people";
 import { linkBookingsByEmail } from "../calendar";
 import { GuardrailWarning, logWithPlan } from "../plans/enrolment";
 import { PlanError } from "../plans/plans";
@@ -214,5 +221,16 @@ export async function removePerson(personId: string): Promise<ActionResult> {
   return run(async () => {
     const row = await deletePerson(getDb(), viewer, personId);
     return { ok: true, message: `${row.fullName} deleted.`, link: "/people" };
+  });
+}
+
+/** "Done checking" on a person a booking added (D-043). */
+export async function doneChecking(personId: string): Promise<ActionResult> {
+  const viewer = await requireUser();
+  if (!idSchema.safeParse(personId).success) return { ok: false, error: "Unknown person." };
+  return run(async () => {
+    await clearReviewNote(getDb(), viewer, personId);
+    refresh();
+    return { ok: true, message: "Marked as checked." };
   });
 }

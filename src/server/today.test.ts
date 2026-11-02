@@ -10,7 +10,15 @@ import { quickLog } from "./leads/quicklog";
 import { completeStep, enrolPeople, liveEnrolment } from "./plans/enrolment";
 import { createPlan } from "./plans/plans";
 import { seedPlans } from "./plans/seed";
-import { applyRanking, buildToday, completeTask, snoozeLead } from "./today";
+import {
+  applyRanking,
+  backlogByPerson,
+  backlogOf,
+  buildToday,
+  completeTask,
+  snoozeLead,
+} from "./today";
+import { snoozeStep } from "./plans/enrolment";
 
 let t: Awaited<ReturnType<typeof createTestDb>>;
 let admin: Actor;
@@ -111,17 +119,38 @@ describe("Today v2 sections (F08)", () => {
     await lead("Do Not Contact", { doNotContact: true, dncReason: "Asked us to stop" });
     await lead("Someone Else's", {}, other);
 
+    // Anything due on an earlier day is a Backlog task, most days late first (D-043).
     expect(await sections()).toEqual([
-      ["reply", "Reply Lead"],
+      ["backlog", "Overdue Lead"],
+      ["backlog", "Deadline Lead"],
+      ["backlog", "Reply Lead"],
+      ["backlog", "Withdraw Lead"],
       ["meeting", "Meeting Lead"],
-      ["deadline", "Deadline Lead"],
       ["due", "Due Lead"],
-      ["due", "Withdraw Lead"],
-      ["overdue", "Overdue Lead"],
       ["finished", "Finished Lead"],
       ["nurture", "Nurture Lead"],
       ["stale", "Stale Lead"],
     ]);
+    const plan = await buildToday(t.db, rep, NOW);
+    const late = (name: string) => plan.tasks.find((x) => x.name === name)!;
+    expect(late("Overdue Lead")).toMatchObject({
+      origin: "due",
+      daysLate: 3,
+      dueDate: "2026-10-27",
+    });
+    expect(late("Overdue Lead").detail).toContain("due 27 Oct 2026 · 3 days late");
+    expect(late("Reply Lead")).toMatchObject({ origin: "reply", daysLate: 1, kind: "quick" });
+    expect(late("Deadline Lead")).toMatchObject({ origin: "deadline", dueDate: "2026-10-29" });
+    // The People and Companies badges use the same rules.
+    const badges = await backlogByPerson(t.db, NOW);
+    expect([...badges.keys()].sort()).toEqual(
+      plan.tasks
+        .filter((x) => x.section === "backlog")
+        .map((x) => x.personId)
+        .sort(),
+    );
+    expect(await backlogOf(t.db, reply.id, NOW)).toMatchObject({ daysLate: 1 });
+    expect(await backlogOf(t.db, dueToday.id, NOW)).toBeNull();
     const due = (await buildToday(t.db, rep, NOW)).tasks.find((x) => x.name === "Due Lead")!;
     expect(due).toMatchObject({
       kind: "step",
@@ -181,6 +210,42 @@ describe("Today v2 sections (F08)", () => {
     expect((await buildToday(t.db, rep, on("2026-10-31"))).tasks[0]?.name).toBe("Reply Lead");
     await completeTask(t.db, rep, `reply:${r.id}`, on("2026-10-31"));
     expect((await buildToday(t.db, rep, on("2026-10-31"))).tasks).toEqual([]);
+  });
+
+  it("Snooze to a date: hidden until then, then due that day, not a backlog (D-043)", async () => {
+    const r = await lead("Reply Lead");
+    await quickLog(
+      t.db,
+      rep,
+      r.id,
+      { action: "gotReply", replyType: "Not now" },
+      { now: on("2026-10-27") },
+    );
+    expect((await buildToday(t.db, rep, NOW)).tasks[0].section).toBe("backlog");
+    await expect(snoozeLead(t.db, rep, r.id, NOW, "2026-10-30")).rejects.toThrow("after today");
+    await expect(snoozeLead(t.db, rep, r.id, NOW, "2027-03-01")).rejects.toThrow("within 60 days");
+    await snoozeLead(t.db, rep, r.id, NOW, "2026-11-04");
+    expect(await sections()).toEqual([]);
+    expect((await buildToday(t.db, rep, on("2026-11-03"))).tasks).toEqual([]);
+    const back = (await buildToday(t.db, rep, on("2026-11-04"))).tasks[0];
+    expect(back).toMatchObject({ section: "reply", name: "Reply Lead", dueDate: "2026-11-04" });
+    // Not done that day: it's a backlog from the next day.
+    expect((await buildToday(t.db, rep, on("2026-11-05"))).tasks[0]).toMatchObject({
+      section: "backlog",
+      daysLate: 1,
+    });
+  });
+
+  it("a plan step snoozed to a date comes back that day, within the weekly limit", async () => {
+    const d = await lead("Step Lead");
+    await enrolPeople(t.db, rep, [d.id], outreachId, on("2026-10-27"));
+    const e = await snoozeStep(t.db, rep, d.id, NOW, "2026-11-03");
+    expect(e.nextDueDate).toBe("2026-11-03");
+    expect(await sections()).toEqual([]);
+    expect((await buildToday(t.db, rep, on("2026-11-03"))).tasks[0]).toMatchObject({
+      section: "due",
+      name: "Step Lead",
+    });
   });
 });
 

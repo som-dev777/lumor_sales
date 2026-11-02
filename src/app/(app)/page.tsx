@@ -13,11 +13,13 @@ import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { formatIstDate } from "@/lib/time";
 import { aiMode } from "@/server/ai/client";
-import { buildTeam, buildToday } from "@/server/today";
+import { buildTeam, buildToday, TEAM_DETAILS, teamDetail, type TeamDetail } from "@/server/today";
 import { meetingsToday } from "@/server/calendar";
 import { TodayMeetings } from "@/components/calendar/TodayMeetings";
 
 export const metadata: Metadata = { title: "Today" };
+
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 export default function TodayPage({ searchParams }: PageProps<"/">) {
   return (
@@ -38,10 +40,20 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
   const viewer = await requireUser();
   await connection();
   const params = await searchParams;
-  const teamView =
-    can(viewer, "today.team") &&
-    (Array.isArray(params.tab) ? params.tab[0] : params.tab) === "team";
+  const teamView = can(viewer, "today.team") && one(params.tab) === "team";
   const now = await appNow();
+  // The list behind one Team tab number (D-043): ?tab=team&user=…&show=…
+  const detailOf = async () => {
+    const userId = one(params.user);
+    const show = one(params.show) as TeamDetail | undefined;
+    if (!userId || !show || !TEAM_DETAILS.includes(show)) return null;
+    try {
+      const d = await teamDetail(getDb(), viewer, userId, show, now);
+      return { userId, show, ...d };
+    } catch {
+      return null;
+    }
+  };
   const [plan, meetings] = await Promise.all([
     buildToday(getDb(), viewer, now),
     meetingsToday(getDb(), viewer.id, now),
@@ -75,7 +87,7 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
         </nav>
       )}
       {teamView ? (
-        <TeamTable rows={await buildTeam(getDb(), viewer, now)} />
+        <TeamTable rows={await buildTeam(getDb(), viewer, now)} detail={await detailOf()} />
       ) : (
         <>
           <TodayMeetings meetings={meetings} />

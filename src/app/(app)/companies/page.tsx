@@ -12,7 +12,9 @@ import { COMPANY_STATUSES } from "@/lib/db/enums";
 import { formatInr } from "@/lib/money";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
+import { appNow } from "@/lib/clock";
 import { listCompanies } from "@/server/leads/companies";
+import { backlogByCompany, backlogByPerson } from "@/server/today";
 import { leadFormOptions } from "@/server/leads/options";
 
 export const metadata: Metadata = { title: "Companies" };
@@ -53,7 +55,11 @@ async function Companies({ searchParams }: Pick<PageProps<"/companies">, "search
     accountFilterId: one("filter"),
   };
   const db = getDb();
-  const [rows, options] = await Promise.all([listCompanies(db, filters), leadFormOptions(db)]);
+  const [rows, options, backlog] = await Promise.all([
+    listCompanies(db, filters),
+    leadFormOptions(db),
+    backlogByPerson(db, await appNow()).then(backlogByCompany),
+  ]);
   const filtered = Object.values(filters).some(Boolean);
 
   return (
@@ -142,6 +148,7 @@ async function Companies({ searchParams }: Pick<PageProps<"/companies">, "search
                   <th scope="col">Company</th>
                   <th scope="col">Status</th>
                   <th scope="col">People</th>
+                  <th scope="col">Backlog</th>
                   <th scope="col">Account filter</th>
                   <th scope="col">Owner</th>
                   <th scope="col">Deal</th>
@@ -160,6 +167,18 @@ async function Companies({ searchParams }: Pick<PageProps<"/companies">, "search
                       <Badge tone={STATUS_TONE[c.status]}>{c.status}</Badge>
                     </td>
                     <td>{c.people}</td>
+                    <td>
+                      {backlog.get(c.id) ? (
+                        <span
+                          className={styles.backlogBadge}
+                          title="People here with work from earlier days on Today"
+                        >
+                          {backlog.get(c.id)} {backlog.get(c.id) === 1 ? "person" : "people"}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td>{c.accountFilterCode ?? "—"}</td>
                     <td>{c.ownerName ?? "—"}</td>
                     <td className={styles.nowrap}>

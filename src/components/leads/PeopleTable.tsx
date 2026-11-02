@@ -27,6 +27,8 @@ export type PersonRow = {
   nextAction: string | null;
   nextActionLabel: string | null;
   overdue: boolean;
+  /** "Backlog · 2 days" when Today has late work for them (D-043). */
+  backlog: string | null;
   ownerName: string | null;
 };
 
@@ -98,7 +100,12 @@ export function PeopleTable({ rows, canReassign, owners, plans }: Props) {
       header: "Next action",
       cell: (c) => (
         <>
-          <div>{c.getValue() ?? "—"}</div>
+          <div>
+            {c.getValue() ?? "—"}{" "}
+            {c.row.original.backlog && (
+              <span className={styles.backlogBadge}>{c.row.original.backlog}</span>
+            )}
+          </div>
           {c.row.original.nextActionLabel && (
             <div className={c.row.original.overdue ? styles.overdue : styles.muted}>
               {c.row.original.overdue ? "Overdue · " : ""}

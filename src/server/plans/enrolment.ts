@@ -984,20 +984,29 @@ export async function nurtureLost(db: Db, actor: Actor, personId: string, now = 
   });
 }
 
-/** Snooze a plan step to tomorrow, still within the guardrails (F08). */
-export async function snoozeStep(db: Db, actor: Actor, personId: string, now = new Date()) {
+/**
+ * Snooze a plan step to a date (tomorrow by default, D-043), still within the weekly touch
+ * limit, so it may land a day or two later. Returns the enrolment with its new due date.
+ */
+export async function snoozeStep(
+  db: Db,
+  actor: Actor,
+  personId: string,
+  now = new Date(),
+  until?: string,
+) {
   return db.transaction(async (tx) => {
     const { p, e, pl } = await loadLive(tx, actor, personId);
     if (e.status !== "Active") throw new PlanError("The plan is paused.");
     const settings = await getPlaybookSettings(tx);
-    const tomorrow = addDaysIst(todayIst(now), 1);
+    const date = until ?? addDaysIst(todayIst(now), 1);
     const due = fitWeeklyLimit(
-      tomorrow,
+      rollOffWeekend(date, pl.skipWeekends),
       touchDates(await touchHistory(tx, personId)),
       settings.weeklyTouchLimit,
       pl.skipWeekends,
     );
-    return updateEnrolment(tx, actor, e, { nextDueDate: due }, p.fullName, "snoozed");
+    return updateEnrolment(tx, actor, e, { nextDueDate: due }, p.fullName, `snoozed to ${date}`);
   });
 }
 
