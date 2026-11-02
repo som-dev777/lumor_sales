@@ -17,14 +17,19 @@ import {
   meetingTypeSchema,
 } from "@/lib/validation/calendar";
 import {
+  addTeammate,
   cancelByHost,
   cancelByToken,
   createBooking,
+  removeTeammate,
+  rescheduleByHost,
   rescheduleByToken,
+  rescheduleSlots,
   saveAvailability,
   saveMeetingType,
   setMeetingTypeActive,
 } from "../calendar";
+import { disconnectGoogle } from "../google/google";
 import { LeadError } from "../leads/companies";
 
 const id = z.uuid();
@@ -100,6 +105,88 @@ export async function cancelBookingAction(bookingId: string, reason: string) {
     await cancelByHost(getDb(), viewer, bookingId, r.data || null, now);
     refresh();
     return { ok: true, message: "Booking cancelled." };
+  });
+}
+
+export async function rescheduleSlotsAction(
+  bookingId: string,
+): Promise<{ ok: true; slots: string[] } | { ok: false; error: string }> {
+  const viewer = await requireUser();
+  if (!id.safeParse(bookingId).success) return { ok: false, error: "Unknown booking." };
+  try {
+    const slots = await rescheduleSlots(getDb(), viewer, bookingId, await appNow());
+    return { ok: true, slots: slots.map((s) => s.toISOString()) };
+  } catch (e) {
+    if (e instanceof LeadError || e instanceof PermissionError) {
+      return { ok: false, error: e.message };
+    }
+    console.error(e);
+    return { ok: false, error: "Couldn't load free times." };
+  }
+}
+
+export async function rescheduleBookingAction(
+  bookingId: string,
+  startsAt: string,
+): Promise<ActionResult & { id?: string }> {
+  const viewer = await requireUser();
+  if (!id.safeParse(bookingId).success) return { ok: false, error: "Unknown booking." };
+  if (!z.iso.datetime().safeParse(startsAt).success) return { ok: false, error: "Pick a time." };
+  const now = await appNow();
+  try {
+    const { booking } = await rescheduleByHost(getDb(), viewer, bookingId, startsAt, now);
+    refresh();
+    return {
+      ok: true,
+      message: "Meeting moved. They've been emailed the new time.",
+      id: booking.id,
+    };
+  } catch (e) {
+    if (e instanceof LeadError || e instanceof PermissionError) {
+      return { ok: false, error: e.message };
+    }
+    console.error(e);
+    return { ok: false, error: "Couldn't reschedule. Please try again." };
+  }
+}
+
+export async function addTeammateAction(bookingId: string, userId: string) {
+  const viewer = await requireUser();
+  if (!id.safeParse(bookingId).success || !z.string().min(1).max(100).safeParse(userId).success) {
+    return { ok: false as const, error: "Unknown." };
+  }
+  const now = await appNow();
+  return run(async () => {
+    const r = await addTeammate(getDb(), viewer, bookingId, userId, now);
+    refresh();
+    return {
+      ok: true,
+      message: r.busy
+        ? `${r.name} added. Heads-up: they already have something at that time.`
+        : `${r.name} added and notified.`,
+    };
+  });
+}
+
+export async function removeTeammateAction(bookingId: string, userId: string) {
+  const viewer = await requireUser();
+  if (!id.safeParse(bookingId).success || !z.string().min(1).max(100).safeParse(userId).success) {
+    return { ok: false as const, error: "Unknown." };
+  }
+  const now = await appNow();
+  return run(async () => {
+    await removeTeammate(getDb(), viewer, bookingId, userId, now);
+    refresh();
+    return { ok: true, message: "Removed from the meeting." };
+  });
+}
+
+export async function disconnectGoogleAction(): Promise<ActionResult> {
+  const viewer = await requireUser();
+  return run(async () => {
+    await disconnectGoogle(getDb(), viewer, viewer.id);
+    refresh();
+    return { ok: true, message: "Google Calendar disconnected." };
   });
 }
 

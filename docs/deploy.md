@@ -132,7 +132,42 @@ lumor-sales --location <region>`), and update `DATABASE_URL` and `DATABASE_AUTH_
 Booking links use the site address in `BETTER_AUTH_URL` (for example
 `https://your-site.netlify.app/book/somnath/demo`), so it must be the live address. Booking
 emails and calendar invites go through Resend (`RESEND_API_KEY`, `EMAIL_FROM`); without them,
-bookings still work and the confirmation page offers the calendar file. Nothing else to set up.
+bookings still work and the confirmation page offers the calendar file. Each rep sets where their
+own booking emails go on Calendar → Availability (it starts as their login email).
+
+## Google Calendar and Meet (F26, one-time setup)
+
+With this set up, each rep can click **Connect Google Calendar** (Calendar → Availability). Then
+every booking gets its own Google Meet link, lands in their Google Calendar, and their Google busy
+times block booking slots. Until it's set up, the button says it isn't set up and everything else
+works as before.
+
+1. Go to <https://console.cloud.google.com>, sign in with the company Google account, and create a
+   project (top bar → project picker → **New project**, name "Lumor Sales Hub").
+2. **APIs & Services → Library**: search **Google Calendar API** → **Enable**.
+3. **APIs & Services → OAuth consent screen** (also called **Google Auth Platform**):
+   - User type: **Internal** if everyone uses a company Google Workspace address (for example
+     @lumor.tech): no Google review needed, and connections don't expire. Otherwise **External**,
+     and add each rep's Google address under **Test users** (in testing mode Google asks reps to
+     reconnect every 7 days, until you submit the app for Google's verification).
+   - App name "Lumor Sales Hub", your support email, then save.
+   - **Data access / Scopes → Add or remove scopes**: add `.../auth/calendar.events` and
+     `.../auth/calendar.freebusy` (paste them in the "Manually add scopes" box), plus `openid`
+     and `email`. Save.
+4. **APIs & Services → Credentials → Create credentials → OAuth client ID**:
+   - Application type: **Web application**, name "Lumor Sales Hub".
+   - **Authorised redirect URIs → Add URI**: `https://YOUR-LIVE-SITE/api/google/callback` (the
+     same address as `BETTER_AUTH_URL`, plus `/api/google/callback`). For trying it on your own
+     computer, also add `http://localhost:3000/api/google/callback`.
+   - **Create**. Copy the **Client ID** and **Client secret** (keep the secret private).
+5. In Netlify → **Site configuration → Environment variables**, add `GOOGLE_CLIENT_ID` and
+   `GOOGLE_CLIENT_SECRET` with those values, then **Deploys → Trigger deploy**. To use it locally
+   too, put the same two lines in `.env.local` and restart `npm run dev`.
+6. Each rep: Calendar → Availability → **Connect Google Calendar** → choose their account →
+   **Allow**. They come back to "Connected as …".
+
+The token Google returns is stored encrypted with `BETTER_AUTH_SECRET`; if you ever change that
+secret, reps simply click Connect again.
 
 ## The logo and tab icon
 

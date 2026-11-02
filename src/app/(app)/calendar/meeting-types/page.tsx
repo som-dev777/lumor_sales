@@ -1,4 +1,4 @@
-import { Clock, ExternalLink, MapPin } from "lucide-react";
+import { Clock, ExternalLink, MapPin, Video } from "lucide-react";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -13,6 +13,7 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { getDb } from "@/lib/db/client";
 import { requireUser } from "@/lib/session";
 import { bookingLink, listMeetingTypes, profileView } from "@/server/calendar";
+import { connectionView, googleConfigured } from "@/server/google/google";
 
 export const metadata: Metadata = { title: "Meeting types" };
 
@@ -22,7 +23,11 @@ export default function MeetingTypesPage() {
       <PageHeader
         title="Calendar"
         description="Each meeting type has its own booking link. Paste it into a message; people pick a free time."
-        actions={<MeetingTypeDialog />}
+        actions={
+          <Suspense fallback={null}>
+            <NewMeetingType />
+          </Suspense>
+        }
       />
       <CalendarTabs current="/calendar/meeting-types" />
       <Suspense fallback={<StatusMessage title="Loading…" />}>
@@ -32,13 +37,24 @@ export default function MeetingTypesPage() {
   );
 }
 
+async function googleReadyFor(userId: string) {
+  return googleConfigured() && (await connectionView(getDb(), userId)) !== null;
+}
+
+async function NewMeetingType() {
+  const viewer = await requireUser();
+  await connection();
+  return <MeetingTypeDialog googleReady={await googleReadyFor(viewer.id)} />;
+}
+
 async function MeetingTypes() {
   const viewer = await requireUser();
   await connection();
   const db = getDb();
-  const [types, profile] = await Promise.all([
+  const [types, profile, googleReady] = await Promise.all([
     listMeetingTypes(db, viewer.id),
     profileView(db, viewer),
+    googleReadyFor(viewer.id),
   ]);
   if (types.length === 0) {
     return (
@@ -62,9 +78,20 @@ async function MeetingTypes() {
                   <span>
                     <Clock size={14} aria-hidden /> {t.durationMin} min
                   </span>
-                  {t.location && (
+                  {t.googleMeet && googleReady ? (
                     <span>
-                      <MapPin size={14} aria-hidden /> {t.location}
+                      <Video size={14} aria-hidden /> Google Meet (a new link each booking)
+                    </span>
+                  ) : (
+                    t.location && (
+                      <span>
+                        <MapPin size={14} aria-hidden /> {t.location}
+                      </span>
+                    )
+                  )}
+                  {t.questions.length > 0 && (
+                    <span>
+                      {t.questions.length} question{t.questions.length === 1 ? "" : "s"}
                     </span>
                   )}
                   <span>
@@ -82,6 +109,7 @@ async function MeetingTypes() {
                 <MeetingTypeDialog
                   meetingTypeId={t.id}
                   name={t.name}
+                  googleReady={googleReady}
                   defaults={{
                     name: t.name,
                     slug: t.slug,
@@ -92,7 +120,12 @@ async function MeetingTypes() {
                     minNoticeHours: t.minNoticeHours,
                     maxDaysAhead: t.maxDaysAhead,
                     maxPerDay: t.maxPerDay ?? "",
-                    questions: t.questions,
+                    googleMeet: t.googleMeet,
+                    questions: t.questions.map((q) => ({
+                      ...q,
+                      type: q.type ?? "short",
+                      options: q.options ?? [],
+                    })),
                   }}
                 />
               </div>

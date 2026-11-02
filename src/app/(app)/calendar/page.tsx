@@ -1,98 +1,254 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { CalendarTabs } from "@/components/calendar/CalendarTabs";
-import { CancelBookingButton } from "@/components/calendar/CancelBookingButton";
+import { HostLegend, MonthView, TimeGridView } from "@/components/calendar/CalendarViews";
+import { MeetingDetailDialog, type DetailData } from "@/components/calendar/MeetingDetailDialog";
+import { WhoFilter } from "@/components/calendar/WhoFilter";
 import styles from "@/components/calendar/calendar.module.scss";
-import { PersonDialogButton } from "@/components/leads/PersonDialogButton";
-import { EMPTY_PERSON } from "@/components/leads/PersonForm";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { Badge } from "@/components/ui/Badge";
 import { StatusMessage } from "@/components/ui/StatusMessage";
+import {
+  colourIndex,
+  daysShown,
+  parseDate,
+  parseView,
+  rangeOf,
+  stepDate,
+  VIEWS,
+  type CalendarView,
+} from "@/lib/calendar-view";
 import { appNow } from "@/lib/clock";
 import { getDb } from "@/lib/db/client";
 import { can } from "@/lib/permissions";
-import { requireUser } from "@/lib/session";
-import { formatIst } from "@/lib/time";
-import { listBookings } from "@/server/calendar";
+import { requireUser, type Viewer } from "@/lib/session";
+import { formatIst, formatIstDate, todayIst } from "@/lib/time";
+import {
+  canChangeTeam,
+  listBookings,
+  meetingDetail,
+  meetingsBetween,
+  teammateChoices,
+  type BookingListRow,
+  type MeetingFilter,
+} from "@/server/calendar";
 import { leadFormOptions } from "@/server/leads/options";
 
 export const metadata: Metadata = { title: "Calendar" };
+
+const VIEW_LABELS: Record<CalendarView, string> = {
+  month: "Month",
+  week: "Week",
+  day: "Day",
+  list: "List",
+};
 
 export default function CalendarPage({ searchParams }: PageProps<"/calendar">) {
   return (
     <>
       <PageHeader
         title="Calendar"
-        description="Meetings people booked from your booking links. Times are in India time (IST)."
+        description="Everyone's booked meetings, in India time (IST). Click a meeting for details, teammates and changes."
       />
       <CalendarTabs current="/calendar" />
       <Suspense fallback={<StatusMessage title="Loading…" />}>
-        <Bookings searchParams={searchParams} />
+        <Meetings searchParams={searchParams} />
       </Suspense>
     </>
   );
 }
 
-async function Bookings({ searchParams }: Pick<PageProps<"/calendar">, "searchParams">) {
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+
+async function Meetings({ searchParams }: Pick<PageProps<"/calendar">, "searchParams">) {
   const viewer = await requireUser();
   await connection();
-  const { show } = await searchParams;
-  const when = show === "past" ? "past" : "upcoming";
+  const query = await searchParams;
   const db = getDb();
   const now = await appNow();
-  const [rows, options] = await Promise.all([
-    listBookings(db, viewer.id, when, now),
-    leadFormOptions(db),
-  ]);
+  const today = todayIst(now);
+  const view = parseView(one(query.view));
+  const date = parseDate(one(query.date), today);
+  const whoParam = one(query.who) ?? "all";
+  const reps = await teammateChoices(db);
+  const who = whoParam === "me" || reps.some((r) => r.id === whoParam) ? whoParam : "all";
+  const filter: MeetingFilter = {
+    userId: who === "all" ? null : who === "me" ? viewer.id : who,
+  };
+  const past = one(query.show) === "past";
+
+  const current = {
+    view,
+    date,
+    who: who === "all" ? null : who,
+    show: past ? "past" : null,
+    booking: one(query.booking) ?? null,
+  };
+  const href = (change: Record<string, string | null>) => {
+    const next = { ...current, ...change };
+    const p = new URLSearchParams();
+    if (next.view !== "week") p.set("view", next.view);
+    if (next.date !== today) p.set("date", next.date);
+    if (next.who) p.set("who", next.who);
+    if (next.show && next.view === "list") p.set("show", next.show);
+    if (next.booking) p.set("booking", next.booking);
+    return `/calendar${p.size ? `?${p}` : ""}`;
+  };
+
+  const range = rangeOf(view, date);
+  const meetings =
+    view === "list"
+      ? await listBookings(db, filter, past ? "past" : "upcoming", now)
+      : await meetingsBetween(db, filter, range.start, range.end);
+  const colours = colourIndex(reps.map((r) => r.id));
+  const hosts = reps.filter((r) => meetings.some((m) => m.hostId === r.id));
+  const days = daysShown(view, date);
+  const title =
+    view === "month"
+      ? formatIstDate(`${date.slice(0, 7)}-01`, "MMMM yyyy")
+      : view === "day"
+        ? formatIstDate(date, "EEEE d MMMM yyyy")
+        : view === "week"
+          ? `${formatIstDate(days[0], "d MMM")} – ${formatIstDate(days[6], "d MMM yyyy")}`
+          : past
+            ? "Past meetings"
+            : "Upcoming meetings";
 
   return (
     <div className={styles.stack}>
-      <div className={styles.topRow}>
-        <nav className={styles.row} aria-label="Which bookings">
-          <Link href="/calendar" aria-current={when === "upcoming" ? "page" : undefined}>
-            {when === "upcoming" ? <strong>Upcoming</strong> : "Upcoming"}
-          </Link>
-          <span aria-hidden>·</span>
-          <Link href="/calendar?show=past" aria-current={when === "past" ? "page" : undefined}>
-            {when === "past" ? <strong>Past</strong> : "Past"}
-          </Link>
-        </nav>
-        <Link href="/calendar/meeting-types">Your booking links →</Link>
+      <div className={styles.calToolbar}>
+        <div className={styles.row}>
+          {view !== "list" && (
+            <>
+              <Link className={styles.navButton} href={href({ date: today, booking: null })}>
+                Today
+              </Link>
+              <Link
+                className={styles.iconLink}
+                aria-label="Back"
+                href={href({ date: stepDate(view, date, -1), booking: null })}
+              >
+                <ChevronLeft size={18} aria-hidden />
+              </Link>
+              <Link
+                className={styles.iconLink}
+                aria-label="Next"
+                href={href({ date: stepDate(view, date, 1), booking: null })}
+              >
+                <ChevronRight size={18} aria-hidden />
+              </Link>
+            </>
+          )}
+          <h2 className={styles.calTitle}>{title}</h2>
+        </div>
+        <div className={styles.row}>
+          <nav className={styles.segmented} aria-label="View">
+            {VIEWS.map((v) => (
+              <Link
+                key={v}
+                href={href({ view: v, booking: null })}
+                aria-current={v === view ? "page" : undefined}
+                className={v === view ? styles.segOn : undefined}
+              >
+                {VIEW_LABELS[v]}
+              </Link>
+            ))}
+          </nav>
+          <div className={styles.whoBox}>
+            <WhoFilter value={who} reps={reps} />
+          </div>
+        </div>
       </div>
-      {rows.length === 0 ? (
-        <StatusMessage title={when === "upcoming" ? "No upcoming bookings" : "No past bookings"}>
+
+      <HostLegend hosts={hosts} colours={colours} />
+
+      {view === "month" && (
+        <MonthView
+          days={days}
+          month={date.slice(0, 7)}
+          today={today}
+          meetings={meetings}
+          colours={colours}
+          href={href}
+        />
+      )}
+      {(view === "week" || view === "day") && (
+        <>
+          <TimeGridView
+            view={view}
+            days={days}
+            today={today}
+            meetings={meetings}
+            colours={colours}
+            href={href}
+          />
+          {meetings.length === 0 && (
+            <p className={styles.muted}>
+              No meetings {view === "day" ? "this day" : "this week"}. Share a booking link from
+              Meeting types.
+            </p>
+          )}
+        </>
+      )}
+      {view === "list" && <ListView meetings={meetings} past={past} href={href} />}
+
+      {current.booking && (
+        <Suspense fallback={null}>
+          <Detail id={current.booking} viewer={viewer} now={now} />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+function ListView({
+  meetings,
+  past,
+  href,
+}: {
+  meetings: BookingListRow[];
+  past: boolean;
+  href: (change: Record<string, string | null>) => string;
+}) {
+  return (
+    <div className={styles.stack}>
+      <nav className={styles.row} aria-label="Which meetings">
+        <Link href={href({ show: null, booking: null })} aria-current={past ? undefined : "page"}>
+          {past ? "Upcoming" : <strong>Upcoming</strong>}
+        </Link>
+        <span aria-hidden>·</span>
+        <Link href={href({ show: "past", booking: null })} aria-current={past ? "page" : undefined}>
+          {past ? <strong>Past</strong> : "Past"}
+        </Link>
+      </nav>
+      {meetings.length === 0 ? (
+        <StatusMessage title={past ? "No past bookings" : "No upcoming bookings"}>
           Share a booking link from Meeting types; bookings show up here.
         </StatusMessage>
       ) : (
         <div className={styles.tableWrap}>
-          <table
-            className={styles.table}
-            aria-label={when === "upcoming" ? "Upcoming bookings" : "Past bookings"}
-          >
+          <table className={styles.table} aria-label={past ? "Past bookings" : "Upcoming bookings"}>
             <thead>
               <tr>
                 <th scope="col">When (IST)</th>
                 <th scope="col">Meeting</th>
-                <th scope="col">Who</th>
+                <th scope="col">Who booked</th>
+                <th scope="col">On the meeting</th>
                 <th scope="col">Person</th>
-                <th scope="col" aria-label="Actions" />
               </tr>
             </thead>
             <tbody>
-              {rows.map((b) => {
+              {meetings.map((b) => {
                 const cancelled = b.status === "Cancelled";
-                const details = [
-                  b.inviteeNote ? `Note: ${b.inviteeNote}` : "",
-                  ...b.answers.filter((a) => a.answer).map((a) => `${a.question}: ${a.answer}`),
-                ]
-                  .filter(Boolean)
-                  .join("\n");
                 return (
                   <tr key={b.id}>
                     <td className={cancelled ? styles.cancelled : undefined}>
-                      {formatIst(b.startsAt, "EEE d MMM yyyy, h:mm aaa")}
+                      <Link href={href({ booking: b.id })} scroll={false}>
+                        {formatIst(b.startsAt, "EEE d MMM yyyy, h:mm aaa")}
+                      </Link>
                     </td>
                     <td>
                       {b.meetingTypeName}{" "}
@@ -109,35 +265,15 @@ async function Bookings({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
                       <strong>{b.inviteeName}</strong>, {b.inviteeCompany}
                       <br />
                       <a href={`mailto:${b.inviteeEmail}`}>{b.inviteeEmail}</a>
-                      {b.inviteePhone && <> · {b.inviteePhone}</>}
-                      {details && <div className={styles.details}>{details}</div>}
-                      {b.cancelReason && cancelled && (
-                        <div className={styles.details}>Reason: {b.cancelReason}</div>
-                      )}
                     </td>
+                    <td>{[b.hostName, ...b.teammates.map((t) => t.name)].join(", ")}</td>
                     <td>
                       {b.personId ? (
                         <Link href={`/people/${b.personId}`}>{b.personName}</Link>
                       ) : (
-                        <PersonDialogButton
-                          label="Add as person"
-                          ariaLabel={`Add ${b.inviteeName} as a person`}
-                          options={options}
-                          canChooseOwner={can(viewer, "lead.reassign")}
-                          defaults={{
-                            ...EMPTY_PERSON,
-                            fullName: b.inviteeName,
-                            companyName: b.inviteeCompany,
-                            email: b.inviteeEmail,
-                            phone: b.inviteePhone ?? "",
-                            linkedinUrl: b.inviteeLinkedin ?? "",
-                          }}
-                        />
-                      )}
-                    </td>
-                    <td>
-                      {!cancelled && when === "upcoming" && (
-                        <CancelBookingButton id={b.id} who={b.inviteeName} />
+                        <Link href={href({ booking: b.id })} scroll={false}>
+                          Details / Add as person
+                        </Link>
                       )}
                     </td>
                   </tr>
@@ -148,5 +284,52 @@ async function Bookings({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
         </div>
       )}
     </div>
+  );
+}
+
+async function Detail({ id, viewer, now }: { id: string; viewer: Viewer; now: Date }) {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const db = getDb();
+  const m = await meetingDetail(db, id);
+  if (!m) return null;
+  const [mayChange, choices, options] = await Promise.all([
+    canChangeTeam(db, viewer, m),
+    teammateChoices(db),
+    leadFormOptions(db),
+  ]);
+  const where = m.meetLink ?? m.location;
+  const data: DetailData = {
+    id: m.id,
+    status: m.status,
+    meetingTypeName: m.meetingTypeName,
+    when: `${formatIst(m.startsAt, "EEEE d MMMM yyyy, h:mm aaa")} – ${formatIst(m.endsAt, "h:mm aaa")} IST`,
+    durationMin: Math.round((m.endsAt.getTime() - m.startsAt.getTime()) / 60_000),
+    where,
+    isMeet: Boolean(m.meetLink),
+    upcoming: m.endsAt > now,
+    invitee: {
+      name: m.inviteeName,
+      company: m.inviteeCompany,
+      email: m.inviteeEmail,
+      phone: m.inviteePhone,
+      linkedin: m.inviteeLinkedin,
+    },
+    answers: m.answers,
+    note: m.inviteeNote,
+    cancelReason: m.cancelReason,
+    cancelledBy: m.cancelledBy,
+    rescheduled: Boolean(m.rescheduledFromId),
+    person: m.personId && m.personName ? { id: m.personId, name: m.personName } : null,
+    team: m.team.map((t) => ({ id: t.id, name: t.name, host: t.host })),
+  };
+  return (
+    <MeetingDetailDialog
+      data={data}
+      canManage={can(viewer, "calendar.manage", { ownerId: m.hostId })}
+      canChangeTeam={mayChange}
+      choices={choices}
+      options={options}
+      canChooseOwner={can(viewer, "lead.reassign")}
+    />
   );
 }

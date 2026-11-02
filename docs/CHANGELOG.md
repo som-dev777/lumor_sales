@@ -10,6 +10,7 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 In progress: Calendar round 2 (D-042), v2.6.0.
 
 - Docs: F22 round 2 rules, new F25 Notifications and F26 Google Calendar and Meet links, decision D-042.
+- Calendar round 2 built: question types, custom length, more hours a day with a preview, booking email address, stricter booking form, public "link doesn't work" page, month/week/day calendar, teammates, rep reschedule, notifications, Google Meet links.
 
 ## [2.5.0] - 2026-11-02
 

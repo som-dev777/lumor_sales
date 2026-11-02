@@ -210,7 +210,20 @@ export const AI_PROMPT_IDS = ["P01", "P02", "P03", "P04"] as const;
 /** Calendar (F22). */
 export const BOOKING_STATUSES = ["Confirmed", "Cancelled"] as const;
 export const BOOKING_CANCELLERS = ["invitee", "host"] as const;
-export const MEETING_LENGTHS = [15, 20, 30, 45, 60, 90] as const;
+export const MEETING_LENGTHS = [15, 20, 30, 45, 60, 90, 120] as const;
+/** Booking question types (F22 round 2, D-042). */
+export const QUESTION_TYPES = ["short", "paragraph", "dropdown", "checkboxes"] as const;
+export type QuestionType = (typeof QUESTION_TYPES)[number];
+/** What a notification is about (F25). */
+export const NOTIFICATION_KINDS = [
+  "booked",
+  "cancelled",
+  "rescheduled",
+  "added",
+  "removed",
+  "google",
+] as const;
+export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
 /** Who wrote a message in an AI chat (F23). */
 export const CHAT_ROLES = ["rep", "ai"] as const;

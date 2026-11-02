@@ -17,6 +17,12 @@ export function TextArea({ label, error, hint, id, rows = 3, ref, ...rest }: Pro
     <div className={fieldStyles.field}>
       <label htmlFor={inputId} className={fieldStyles.label}>
         {label}
+        {rest.required && (
+          <span className={fieldStyles.req} aria-hidden>
+            {" "}
+            *
+          </span>
+        )}
       </label>
       <textarea
         id={inputId}

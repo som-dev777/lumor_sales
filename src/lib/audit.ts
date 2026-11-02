@@ -13,6 +13,7 @@ const SECRET_FIELDS = new Set([
   "tokenHash",
   "accessToken",
   "refreshToken",
+  "refreshTokenEnc",
   "idToken",
   "secret",
 ]);

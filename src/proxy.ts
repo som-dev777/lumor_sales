@@ -12,6 +12,8 @@ const PUBLIC_PATHS = [
   "/reset-password",
   "/verify-email",
   "/disabled",
+  "/book",
+  "/booking",
 ];
 // "/api/cron/" checks its own secret (CRON_SECRET) instead of a login (F19). "/book/" and
 // "/booking/" are the public booking pages (F22): checked against the link or private code.

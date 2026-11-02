@@ -43,6 +43,7 @@ address (set on Calendar → Availability).
 
 ## Change history
 
-| Date       | Version | Change                                    |
-| ---------- | ------- | ----------------------------------------- |
-| 2026-11-02 | 2.6.0   | Feature doc written (before code), D-042. |
+| Date       | Version | Change                                                                          |
+| ---------- | ------- | ------------------------------------------------------------------------------- |
+| 2026-11-02 | 2.6.0   | Feature doc written (before code), D-042.                                       |
+| 2026-11-02 | 2.6.0   | Built: notification table, bell with count, mark read (audited), emails; tests. |

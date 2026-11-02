@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch, type Control } from "react-hook-form";
 import { useServerResult } from "@/components/auth/useServerResult";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -12,8 +12,9 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-import { MEETING_LENGTHS } from "@/lib/db/enums";
+import { MEETING_LENGTHS, type QuestionType } from "@/lib/db/enums";
 import {
+  MAX_QUESTIONS,
   meetingTypeSchema,
   toSlug,
   type MeetingTypeData,
@@ -32,7 +33,15 @@ export const NEW_MEETING_TYPE: MeetingTypeInput = {
   minNoticeHours: 4,
   maxDaysAhead: 30,
   maxPerDay: "",
+  googleMeet: true,
   questions: [],
+};
+
+const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
+  short: "Short answer",
+  paragraph: "Paragraph",
+  dropdown: "Dropdown (pick one)",
+  checkboxes: "Checkboxes (pick any)",
 };
 
 /** "New meeting type" or "Edit" with the form in a dialog (F22). */
@@ -40,10 +49,13 @@ export function MeetingTypeDialog({
   meetingTypeId,
   defaults,
   name,
+  googleReady = false,
 }: {
   meetingTypeId?: string;
   defaults?: MeetingTypeInput;
   name?: string;
+  /** The rep has Google Calendar connected (F26). */
+  googleReady?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -68,6 +80,7 @@ export function MeetingTypeDialog({
           <MeetingTypeForm
             meetingTypeId={meetingTypeId ?? null}
             defaults={defaults ?? NEW_MEETING_TYPE}
+            googleReady={googleReady}
             onDone={() => setOpen(false)}
           />
         )}
@@ -79,10 +92,12 @@ export function MeetingTypeDialog({
 function MeetingTypeForm({
   meetingTypeId,
   defaults,
+  googleReady,
   onDone,
 }: {
   meetingTypeId: string | null;
   defaults: MeetingTypeInput;
+  googleReady: boolean;
   onDone: () => void;
 }) {
   const notify = useToast();
@@ -99,6 +114,10 @@ function MeetingTypeForm({
     defaultValues: defaults,
   });
   const questions = useFieldArray({ control, name: "questions" });
+  const duration = Number(useWatch({ control, name: "durationMin" }));
+  const [custom, setCustom] = useState(
+    !(MEETING_LENGTHS as readonly number[]).includes(Number(defaults.durationMin)),
+  );
   const { formError, apply } = useServerResult(setError);
 
   const onSubmit = handleSubmit(async (values) => {
@@ -138,10 +157,32 @@ function MeetingTypeForm({
       <div className={styles.grid3}>
         <SelectField
           label="Length"
-          options={MEETING_LENGTHS.map((m) => ({ value: String(m), label: `${m} minutes` }))}
-          error={errors.durationMin?.message}
-          {...register("durationMin")}
+          value={custom ? "custom" : String(duration)}
+          options={[
+            ...MEETING_LENGTHS.map((m) => ({ value: String(m), label: `${m} minutes` })),
+            { value: "custom", label: "Custom…" },
+          ]}
+          error={custom ? undefined : errors.durationMin?.message}
+          onChange={(e) => {
+            if (e.target.value === "custom") {
+              setCustom(true);
+              return;
+            }
+            setCustom(false);
+            setValue("durationMin", Number(e.target.value), { shouldValidate: true });
+          }}
         />
+        {custom && (
+          <TextField
+            label="Custom length (minutes)"
+            type="number"
+            min={5}
+            max={240}
+            step={5}
+            error={errors.durationMin?.message}
+            {...register("durationMin")}
+          />
+        )}
         <TextField
           label="Gap after (minutes)"
           type="number"
@@ -188,35 +229,65 @@ function MeetingTypeForm({
         error={errors.description?.message}
         {...register("description")}
       />
+      <label className={styles.checkRow}>
+        <input type="checkbox" {...register("googleMeet")} /> Create a Google Meet link for each
+        booking
+      </label>
+      <p className={styles.muted}>
+        {googleReady
+          ? "Your Google Calendar is connected: each booking gets its own Meet link."
+          : "Needs Google Calendar connected (Calendar → Availability). Until then, people get the “Where” above."}
+      </p>
       <div className={styles.stack}>
+        <h3 className={styles.sectionTitle}>Questions</h3>
         <p className={styles.muted}>
-          Name, work email and company are always asked; phone and LinkedIn are optional. Add up to
-          5 more questions.
+          Name, work email and company are always asked; phone and LinkedIn are optional. Add up to{" "}
+          {MAX_QUESTIONS} questions of your own; only these show on the booking page.
         </p>
+        {typeof errors.questions?.message === "string" && (
+          <Alert tone="error">{errors.questions.message}</Alert>
+        )}
         {questions.fields.map((f, i) => (
-          <div key={f.id} className={styles.question}>
-            <TextField
-              label={`Question ${i + 1}`}
-              error={errors.questions?.[i]?.label?.message}
-              {...register(`questions.${i}.label`)}
+          <div key={f.id} className={styles.questionCard}>
+            <div className={styles.question}>
+              <TextField
+                label={`Question ${i + 1}`}
+                error={errors.questions?.[i]?.label?.message}
+                {...register(`questions.${i}.label`)}
+              />
+              <SelectField
+                label="Type"
+                options={Object.entries(QUESTION_TYPE_LABELS).map(([value, label]) => ({
+                  value,
+                  label,
+                }))}
+                {...register(`questions.${i}.type`)}
+              />
+              <Button
+                variant="ghost"
+                aria-label={`Remove question ${i + 1}`}
+                onClick={() => questions.remove(i)}
+              >
+                <Trash2 size={16} aria-hidden />
+              </Button>
+            </div>
+            <ChoicesField
+              control={control}
+              index={i}
+              error={errors.questions?.[i]?.options?.message}
             />
             <label className={styles.checkRow}>
               <input type="checkbox" {...register(`questions.${i}.required`)} /> Required
             </label>
-            <Button
-              variant="ghost"
-              aria-label={`Remove question ${i + 1}`}
-              onClick={() => questions.remove(i)}
-            >
-              <Trash2 size={16} aria-hidden />
-            </Button>
           </div>
         ))}
-        {questions.fields.length < 5 && (
+        {questions.fields.length < MAX_QUESTIONS && (
           <div>
             <Button
               variant="secondary"
-              onClick={() => questions.append({ label: "", required: false })}
+              onClick={() =>
+                questions.append({ label: "", required: false, type: "short", options: [] })
+              }
             >
               <Plus size={16} aria-hidden /> Add a question
             </Button>
@@ -232,5 +303,36 @@ function MeetingTypeForm({
         </Button>
       </div>
     </form>
+  );
+}
+
+/** The choices of a dropdown or checkboxes question, one per line. */
+function ChoicesField({
+  control,
+  index,
+  error,
+}: {
+  control: Control<MeetingTypeInput, unknown, MeetingTypeData>;
+  index: number;
+  error?: string;
+}) {
+  const type = useWatch({ control, name: `questions.${index}.type` });
+  if (type !== "dropdown" && type !== "checkboxes") return null;
+  return (
+    <Controller
+      control={control}
+      name={`questions.${index}.options`}
+      render={({ field }) => (
+        <TextArea
+          label="Choices (one per line)"
+          rows={4}
+          placeholder={"e.g.\n1–10 people\n11–50 people\n51+ people"}
+          value={(field.value ?? []).join("\n")}
+          onChange={(e) => field.onChange(e.target.value.split("\n"))}
+          onBlur={field.onBlur}
+          error={error}
+        />
+      )}
+    />
   );
 }

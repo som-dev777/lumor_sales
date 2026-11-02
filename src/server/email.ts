@@ -5,6 +5,8 @@ export type Email = {
   to: string;
   subject: string;
   text: string;
+  /** An HTML version (booking emails, D-042); `text` stays for plain-text mail apps. */
+  html?: string;
   /** Files sent with it, e.g. a calendar invite (F22). */
   attachments?: { filename: string; content: string; contentType?: string }[];
   /** Where a reply goes (e.g. the rep, for booking emails). */
@@ -30,6 +32,7 @@ export async function sendEmail(email: Email, fetcher: typeof fetch = fetch): Pr
         to: [email.to],
         subject: email.subject,
         text: email.text,
+        ...(email.html ? { html: email.html } : {}),
         ...(email.replyTo ? { reply_to: email.replyTo } : {}),
         ...(email.attachments?.length
           ? {

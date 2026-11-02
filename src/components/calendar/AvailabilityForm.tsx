@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { WEEKDAYS, type TimeRange, type WeeklyHours } from "@/lib/slots";
+import { minutesOf } from "@/lib/slots";
 import { formatIstDate } from "@/lib/time";
-import { toSlug } from "@/lib/validation/calendar";
+import { MAX_RANGES_PER_DAY, toSlug } from "@/lib/validation/calendar";
 import { saveAvailabilityAction } from "@/server/actions/calendar";
 import styles from "./calendar.module.scss";
 
@@ -19,15 +20,26 @@ export function AvailabilityForm({
   initial,
   baseUrl,
   today,
+  loginEmail,
+  meetingTypes,
 }: {
-  initial: { slug: string; weeklyHours: WeeklyHours; daysOff: string[] };
+  initial: {
+    slug: string;
+    weeklyHours: WeeklyHours;
+    daysOff: string[];
+    notifyEmail: string | null;
+  };
   baseUrl: string;
   today: string;
+  loginEmail: string;
+  /** Active meeting types, to warn when one fits in none of a day's ranges. */
+  meetingTypes: { name: string; durationMin: number }[];
 }) {
   const notify = useToast();
   const [hours, setHours] = useState<WeeklyHours>(initial.weeklyHours);
   const [daysOff, setDaysOff] = useState<string[]>(initial.daysOff);
   const [slug, setSlug] = useState(initial.slug);
+  const [notifyEmail, setNotifyEmail] = useState(initial.notifyEmail ?? "");
   const [newDay, setNewDay] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -42,9 +54,7 @@ export function AvailabilityForm({
     setHours((h) => {
       const list = h[day] ?? [];
       const last = list.at(-1);
-      const next = last
-        ? { start: last.end, end: last.end < "20:00" ? "20:00" : "23:00" }
-        : { start: "10:00", end: "18:00" };
+      const next = last ? nextRange(last) : { start: "10:00", end: "18:00" };
       return { ...h, [day]: [...list, next] };
     });
   const removeRange = (day: string, i: number) =>
@@ -55,7 +65,7 @@ export function AvailabilityForm({
       setError(null);
       setErrors({});
       const weeklyHours = Object.fromEntries(DAYS.map((d) => [d, hours[d] ?? []]));
-      const r = await saveAvailabilityAction({ slug, weeklyHours, daysOff });
+      const r = await saveAvailabilityAction({ slug, weeklyHours, daysOff, notifyEmail });
       if (r.ok) notify("success", r.message ?? "Saved.");
       else {
         setError(r.error);
@@ -69,13 +79,19 @@ export function AvailabilityForm({
       <section className={styles.card} aria-label="Weekly hours">
         <h2 className={styles.cardTitle}>Weekly hours (India time)</h2>
         <p className={styles.muted}>
-          People can book inside these hours. Add a second range for a break, e.g. 10:00–13:00 and
-          14:00–18:00.
+          People can book inside these hours, and changes reach your booking links at once. Add as
+          many ranges as you like, e.g. 10:00–13:00 and 14:00–18:00, or exact slots like 11:00–11:30
+          and 12:00–12:30. A meeting must fit inside one range.
         </p>
         {errors.weeklyHours && <Alert tone="error">{errors.weeklyHours}</Alert>}
         <div>
           {DAYS.map((d, n) => {
             const list = hours[d] ?? [];
+            const longest = Math.max(
+              0,
+              ...list.map((r) => (minutesOf(r.end) ?? 0) - (minutesOf(r.start) ?? 0)),
+            );
+            const tooLong = list.length ? meetingTypes.filter((t) => t.durationMin > longest) : [];
             return (
               <div key={d} className={styles.dayRow}>
                 <div className={styles.dayName}>{WEEKDAYS[n]}</div>
@@ -109,7 +125,14 @@ export function AvailabilityForm({
                       </Button>
                     </div>
                   ))}
-                  {list.length < 4 && (
+                  {tooLong.length > 0 && (
+                    <p className={styles.warnText} role="note">
+                      No times that day for{" "}
+                      {tooLong.map((t) => `${t.name} (${t.durationMin} min)`).join(", ")}:
+                      it&rsquo;s longer than every range.
+                    </p>
+                  )}
+                  {list.length < MAX_RANGES_PER_DAY && (
                     <div>
                       <Button
                         variant="ghost"
@@ -168,6 +191,19 @@ export function AvailabilityForm({
         )}
       </section>
 
+      <section className={styles.card} aria-label="Booking emails">
+        <h2 className={styles.cardTitle}>Booking emails</h2>
+        <TextField
+          label="Send booking emails to"
+          type="email"
+          placeholder={loginEmail}
+          value={notifyEmail}
+          error={errors.notifyEmail}
+          hint={`New bookings, cancellations, reschedules and teammate changes. Empty = ${loginEmail}.`}
+          onChange={(e) => setNotifyEmail(e.target.value)}
+        />
+      </section>
+
       <section className={styles.card} aria-label="Booking page">
         <h2 className={styles.cardTitle}>Your booking page</h2>
         <TextField
@@ -190,4 +226,17 @@ export function AvailabilityForm({
       </div>
     </div>
   );
+}
+
+/** The next range after `last`: the same length, half an hour later (e.g. 11:00–11:30 → 12:00–12:30). */
+function nextRange(last: TimeRange): TimeRange {
+  const s = minutesOf(last.start);
+  const e = minutesOf(last.end);
+  if (s === null || e === null) return { start: "10:00", end: "18:00" };
+  const length = Math.max(15, e - s);
+  const start = Math.min(e + 30, 24 * 60 - 15 - Math.min(length, 60));
+  const end = Math.min(start + length, 23 * 60 + 59);
+  const hm = (m: number) =>
+    `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+  return { start: hm(start), end: hm(end) };
 }

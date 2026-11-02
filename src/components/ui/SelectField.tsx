@@ -18,6 +18,12 @@ export function SelectField({ label, options, error, hint, id, ref, ...rest }: P
     <div className={fieldStyles.field}>
       <label htmlFor={selectId} className={fieldStyles.label}>
         {label}
+        {rest.required && (
+          <span className={fieldStyles.req} aria-hidden>
+            {" "}
+            *
+          </span>
+        )}
       </label>
       <select
         id={selectId}

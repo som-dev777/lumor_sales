@@ -114,6 +114,16 @@
   }
 }
 
+.topbarBell {
+  margin-left: auto;
+}
+
+.headerBell {
+  @include mobile {
+    display: none;
+  }
+}
+
 .closeButton {
   @include desktop {
     display: none;

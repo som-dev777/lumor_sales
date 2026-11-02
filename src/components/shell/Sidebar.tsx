@@ -16,6 +16,8 @@ type Props = {
   footer?: ReactNode;
   /** Small numbers next to menu items, by link, e.g. { "/approvals": 2 } waiting proposals. */
   counts?: Record<string, number>;
+  /** The notification bell (F25). */
+  bell?: ReactNode;
 };
 
 /** The sidebar, highlighting the page you're on. */
@@ -32,7 +34,13 @@ export function SidebarPlaceholder() {
   return <SidebarView role={null} pathname={null} />;
 }
 
-function SidebarView({ role, footer, counts = {}, pathname }: Props & { pathname: string | null }) {
+function SidebarView({
+  role,
+  footer,
+  counts = {},
+  bell,
+  pathname,
+}: Props & { pathname: string | null }) {
   const [open, setOpen] = useState(false);
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || role === "Admin");
 
@@ -53,6 +61,7 @@ function SidebarView({ role, footer, counts = {}, pathname }: Props & { pathname
         <Link href="/" className={styles.logo} aria-label="Lumor Sales Hub, go to Today">
           <Brand />
         </Link>
+        {bell && <div className={styles.topbarBell}>{bell}</div>}
       </header>
 
       {open && (
@@ -74,6 +83,7 @@ function SidebarView({ role, footer, counts = {}, pathname }: Props & { pathname
           >
             <Brand />
           </Link>
+          {bell && <div className={styles.headerBell}>{bell}</div>}
           <button
             type="button"
             className={styles.closeButton}
@@ -100,7 +110,10 @@ function SidebarView({ role, footer, counts = {}, pathname }: Props & { pathname
                     <Icon size={18} aria-hidden />
                     <span>{item.label}</span>
                     {(counts[item.href] ?? 0) > 0 && (
-                      <span className={styles.count} aria-label={`${counts[item.href]} waiting`}>
+                      <span
+                        className={styles.count}
+                        aria-label={`${counts[item.href]} ${item.href === "/calendar" ? "new" : "waiting"}`}
+                      >
                         {counts[item.href]}
                       </span>
                     )}

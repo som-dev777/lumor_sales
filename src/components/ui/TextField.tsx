@@ -19,6 +19,12 @@ export function TextField({ label, error, hint, id, className, ref, ...rest }: P
     <div className={`${styles.field} ${className ?? ""}`}>
       <label htmlFor={inputId} className={styles.label}>
         {label}
+        {rest.required && (
+          <span className={styles.req} aria-hidden>
+            {" "}
+            *
+          </span>
+        )}
       </label>
       <input
         id={inputId}

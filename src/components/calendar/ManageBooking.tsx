@@ -34,14 +34,7 @@ export function ManageBooking({ code, slots }: { code: string; slots: string[] }
       )}
       {mode === "reschedule" && (
         <>
-          <SlotPicker
-            slots={slots}
-            value={slot}
-            onChange={setSlot}
-            zone={tz.zone}
-            setZone={tz.setZone}
-            zoneOptions={tz.options}
-          />
+          <SlotPicker slots={slots} value={slot} onChange={setSlot} tz={tz} />
           <div className={styles.row}>
             <Button
               disabled={!slot}

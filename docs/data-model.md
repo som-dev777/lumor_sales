@@ -339,15 +339,18 @@ created_at. Index (chat_id, created_at). At most 200 per chat.
 ### calendar_profile (F22)
 
 user_id (→ user, unique), slug (unique: the rep's part of the booking link), weekly_hours (JSON:
-ISO weekday "1"–"7" → list of {start, end} in IST "HH:mm"), days_off (JSON list of IST dates).
+ISO weekday "1"–"7" → list of {start, end} in IST "HH:mm", up to 12 a day), days_off (JSON list
+of IST dates), notify_email (where booking emails go; empty = the login email; D-042).
 Created the first time the rep saves their hours or a meeting type.
 
 ### meeting_type (F22)
 
-owner_id (→ user), name, slug (unique per owner), duration_min (15, 20, 30, 45, 60 or 90),
-description, location (meeting link, phone or address), buffer_min (0–60), min_notice_hours
-(0–72), max_days_ahead (1–90), max_per_day (empty = no limit), questions (JSON list of {label,
-required}, up to 5), active (0/1).
+owner_id (→ user), name, slug (unique per owner), duration_min (5–240 in steps of 5; presets 15,
+20, 30, 45, 60, 90, 120), description, location (meeting link, phone or address), buffer_min
+(0–60), min_notice_hours (0–72), max_days_ahead (1–90), max_per_day (empty = no limit),
+questions (JSON list of {label, required, type: short/paragraph/dropdown/checkboxes, options for
+dropdown and checkboxes}, up to 10; old rows without a type read as short), active (0/1),
+google_meet (0/1: make a Meet link per booking when Google is connected, F26).
 
 ### booking (F22)
 
@@ -357,8 +360,28 @@ invitee_linkedin, invitee_note, answers (JSON list of {question, answer}), invit
 manage_token_hash (unique; hash of the visitor's private code), person_id (→ person; emptied if
 the person is deleted), cancelled_at, cancelled_by (`invitee` or `host`), cancel_reason,
 rescheduled_from_id (the first booking in a reschedule chain, so calendar invites update one
-event). A partial unique index stops two confirmed bookings at the same start for one rep.
+event), google_event_id and meet_link (the host's Google Calendar event and its Meet link, F26;
+carried across reschedules). invitee_note is only filled by v2.5.0 bookings (the note field was
+removed in v2.6.0). A partial unique index stops two confirmed bookings at the same start for one rep.
 Indexes (host_id, starts_at), person_id, (invitee_email, created_at).
+
+### booking_participant (D-042)
+
+booking_id (→ booking: the first booking of a reschedule chain, so teammates stay when it
+moves), user_id (→ user). Unique (booking_id, user_id). Teammates on a meeting; their meetings
+block their own booking slots.
+
+### notification (F25)
+
+user_id (→ user: only they see it), kind (`booked`, `cancelled`, `rescheduled`, `added`,
+`removed`, `google`), title, body, link (an app path), booking_id (→ booking), read_at (empty =
+unread). created_by = who caused it (empty for a visitor). Indexes (user_id, created_at) and
+unread per user.
+
+### google_connection (F26)
+
+user_id (→ user, unique), google_email, refresh_token_enc (AES-256-GCM, key derived from
+BETTER_AUTH_SECRET; never shown, never audited), scope, last_error (e.g. access removed).
 
 ### report_schedule (F19)
 
@@ -425,3 +448,6 @@ Resources tables (F20). 0008 (R8) adds `activity.direction` (filled in for old r
 and calls `out`, replies `in`) and `person.nudge_count`. 0009 (R9) adds `report_schedule`, `report_run` and
 `activity.plan_due_date`. 0010 adds `industry`. 0011 adds `ai_chat` and
 `ai_chat_message` (F23). 0012 adds `calendar_profile`, `meeting_type` and `booking` (F22).
+0013 (v2.6.0) adds `booking_participant`, `notification` and `google_connection`, and the
+columns `calendar_profile.notify_email`, `meeting_type.google_meet`, `booking.google_event_id`
+and `booking.meet_link`.

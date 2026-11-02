@@ -11,6 +11,8 @@ export type CalendarEvent = {
   location: string | null;
   organizer: { name: string; email: string };
   attendee: { name: string; email: string };
+  /** Teammates on the meeting (D-042). */
+  others?: { name: string; email: string }[];
   /** REQUEST adds or updates the event; CANCEL removes it. */
   method: "REQUEST" | "CANCEL";
   /** Bumped on every change (0 when booked, 1 when cancelled). */
@@ -72,6 +74,10 @@ export function buildIcs(e: CalendarEvent): string {
     ...(e.location ? [`LOCATION:${icsText(e.location)}`] : []),
     `ORGANIZER;CN=${cn(e.organizer.name)}:mailto:${e.organizer.email}`,
     `ATTENDEE;CN=${cn(e.attendee.name)};ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED:mailto:${e.attendee.email}`,
+    ...(e.others ?? []).map(
+      (o) =>
+        `ATTENDEE;CN=${cn(o.name)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION:mailto:${o.email}`,
+    ),
     `STATUS:${e.method === "CANCEL" ? "CANCELLED" : "CONFIRMED"}`,
     `SEQUENCE:${e.sequence}`,
     "END:VEVENT",

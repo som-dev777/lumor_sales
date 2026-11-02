@@ -12,6 +12,8 @@ type Meeting = {
   personId: string | null;
   meetingTypeName: string;
   location: string | null;
+  hostName: string;
+  hosting: boolean;
 };
 
 /** Today's booked meetings, with times, at the top of Today (F22). */
@@ -25,9 +27,11 @@ export function TodayMeetings({ meetings }: { meetings: Meeting[] }) {
       <ul className={styles.meetingList}>
         {meetings.map((m) => (
           <li key={m.id}>
-            <strong>
-              {formatIst(m.startsAt, "h:mm aaa")}–{formatIst(m.endsAt, "h:mm aaa")}
-            </strong>{" "}
+            <Link href={`/calendar?view=day&booking=${m.id}`}>
+              <strong>
+                {formatIst(m.startsAt, "h:mm aaa")}–{formatIst(m.endsAt, "h:mm aaa")}
+              </strong>
+            </Link>{" "}
             {m.meetingTypeName} with{" "}
             {m.personId ? (
               <Link href={`/people/${m.personId}`}>{m.inviteeName}</Link>
@@ -35,6 +39,7 @@ export function TodayMeetings({ meetings }: { meetings: Meeting[] }) {
               m.inviteeName
             )}
             , {m.inviteeCompany}
+            {!m.hosting && <span className={styles.muted}> (with {m.hostName})</span>}
             {m.location && /^https?:\/\//.test(m.location) && (
               <>
                 {" "}
@@ -48,7 +53,7 @@ export function TodayMeetings({ meetings }: { meetings: Meeting[] }) {
         ))}
       </ul>
       <p className={styles.muted}>
-        <Link href="/calendar">All bookings →</Link>
+        <Link href="/calendar">Open the calendar →</Link>
       </p>
     </section>
   );

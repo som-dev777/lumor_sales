@@ -156,9 +156,10 @@ These rules replace the matching v2.5.0 rules below where they differ.
 
 ## Change history
 
-| Date       | Version | Change                                                                                                                   |
-| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
-| 2026-11-02 | 2.5.0   | Feature doc written (before code).                                                                                       |
-| 2026-11-02 | 2.5.0   | Built: tables (migration 0012), slot rules, invites, public booking pages, Calendar pages, Today and person page; tests. |
-| 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                                      |
-| 2026-11-02 | 2.6.0   | Round 2 rules written (before code), D-042.                                                                              |
+| Date       | Version | Change                                                                                                                                                                                            |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-02 | 2.5.0   | Feature doc written (before code).                                                                                                                                                                |
+| 2026-11-02 | 2.5.0   | Built: tables (migration 0012), slot rules, invites, public booking pages, Calendar pages, Today and person page; tests.                                                                          |
+| 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                                                                                                               |
+| 2026-11-02 | 2.6.0   | Round 2 rules written (before code), D-042.                                                                                                                                                       |
+| 2026-11-02 | 2.6.0   | Built round 2: migration 0013, question types, custom length, 12 ranges, preview, notification email, stricter form, public not-found, month/week/day calendar, teammates, rep reschedule; tests. |

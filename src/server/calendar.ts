@@ -2,23 +2,39 @@
 // with calendar.manage and audited). Visitors book from the public pages without signing in:
 // each of those changes is checked against the booking link or the booking's private code
 // instead, and audited with the rep as the actor (D-041).
-import { and, asc, desc, eq, gt, gte, lt, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, lt, ne, or, sql } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
-import { activity, booking, calendarProfile, meetingType, person, user } from "@/lib/db/schema";
+import {
+  activity,
+  booking,
+  bookingParticipant,
+  calendarProfile,
+  meetingType,
+  person,
+  user,
+} from "@/lib/db/schema";
 import { buildIcs, googleCalendarLink } from "@/lib/ics";
 import { normaliseLinkedInUrl } from "@/lib/linkedin";
-import { assertCan, can, type Actor } from "@/lib/permissions";
+import { assertCan, can, PermissionError, type Actor } from "@/lib/permissions";
 import { availableSlots, DEFAULT_HOURS, isOffered, type Busy, type WeeklyHours } from "@/lib/slots";
 import { formatIst, istDayRange, istMidnight, toIstDate, todayIst } from "@/lib/time";
 import { appUrl, generateToken, hashToken } from "@/lib/tokens";
 import type { AvailabilityData, BookingFormData, MeetingTypeData } from "@/lib/validation/calendar";
-import { toSlug } from "@/lib/validation/calendar";
+import { checkAnswers, toSlug } from "@/lib/validation/calendar";
 import { personSchema } from "@/lib/validation/leads";
+import { renderMail, type MailContent } from "./calendar-mail";
 import { emailConfigured, sendEmail } from "./email";
+import {
+  createGoogleEvent,
+  deleteGoogleEvent,
+  googleBusy,
+  updateGoogleEvent,
+} from "./google/google";
 import { LeadError } from "./leads/companies";
 import { createPersonTx, loadPerson } from "./leads/people";
 import { quickLogTx } from "./leads/quicklog";
+import { addNotificationsTx, type NewNotification } from "./notifications";
 
 export const BOOKINGS_PER_EMAIL_PER_DAY = 3;
 
@@ -49,6 +65,8 @@ export type ProfileView = {
   slug: string;
   weeklyHours: WeeklyHours;
   daysOff: string[];
+  /** Where booking emails go; null = the login email. */
+  notifyEmail: string | null;
   /** False until the rep saves their hours or creates a meeting type. */
   saved: boolean;
 };
@@ -69,12 +87,19 @@ async function freeProfileSlug(db: DbOrTx, base: string, exceptUserId?: string) 
 export async function profileView(db: DbOrTx, owner: { id: string; name: string }) {
   const [row] = await db.select().from(calendarProfile).where(eq(calendarProfile.userId, owner.id));
   if (row) {
-    return { slug: row.slug, weeklyHours: row.weeklyHours, daysOff: row.daysOff, saved: true };
+    return {
+      slug: row.slug,
+      weeklyHours: row.weeklyHours,
+      daysOff: row.daysOff,
+      notifyEmail: row.notifyEmail,
+      saved: true,
+    };
   }
   return {
     slug: await freeProfileSlug(db, toSlug(owner.name.split(" ")[0], "rep")),
     weeklyHours: DEFAULT_HOURS,
     daysOff: [],
+    notifyEmail: null,
     saved: false,
   } satisfies ProfileView;
 }
@@ -129,7 +154,7 @@ export async function saveAvailability(
     const daysOff = [...new Set(data.daysOff)].sort();
     const [after] = await tx
       .update(calendarProfile)
-      .set({ slug: data.slug, weeklyHours, daysOff })
+      .set({ slug: data.slug, weeklyHours, daysOff, notifyEmail: data.notifyEmail })
       .where(eq(calendarProfile.id, before.id))
       .returning();
     await writeAudit(tx, {
@@ -138,8 +163,18 @@ export async function saveAvailability(
       recordId: after.id,
       recordName: `${owner.name}'s calendar`,
       action: "Updated",
-      before: { slug: before.slug, weeklyHours: before.weeklyHours, daysOff: before.daysOff },
-      after: { slug: after.slug, weeklyHours: after.weeklyHours, daysOff: after.daysOff },
+      before: {
+        slug: before.slug,
+        weeklyHours: before.weeklyHours,
+        daysOff: before.daysOff,
+        notifyEmail: before.notifyEmail,
+      },
+      after: {
+        slug: after.slug,
+        weeklyHours: after.weeklyHours,
+        daysOff: after.daysOff,
+        notifyEmail: after.notifyEmail,
+      },
     });
     return after;
   });
@@ -237,6 +272,7 @@ const meetingTypeAudit = (m: MeetingTypeRow) => ({
   maxPerDay: m.maxPerDay,
   questions: m.questions,
   active: m.active,
+  googleMeet: m.googleMeet,
 });
 
 /** Switches a meeting type's booking page on or off (the link stays the same). */
@@ -300,8 +336,21 @@ export async function findHostPage(db: DbOrTx, profileSlug: string) {
   return { host, profile, types };
 }
 
-/** The rep's confirmed bookings that end after `from`, each with its own gap. */
-async function busyFor(db: DbOrTx, hostId: string, from: Date, exceptId?: string): Promise<Busy[]> {
+/** The first booking of a reschedule chain: teammates are kept against it. */
+export const rootOf = (b: { id: string; rescheduledFromId: string | null }) =>
+  b.rescheduledFromId ?? b.id;
+
+/**
+ * Everything that blocks the rep's time from `from` on: confirmed meetings they host or are a
+ * teammate on (each with its gap), and their Google Calendar busy times (F26) when given.
+ */
+async function busyFor(
+  db: DbOrTx,
+  userId: string,
+  from: Date,
+  except?: BookingRow | null,
+  google: { start: Date; end: Date }[] = [],
+): Promise<Busy[]> {
   const rows = await db
     .select({
       start: booking.startsAt,
@@ -313,13 +362,25 @@ async function busyFor(db: DbOrTx, hostId: string, from: Date, exceptId?: string
     .innerJoin(meetingType, eq(meetingType.id, booking.meetingTypeId))
     .where(
       and(
-        eq(booking.hostId, hostId),
+        or(
+          eq(booking.hostId, userId),
+          sql`exists (select 1 from ${bookingParticipant} where ${bookingParticipant.userId} = ${userId} and ${bookingParticipant.bookingId} = coalesce(${booking.rescheduledFromId}, ${booking.id}))`,
+        ),
         eq(booking.status, "Confirmed"),
         gt(booking.endsAt, new Date(from.getTime() - 24 * 3600_000)),
-        exceptId ? ne(booking.id, exceptId) : undefined,
+        except ? ne(booking.id, except.id) : undefined,
       ),
     );
-  return rows;
+  const fromGoogle = google
+    // The meeting being moved is in Google too; it mustn't block its own new time.
+    .filter(
+      (g) =>
+        !except ||
+        g.start.getTime() !== except.startsAt.getTime() ||
+        g.end.getTime() !== except.endsAt.getTime(),
+    )
+    .map((g) => ({ ...g, bufferMin: 0, meetingTypeId: "google" }));
+  return [...rows, ...fromGoogle];
 }
 
 const slotArgs = (page: BookingPage, busy: Busy[], now: Date) => ({
@@ -331,31 +392,124 @@ const slotArgs = (page: BookingPage, busy: Busy[], now: Date) => ({
   now,
 });
 
+/** The rep's Google busy times for this page's booking window (empty without Google). */
+const googleWindow = (db: Db, page: BookingPage, now: Date) =>
+  googleBusy(
+    db,
+    page.host.id,
+    now,
+    new Date(now.getTime() + (page.type.maxDaysAhead + 2) * 24 * 3600_000),
+  );
+
 /** The free start times on a booking page. */
-export async function freeSlots(
-  db: DbOrTx,
-  page: BookingPage,
-  now = new Date(),
-  exceptId?: string,
-) {
+export async function freeSlots(db: Db, page: BookingPage, now = new Date(), exceptId?: string) {
   if (!page.type.active) return [];
-  return availableSlots(slotArgs(page, await busyFor(db, page.host.id, now, exceptId), now));
+  const [except, google] = await Promise.all([
+    exceptId
+      ? db
+          .select()
+          .from(booking)
+          .where(eq(booking.id, exceptId))
+          .then((r) => r[0])
+      : null,
+    googleWindow(db, page, now),
+  ]);
+  return availableSlots(
+    slotArgs(page, await busyFor(db, page.host.id, now, except ?? null, google), now),
+  );
+}
+
+/** The next free times of each of the rep's active meeting types (Availability preview). */
+export async function previewSlots(db: Db, ownerId: string, now = new Date(), perType = 6) {
+  const [profile] = await db
+    .select()
+    .from(calendarProfile)
+    .where(eq(calendarProfile.userId, ownerId));
+  if (!profile) return [];
+  const host = await loadHost(db, ownerId);
+  const types = (await listMeetingTypes(db, ownerId)).filter((t) => t.active);
+  const out = [];
+  for (const type of types) {
+    const slots = await freeSlots(db, { host, profile, type }, now);
+    out.push({
+      id: type.id,
+      name: type.name,
+      durationMin: type.durationMin,
+      count: slots.length,
+      next: slots.slice(0, perType),
+    });
+  }
+  return out;
+}
+
+// --- The people on a meeting ------------------------------------------------------------------
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  email: string;
+  /** Where their booking emails go. */
+  notifyTo: string;
+  host: boolean;
+};
+
+/** The host and the teammates of a booking, host first. */
+export async function teamOf(db: DbOrTx, b: BookingRow): Promise<TeamMember[]> {
+  const ids = await db
+    .select({ userId: bookingParticipant.userId })
+    .from(bookingParticipant)
+    .where(eq(bookingParticipant.bookingId, rootOf(b)))
+    .orderBy(asc(bookingParticipant.createdAt));
+  const all = [b.hostId, ...ids.map((r) => r.userId).filter((id) => id !== b.hostId)];
+  const rows = await db
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      notifyEmail: calendarProfile.notifyEmail,
+    })
+    .from(user)
+    .leftJoin(calendarProfile, eq(calendarProfile.userId, user.id))
+    .where(inArray(user.id, all));
+  return all
+    .map((id) => rows.find((r) => r.id === id))
+    .filter((r): r is NonNullable<typeof r> => Boolean(r))
+    .map((r) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      notifyTo: r.notifyEmail ?? r.email,
+      host: r.id === b.hostId,
+    }));
+}
+
+const teamLine = (team: TeamMember[]) =>
+  team.map((m) => (m.host ? `${m.name} (host)` : m.name)).join(", ");
+
+const whenIst = (d: Date) => `${formatIst(d, "EEE d MMM yyyy, h:mm aaa")} IST`;
+
+/** Where the meeting happens: its Meet link, else the meeting type's "Where". */
+export const whereOf = (b: BookingRow, page: BookingPage) => b.meetLink ?? page.type.location;
+
+const meetingLink = (id: string) => `/calendar?booking=${id}`;
+
+/** Notifications for everyone on the meeting except the person who made the change. */
+function teamNotices(
+  team: TeamMember[],
+  actorId: string | null,
+  n: Omit<NewNotification, "userId">,
+): NewNotification[] {
+  return team.filter((m) => m.id !== actorId).map((m) => ({ ...n, userId: m.id }));
 }
 
 // --- Booking, cancelling, rescheduling -------------------------------------------------------
-
-type Notice = {
-  kind: "booked" | "cancelled";
-  booking: BookingRow;
-  page: BookingPage;
-  reason?: string | null;
-};
 
 const TAKEN = "That time was just taken. Pick another.";
 
 /**
  * Books a slot from a public page. Checks the slot again inside the transaction (and the
- * database refuses two confirmed bookings at the same start). Links the booking to a person.
+ * database refuses two confirmed bookings at the same start). Links the booking to a person,
+ * notifies the rep, then makes the Google event (F26) and sends the emails.
  */
 export async function createBooking(
   db: Db,
@@ -367,6 +521,7 @@ export async function createBooking(
   if (input.website) throw new LeadError("Couldn't book. Please try again.");
   const page = await findBookingPage(db, profileSlug, typeSlug);
   if (!page || !page.type.active) throw new LeadError("This booking link isn't taking bookings.");
+  const google = await googleWindow(db, page, now);
   const token = generateToken();
   let saved: BookingRow;
   try {
@@ -387,12 +542,24 @@ export async function createBooking(
           "You've already booked 3 meetings today. Use the link in your confirmation email to change one.",
         );
       }
-      return insertBooking(tx, page, input, token, now, null);
+      const row = await insertBooking(tx, page, input, token, now, null, google);
+      await addNotificationsTx(tx, null, [
+        {
+          userId: page.host.id,
+          kind: "booked",
+          title: `New booking: ${page.type.name} with ${row.inviteeName}`,
+          body: `${whenIst(row.startsAt)} · ${row.inviteeName}, ${row.inviteeCompany} (${row.inviteeEmail}) booked from your link.`,
+          link: meetingLink(row.id),
+          bookingId: row.id,
+        },
+      ]);
+      return row;
     });
   } catch (e) {
     throw takenOr(e);
   }
-  await notify({ kind: "booked", booking: saved, page });
+  saved = await makeGoogleEvent(db, saved, page);
+  await sendBookingEmails(db, { kind: "booked", booking: saved, page, token });
   return { booking: saved, token };
 }
 
@@ -404,24 +571,31 @@ function takenOr(e: unknown) {
   return /UNIQUE/i.test(text) && /booking/i.test(text) ? new LeadError(TAKEN) : e;
 }
 
+type BookingInput = Omit<BookingFormData, "website" | "phoneCountry"> & { note?: string | null };
+
 async function insertBooking(
   tx: DbOrTx,
   page: BookingPage,
-  input: BookingFormData,
+  input: BookingInput,
   token: string,
   now: Date,
   replacing: BookingRow | null,
+  google: { start: Date; end: Date }[],
 ) {
   const start = new Date(input.startsAt);
-  const busy = await busyFor(tx, page.host.id, now);
+  const busy = await busyFor(tx, page.host.id, now, replacing, google);
   if (!isOffered(start, slotArgs(page, busy, now))) throw new LeadError(TAKEN);
   const end = new Date(start.getTime() + page.type.durationMin * 60_000);
-  const answers = page.type.questions.map((q, i) => ({
-    question: q.label,
-    answer: input.answers[i]?.trim() ?? "",
-  }));
-  const missing = page.type.questions.find((q, i) => q.required && !answers[i].answer);
-  if (missing) throw new LeadError(`Answer "${missing.label}".`);
+  let answers: { question: string; answer: string }[];
+  if (replacing) {
+    answers = replacing.answers;
+  } else {
+    const checked = checkAnswers(page.type.questions, input.answers);
+    if (!checked.ok) {
+      throw new LeadError(`${page.type.questions[checked.index].label}: ${checked.message}`);
+    }
+    answers = checked.answers;
+  }
   const [row] = await tx
     .insert(booking)
     .values({
@@ -434,13 +608,15 @@ async function insertBooking(
       inviteeCompany: input.company,
       inviteePhone: input.phone,
       inviteeLinkedin: input.linkedin,
-      inviteeNote: input.note,
+      inviteeNote: input.note ?? null,
       answers,
       inviteeTimeZone: input.timeZone,
       manageTokenHash: hashToken(token),
       personId: replacing?.personId ?? null,
       // The first booking in the chain, so every invite updates the same calendar event.
-      rescheduledFromId: replacing ? (replacing.rescheduledFromId ?? replacing.id) : null,
+      rescheduledFromId: replacing ? rootOf(replacing) : null,
+      googleEventId: replacing?.googleEventId ?? null,
+      meetLink: replacing?.meetLink ?? null,
     })
     .returning();
   await writeAudit(tx, {
@@ -456,10 +632,10 @@ async function insertBooking(
       email: row.inviteeEmail,
       company: row.inviteeCompany,
       rescheduledFrom: replacing?.id ?? null,
-      via: "Booking page",
+      via: replacing ? "Reschedule" : "Booking page",
     },
   });
-  const when = `${formatIst(start, "EEE d MMM yyyy, h:mm aaa")} IST`;
+  const when = whenIst(start);
   if (replacing) {
     if (row.personId) await movedMeeting(tx, page, row, replacing, when);
     return row;
@@ -510,7 +686,6 @@ async function linkPerson(tx: DbOrTx, page: BookingPage, b: BookingRow, now: Dat
   if (can(host, "lead.edit", found)) {
     const details = [
       `Booked "${page.type.name}" for ${when} from the booking page.`,
-      b.inviteeNote ? `Their note: ${b.inviteeNote}` : "",
       ...b.answers.filter((a) => a.answer).map((a) => `${a.question}: ${a.answer}`),
     ]
       .filter(Boolean)
@@ -577,7 +752,7 @@ async function movedMeeting(
       recordName: p.fullName,
       action: "Updated",
       before: { nextActionDate: p.nextActionDate },
-      after: { nextActionDate: date, via: "Booking page" },
+      after: { nextActionDate: date, via: "Calendar" },
     });
   }
 }
@@ -637,6 +812,53 @@ async function cancelTx(
 const cancelledNote = (page: BookingPage, b: BookingRow, who: string, reason: string | null) =>
   `"${page.type.name}" on ${formatIst(b.startsAt, "EEE d MMM, h:mm aaa")} IST was cancelled by ${who}.${reason ? ` Reason: ${reason}` : ""}`;
 
+async function cancelWith(
+  db: Db,
+  b: BookingRow,
+  page: BookingPage,
+  by: "invitee" | "host",
+  actor: { id: string; name: string } | null,
+  reason: string | null,
+  now: Date,
+) {
+  const team = await teamOf(db, b);
+  const who = actor?.name ?? b.inviteeName;
+  const after = await db.transaction(async (tx) => {
+    const row = await cancelTx(tx, b, page, by, actor?.id ?? page.host.id, reason, now);
+    if (b.personId) {
+      await noteOnPerson(
+        tx,
+        actor?.id ?? page.host.id,
+        b.personId,
+        cancelledNote(page, b, who, reason),
+      );
+    }
+    await addNotificationsTx(
+      tx,
+      actor?.id ?? null,
+      teamNotices(team, actor?.id ?? null, {
+        kind: "cancelled",
+        title: `Cancelled: ${page.type.name} with ${b.inviteeName}`,
+        body: `${whenIst(b.startsAt)} · cancelled by ${who}.${reason ? ` Reason: ${reason}` : ""} On the meeting: ${teamLine(team)}.`,
+        link: meetingLink(b.id),
+        bookingId: b.id,
+      }),
+    );
+    return row;
+  });
+  if (b.googleEventId) await deleteGoogleEvent(db, b.hostId, b.googleEventId);
+  await sendBookingEmails(db, {
+    kind: "cancelled",
+    booking: after,
+    page,
+    reason,
+    by: who,
+    actorId: actor?.id ?? null,
+    team,
+  });
+  return after;
+}
+
 /** The visitor cancels from their link, any time before it starts. */
 export async function cancelByToken(
   db: Db,
@@ -649,23 +871,10 @@ export async function cancelByToken(
   const { booking: b, page } = found;
   if (b.status !== "Confirmed") throw new LeadError("This booking is already cancelled.");
   if (b.startsAt <= now) throw new LeadError("This meeting has already started.");
-  const after = await db.transaction(async (tx) => {
-    const row = await cancelTx(tx, b, page, "invitee", page.host.id, reason, now);
-    if (b.personId) {
-      await noteOnPerson(
-        tx,
-        page.host.id,
-        b.personId,
-        cancelledNote(page, b, b.inviteeName, reason),
-      );
-    }
-    return row;
-  });
-  await notify({ kind: "cancelled", booking: after, page, reason });
-  return after;
+  return cancelWith(db, b, page, "invitee", null, reason, now);
 }
 
-/** The rep (or an Admin) cancels from Calendar → Bookings. */
+/** The rep (or an Admin) cancels from the calendar. */
 export async function cancelByHost(
   db: Db,
   actor: Actor,
@@ -677,15 +886,93 @@ export async function cancelByHost(
   if (!b) throw new LeadError("That booking doesn't exist.");
   assertCan(actor, "calendar.manage", { ownerId: b.hostId });
   const page = await pageOf(db, b);
-  const after = await db.transaction(async (tx) => {
-    const row = await cancelTx(tx, b, page, "host", actor.id, reason, now);
-    if (b.personId) {
-      await noteOnPerson(tx, actor.id, b.personId, cancelledNote(page, b, page.host.name, reason));
-    }
-    return row;
+  const me = await loadHost(db, actor.id);
+  return cancelWith(db, b, page, "host", { id: actor.id, name: me.name }, reason, now);
+}
+
+/** Cancels `old` and books `startsAt` in its place, in one transaction. */
+async function moveBooking(
+  db: Db,
+  old: BookingRow,
+  page: BookingPage,
+  startsAt: string,
+  actor: { id: string; name: string } | null,
+  now: Date,
+): Promise<{ booking: BookingRow; token: string }> {
+  if (old.status !== "Confirmed") throw new LeadError("This booking is already cancelled.");
+  if (old.startsAt <= now) throw new LeadError("This meeting has already started.");
+  if (!page.type.active) throw new LeadError("This booking link isn't taking bookings.");
+  const team = await teamOf(db, old);
+  const google = await googleWindow(db, page, now);
+  const fresh = generateToken();
+  const who = actor?.name ?? old.inviteeName;
+  let saved: BookingRow;
+  try {
+    saved = await db.transaction(async (tx) => {
+      await cancelTx(
+        tx,
+        old,
+        page,
+        actor ? "host" : "invitee",
+        actor?.id ?? page.host.id,
+        "Rescheduled",
+        now,
+      );
+      const row = await insertBooking(
+        tx,
+        page,
+        {
+          startsAt,
+          name: old.inviteeName,
+          email: old.inviteeEmail,
+          company: old.inviteeCompany,
+          phone: old.inviteePhone,
+          linkedin: old.inviteeLinkedin,
+          note: old.inviteeNote,
+          answers: [],
+          timeZone: old.inviteeTimeZone,
+        },
+        fresh,
+        now,
+        old,
+        google,
+      );
+      await addNotificationsTx(
+        tx,
+        actor?.id ?? null,
+        teamNotices(team, actor?.id ?? null, {
+          kind: "rescheduled",
+          title: `Rescheduled: ${page.type.name} with ${old.inviteeName}`,
+          body: `Moved from ${whenIst(old.startsAt)} to ${whenIst(row.startsAt)} by ${who}. On the meeting: ${teamLine(team)}.`,
+          link: meetingLink(row.id),
+          bookingId: row.id,
+        }),
+      );
+      return row;
+    });
+  } catch (e) {
+    throw takenOr(e);
+  }
+  if (saved.googleEventId) {
+    const ok = await updateGoogleEvent(db, saved.hostId, saved.googleEventId, {
+      start: saved.startsAt,
+      end: saved.endsAt,
+    });
+    if (!ok) await googleProblem(db, saved, page, "move the Google Calendar event");
+  } else {
+    saved = await makeGoogleEvent(db, saved, page);
+  }
+  await sendBookingEmails(db, {
+    kind: "rescheduled",
+    booking: saved,
+    page,
+    token: fresh,
+    old,
+    by: who,
+    actorId: actor?.id ?? null,
+    team,
   });
-  await notify({ kind: "cancelled", booking: after, page, reason });
-  return after;
+  return { booking: saved, token: fresh };
 }
 
 /** The visitor picks a new time: the old booking is cancelled and a new one replaces it. */
@@ -697,93 +984,387 @@ export async function rescheduleByToken(
 ): Promise<{ booking: BookingRow; token: string }> {
   const found = await findByToken(db, token);
   if (!found) throw new LeadError("That booking doesn't exist.");
-  const { booking: old, page } = found;
-  if (old.status !== "Confirmed") throw new LeadError("This booking is already cancelled.");
-  if (old.startsAt <= now) throw new LeadError("This meeting has already started.");
-  if (!page.type.active) throw new LeadError("This booking link isn't taking bookings.");
-  const fresh = generateToken();
-  let saved: BookingRow;
-  try {
-    saved = await db.transaction(async (tx) => {
-      await cancelTx(tx, old, page, "invitee", page.host.id, "Rescheduled", now);
-      return insertBooking(
-        tx,
-        page,
-        {
-          startsAt,
-          name: old.inviteeName,
-          email: old.inviteeEmail,
-          company: old.inviteeCompany,
-          phone: old.inviteePhone,
-          linkedin: old.inviteeLinkedin,
-          note: old.inviteeNote,
-          answers: old.answers.map((a) => a.answer),
-          timeZone: old.inviteeTimeZone,
-        },
-        fresh,
-        now,
-        old,
-      );
-    });
-  } catch (e) {
-    throw takenOr(e);
+  return moveBooking(db, found.booking, found.page, startsAt, null, now);
+}
+
+/** The host (or an Admin) moves the meeting; the visitor is emailed a new manage link. */
+export async function rescheduleByHost(
+  db: Db,
+  actor: Actor,
+  id: string,
+  startsAt: string,
+  now = new Date(),
+) {
+  const [b] = await db.select().from(booking).where(eq(booking.id, id));
+  if (!b) throw new LeadError("That booking doesn't exist.");
+  assertCan(actor, "calendar.manage", { ownerId: b.hostId });
+  const me = await loadHost(db, actor.id);
+  return moveBooking(db, b, await pageOf(db, b), startsAt, { id: actor.id, name: me.name }, now);
+}
+
+/** Free times the host can move a booking to (the booking's own time doesn't block). */
+export async function rescheduleSlots(db: Db, actor: Actor, id: string, now = new Date()) {
+  const [b] = await db.select().from(booking).where(eq(booking.id, id));
+  if (!b) throw new LeadError("That booking doesn't exist.");
+  assertCan(actor, "calendar.manage", { ownerId: b.hostId });
+  return freeSlots(db, await pageOf(db, b), now, b.id);
+}
+
+// --- Teammates on a meeting (D-042) -----------------------------------------------------------
+
+/** The host, a teammate on the meeting, or an Admin can change who's on it. */
+export async function canChangeTeam(db: DbOrTx, actor: Actor, b: BookingRow) {
+  if (can(actor, "calendar.manage", { ownerId: b.hostId })) return true;
+  if (!actor.active) return false;
+  const [row] = await db
+    .select({ id: bookingParticipant.id })
+    .from(bookingParticipant)
+    .where(
+      and(eq(bookingParticipant.bookingId, rootOf(b)), eq(bookingParticipant.userId, actor.id)),
+    );
+  return Boolean(row);
+}
+
+async function loadOpenBooking(db: DbOrTx, id: string, now: Date) {
+  const [b] = await db.select().from(booking).where(eq(booking.id, id));
+  if (!b) throw new LeadError("That booking doesn't exist.");
+  if (b.status !== "Confirmed") throw new LeadError("This booking is cancelled.");
+  if (b.endsAt <= now) throw new LeadError("This meeting is over.");
+  return b;
+}
+
+/**
+ * Adds a teammate. Returns whether they already had something at that time (a warning only).
+ */
+export async function addTeammate(
+  db: Db,
+  actor: Actor,
+  bookingId: string,
+  userId: string,
+  now = new Date(),
+): Promise<{ busy: boolean; name: string }> {
+  const b = await loadOpenBooking(db, bookingId, now);
+  if (!(await canChangeTeam(db, actor, b))) {
+    throw new PermissionError("Only the host, people on the meeting or an Admin can do that.");
   }
-  await notify({
-    kind: "cancelled",
-    booking: { ...old, status: "Cancelled" },
-    page,
-    reason: "Rescheduled",
-    quiet: true,
+  const mate = await loadHost(db, userId);
+  if (!mate.active) throw new LeadError(`${mate.name}'s account is switched off.`);
+  if (mate.id === b.hostId) throw new LeadError(`${mate.name} is hosting this meeting.`);
+  const page = await pageOf(db, b);
+  const me = await loadHost(db, actor.id);
+  const theirBusy = await busyFor(db, mate.id, now);
+  const busy = theirBusy.some((x) => x.start < b.endsAt && b.startsAt < x.end);
+  await db.transaction(async (tx) => {
+    const [exists] = await tx
+      .select({ id: bookingParticipant.id })
+      .from(bookingParticipant)
+      .where(
+        and(eq(bookingParticipant.bookingId, rootOf(b)), eq(bookingParticipant.userId, mate.id)),
+      );
+    if (exists) throw new LeadError(`${mate.name} is already on this meeting.`);
+    await tx
+      .insert(bookingParticipant)
+      .values({ bookingId: rootOf(b), userId: mate.id, createdBy: actor.id });
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Booking",
+      recordId: b.id,
+      recordName: `${page.type.name} with ${b.inviteeName}`,
+      action: "Updated",
+      after: { addedTeammate: mate.name },
+    });
   });
-  await notify({ kind: "booked", booking: saved, page });
-  return { booking: saved, token: fresh };
+  const team = await teamOf(db, b);
+  await db.transaction((tx) =>
+    addNotificationsTx(
+      tx,
+      actor.id,
+      teamNotices(team, actor.id, {
+        kind: "added",
+        title: `${me.name} added ${mate.id === actor.id ? "themselves" : mate.name} to ${page.type.name} with ${b.inviteeName}`,
+        body: `${whenIst(b.startsAt)} · ${b.inviteeName}, ${b.inviteeCompany}. On the meeting: ${teamLine(team)}.`,
+        link: meetingLink(b.id),
+        bookingId: b.id,
+      }),
+    ),
+  );
+  await syncAttendees(db, b, page, team);
+  await sendTeammateEmail(db, { b, page, team, mate, by: me.name, added: true });
+  return { busy, name: mate.name };
+}
+
+/** Removes a teammate (anyone who may change the team; a teammate may remove themselves). */
+export async function removeTeammate(
+  db: Db,
+  actor: Actor,
+  bookingId: string,
+  userId: string,
+  now = new Date(),
+) {
+  const b = await loadOpenBooking(db, bookingId, now);
+  if (!(await canChangeTeam(db, actor, b))) {
+    throw new PermissionError("Only the host, people on the meeting or an Admin can do that.");
+  }
+  const mate = await loadHost(db, userId);
+  const page = await pageOf(db, b);
+  const me = await loadHost(db, actor.id);
+  const before = await teamOf(db, b);
+  await db.transaction(async (tx) => {
+    const gone = await tx
+      .delete(bookingParticipant)
+      .where(
+        and(eq(bookingParticipant.bookingId, rootOf(b)), eq(bookingParticipant.userId, mate.id)),
+      )
+      .returning();
+    if (gone.length === 0) throw new LeadError(`${mate.name} isn't on this meeting.`);
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Booking",
+      recordId: b.id,
+      recordName: `${page.type.name} with ${b.inviteeName}`,
+      action: "Updated",
+      before: { teammate: mate.name },
+      after: { removedTeammate: mate.name },
+    });
+    await addNotificationsTx(
+      tx,
+      actor.id,
+      teamNotices(before, actor.id, {
+        kind: "removed",
+        title:
+          mate.id === actor.id
+            ? `${me.name} left ${page.type.name} with ${b.inviteeName}`
+            : `${me.name} removed ${mate.name} from ${page.type.name} with ${b.inviteeName}`,
+        body: `${whenIst(b.startsAt)} · ${b.inviteeName}, ${b.inviteeCompany}.`,
+        link: meetingLink(b.id),
+        bookingId: b.id,
+      }),
+    );
+  });
+  const team = await teamOf(db, b);
+  await syncAttendees(db, b, page, team);
+  if (mate.id !== actor.id) {
+    await sendTeammateEmail(db, { b, page, team, mate, by: me.name, added: false });
+  }
+}
+
+/** Active reps who could join a meeting (not its host). */
+export async function teammateChoices(db: DbOrTx) {
+  return db
+    .select({ id: user.id, name: user.name })
+    .from(user)
+    .where(eq(user.active, true))
+    .orderBy(asc(user.name));
+}
+
+// --- Google Calendar (F26) --------------------------------------------------------------------
+
+async function googleProblem(db: Db, b: BookingRow, page: BookingPage, what: string) {
+  await db.transaction((tx) =>
+    addNotificationsTx(tx, null, [
+      {
+        userId: b.hostId,
+        kind: "google",
+        title: `Google problem: couldn't ${what}`,
+        body: `${page.type.name} with ${b.inviteeName}, ${whenIst(b.startsAt)}. The booking stands. Check Calendar → Availability → Google, and send a meeting link yourself if needed.`,
+        link: meetingLink(b.id),
+        bookingId: b.id,
+      },
+    ]),
+  );
+}
+
+const attendeesOf = (b: BookingRow, team: TeamMember[]) => [
+  { email: b.inviteeEmail, name: b.inviteeName },
+  ...team.filter((m) => !m.host).map((m) => ({ email: m.email, name: m.name })),
+];
+
+/** Creates the Google event (with a Meet link when the meeting type asks) and saves it. */
+async function makeGoogleEvent(db: Db, b: BookingRow, page: BookingPage): Promise<BookingRow> {
+  const team = await teamOf(db, b);
+  const result = await createGoogleEvent(
+    db,
+    b.hostId,
+    {
+      title: eventTitle(b, page),
+      description: eventDescription(b, page),
+      start: b.startsAt,
+      end: b.endsAt,
+      location: page.type.location,
+      attendees: attendeesOf(b, team),
+      meet: page.type.googleMeet,
+    },
+    b.id,
+  );
+  if (result === null) return b;
+  if (!result.ok) {
+    await googleProblem(db, b, page, "create the Google Calendar event and Meet link");
+    return b;
+  }
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(booking)
+      .set({ googleEventId: result.eventId, meetLink: result.meetLink })
+      .where(eq(booking.id, b.id))
+      .returning();
+    await writeAudit(tx, {
+      userId: b.hostId,
+      entityType: "Booking",
+      recordId: b.id,
+      recordName: `${page.type.name} with ${b.inviteeName}`,
+      action: "Updated",
+      before: { meetLink: null },
+      after: { meetLink: result.meetLink, via: "Google" },
+    });
+    return row;
+  });
+}
+
+async function syncAttendees(db: Db, b: BookingRow, page: BookingPage, team: TeamMember[]) {
+  if (!b.googleEventId) return;
+  const ok = await updateGoogleEvent(db, b.hostId, b.googleEventId, {
+    attendees: attendeesOf(b, team),
+  });
+  if (!ok) await googleProblem(db, b, page, "update the guests on the Google Calendar event");
 }
 
 // --- Lists -----------------------------------------------------------------------------------
 
 export type BookingListRow = BookingRow & {
   meetingTypeName: string;
+  location: string | null;
   personName: string | null;
   hostName: string;
+  /** Teammates' names (not the host). */
+  teammates: { id: string; name: string }[];
 };
 
-/** The rep's bookings: upcoming (soonest first) or past (latest first). */
+/** Whose meetings: everyone's, or one rep's (hosting or a teammate). */
+export type MeetingFilter = { userId: string | null };
+
+const involves = (userId: string) =>
+  or(
+    eq(booking.hostId, userId),
+    sql`exists (select 1 from ${bookingParticipant} where ${bookingParticipant.userId} = ${userId} and ${bookingParticipant.bookingId} = coalesce(${booking.rescheduledFromId}, ${booking.id}))`,
+  );
+
+async function withTeammates(
+  db: DbOrTx,
+  rows: {
+    b: BookingRow;
+    meetingTypeName: string;
+    location: string | null;
+    personName: string | null;
+    hostName: string;
+  }[],
+): Promise<BookingListRow[]> {
+  const roots = [...new Set(rows.map((r) => rootOf(r.b)))];
+  const mates = roots.length
+    ? await db
+        .select({
+          bookingId: bookingParticipant.bookingId,
+          id: user.id,
+          name: user.name,
+        })
+        .from(bookingParticipant)
+        .innerJoin(user, eq(user.id, bookingParticipant.userId))
+        .where(inArray(bookingParticipant.bookingId, roots))
+        .orderBy(asc(bookingParticipant.createdAt))
+    : [];
+  return rows.map((r) => ({
+    ...r.b,
+    meetingTypeName: r.meetingTypeName,
+    location: r.location,
+    personName: r.personName,
+    hostName: r.hostName,
+    teammates: mates
+      .filter((m) => m.bookingId === rootOf(r.b))
+      .map((m) => ({ id: m.id, name: m.name })),
+  }));
+}
+
+const listColumns = {
+  b: booking,
+  meetingTypeName: meetingType.name,
+  location: meetingType.location,
+  personName: person.fullName,
+  hostName: user.name,
+};
+
+/** Bookings for the List view: upcoming (soonest first) or past (latest first). */
 export async function listBookings(
   db: DbOrTx,
-  hostId: string,
+  filter: MeetingFilter,
   when: "upcoming" | "past",
   now = new Date(),
   limit = 200,
 ): Promise<BookingListRow[]> {
   const rows = await db
-    .select({
-      b: booking,
-      meetingTypeName: meetingType.name,
-      personName: person.fullName,
-      hostName: user.name,
-    })
+    .select(listColumns)
     .from(booking)
     .innerJoin(meetingType, eq(meetingType.id, booking.meetingTypeId))
     .innerJoin(user, eq(user.id, booking.hostId))
     .leftJoin(person, eq(person.id, booking.personId))
     .where(
       and(
-        eq(booking.hostId, hostId),
+        filter.userId ? involves(filter.userId) : undefined,
         when === "upcoming" ? gt(booking.endsAt, now) : lt(booking.endsAt, now),
+        // A booking moved to a new time is shown once, at its new time.
+        sql`not (${booking.status} = 'Cancelled' and ${booking.cancelReason} = 'Rescheduled')`,
       ),
     )
     .orderBy(when === "upcoming" ? asc(booking.startsAt) : desc(booking.startsAt))
     .limit(limit);
-  return rows.map((r) => ({
-    ...r.b,
-    meetingTypeName: r.meetingTypeName,
-    personName: r.personName,
-    hostName: r.hostName,
-  }));
+  return withTeammates(db, rows);
 }
 
-/** The rep's confirmed meetings today (IST), for Today. */
-export async function meetingsToday(db: DbOrTx, hostId: string, now = new Date()) {
+/** Confirmed meetings that overlap [from, to), for the month/week/day views. */
+export async function meetingsBetween(
+  db: DbOrTx,
+  filter: MeetingFilter,
+  from: Date,
+  to: Date,
+): Promise<BookingListRow[]> {
+  const rows = await db
+    .select(listColumns)
+    .from(booking)
+    .innerJoin(meetingType, eq(meetingType.id, booking.meetingTypeId))
+    .innerJoin(user, eq(user.id, booking.hostId))
+    .leftJoin(person, eq(person.id, booking.personId))
+    .where(
+      and(
+        filter.userId ? involves(filter.userId) : undefined,
+        eq(booking.status, "Confirmed"),
+        lt(booking.startsAt, to),
+        gt(booking.endsAt, from),
+      ),
+    )
+    .orderBy(asc(booking.startsAt))
+    .limit(1000);
+  return withTeammates(db, rows);
+}
+
+export type MeetingDetail = BookingListRow & {
+  team: TeamMember[];
+  hostId: string;
+};
+
+/** One booking with everything the details panel shows. Any signed-in rep may see it. */
+export async function meetingDetail(db: DbOrTx, id: string): Promise<MeetingDetail | null> {
+  const rows = await db
+    .select(listColumns)
+    .from(booking)
+    .innerJoin(meetingType, eq(meetingType.id, booking.meetingTypeId))
+    .innerJoin(user, eq(user.id, booking.hostId))
+    .leftJoin(person, eq(person.id, booking.personId))
+    .where(eq(booking.id, id));
+  if (rows.length === 0) return null;
+  const [row] = await withTeammates(db, rows);
+  return { ...row, team: await teamOf(db, rows[0].b) };
+}
+
+/** The rep's confirmed meetings today (IST), hosting or as a teammate, for Today. */
+export async function meetingsToday(db: DbOrTx, userId: string, now = new Date()) {
   const { start, end } = istDayRange(todayIst(now));
   return db
     .select({
@@ -794,13 +1375,16 @@ export async function meetingsToday(db: DbOrTx, hostId: string, now = new Date()
       inviteeCompany: booking.inviteeCompany,
       personId: booking.personId,
       meetingTypeName: meetingType.name,
-      location: meetingType.location,
+      location: sql<string | null>`coalesce(${booking.meetLink}, ${meetingType.location})`,
+      hostName: user.name,
+      hosting: sql<boolean>`${booking.hostId} = ${userId}`.mapWith(Boolean),
     })
     .from(booking)
     .innerJoin(meetingType, eq(meetingType.id, booking.meetingTypeId))
+    .innerJoin(user, eq(user.id, booking.hostId))
     .where(
       and(
-        eq(booking.hostId, hostId),
+        involves(userId),
         eq(booking.status, "Confirmed"),
         gte(booking.startsAt, start),
         lt(booking.startsAt, end),
@@ -822,7 +1406,12 @@ export async function bookingsOfPerson(db: DbOrTx, personId: string) {
     .from(booking)
     .innerJoin(meetingType, eq(meetingType.id, booking.meetingTypeId))
     .innerJoin(user, eq(user.id, booking.hostId))
-    .where(eq(booking.personId, personId))
+    .where(
+      and(
+        eq(booking.personId, personId),
+        sql`not (${booking.status} = 'Cancelled' and ${booking.cancelReason} = 'Rescheduled')`,
+      ),
+    )
     .orderBy(desc(booking.startsAt));
 }
 
@@ -844,7 +1433,7 @@ export async function linkBookingsByEmail(
       .from(booking)
       .where(
         and(
-          eq(booking.hostId, actor.id),
+          involves(actor.id),
           eq(booking.inviteeEmail, p.email!.trim().toLowerCase()),
           sql`${booking.personId} IS NULL`,
         ),
@@ -876,27 +1465,41 @@ export async function linkBookingsByEmail(
   });
 }
 
-// --- Emails ----------------------------------------------------------------------------------
+// --- Invites and emails ----------------------------------------------------------------------
 
-function eventOf(b: BookingRow, page: BookingPage, method: "REQUEST" | "CANCEL") {
+const eventTitle = (b: BookingRow, page: BookingPage) =>
+  `${page.type.name}: ${b.inviteeName} and ${page.host.name}`;
+
+function eventDescription(b: BookingRow, page: BookingPage) {
+  return [
+    `${page.type.name} (${page.type.durationMin} min), booked from the Lumor booking page.`,
+    whereOf(b, page) ? `Where: ${whereOf(b, page)}` : "",
+    `${b.inviteeName}, ${b.inviteeCompany} (${b.inviteeEmail})`,
+    b.inviteePhone ? `Phone: ${b.inviteePhone}` : "",
+    b.inviteeNote ? `Note: ${b.inviteeNote}` : "",
+    ...b.answers.filter((a) => a.answer).map((a) => `${a.question}: ${a.answer}`),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function eventOf(
+  b: BookingRow,
+  page: BookingPage,
+  method: "REQUEST" | "CANCEL",
+  team: TeamMember[] = [],
+) {
   return {
     // A rescheduled booking keeps its first booking's id, so calendars move the same event.
-    uid: `${b.rescheduledFromId ?? b.id}@lumor-sales-hub`,
+    uid: `${rootOf(b)}@lumor-sales-hub`,
     start: b.startsAt,
     end: b.endsAt,
-    title: `${page.type.name}: ${b.inviteeName} and ${page.host.name}`,
-    description: [
-      `${page.type.name} (${page.type.durationMin} min), booked from the Lumor booking page.`,
-      page.type.location ? `Where: ${page.type.location}` : "",
-      `${b.inviteeName}, ${b.inviteeCompany} (${b.inviteeEmail})`,
-      b.inviteeNote ? `Note: ${b.inviteeNote}` : "",
-      ...b.answers.filter((a) => a.answer).map((a) => `${a.question}: ${a.answer}`),
-    ]
-      .filter(Boolean)
-      .join("\n"),
-    location: page.type.location,
+    title: eventTitle(b, page),
+    description: eventDescription(b, page),
+    location: whereOf(b, page),
     organizer: { name: page.host.name, email: page.host.email },
     attendee: { name: b.inviteeName, email: b.inviteeEmail },
+    others: team.filter((m) => !m.host).map((m) => ({ name: m.name, email: m.email })),
     method,
     // Always increasing: the time of this booking, or of its cancellation.
     sequence: Math.floor((b.cancelledAt ?? b.createdAt).getTime() / 1000),
@@ -915,9 +1518,9 @@ export function bookingGoogleLink(b: BookingRow, page: BookingPage) {
 const inZone = (d: Date, tz: string) =>
   new Intl.DateTimeFormat("en-GB", {
     timeZone: tz,
-    weekday: "short",
+    weekday: "long",
     day: "numeric",
-    month: "short",
+    month: "long",
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
@@ -925,43 +1528,225 @@ const inZone = (d: Date, tz: string) =>
     timeZoneName: "short",
   }).format(d);
 
-/** Emails both sides (when email is set up). Never throws: the booking is already saved. */
-async function notify(n: Notice & { quiet?: boolean }) {
-  if (!emailConfigured() || n.quiet) return;
-  const { booking: b, page } = n;
-  const cancelled = n.kind === "cancelled";
-  const ics = buildIcs(eventOf(b, page, cancelled ? "CANCEL" : "REQUEST"));
-  const attachments = [
-    {
-      filename: cancelled ? "cancel.ics" : "invite.ics",
-      content: ics,
-      contentType: "text/calendar; method=" + (cancelled ? "CANCEL" : "REQUEST"),
-    },
-  ];
-  const where = page.type.location ? `\nWhere: ${page.type.location}` : "";
-  const sign = "\n\n— Lumor";
+const manageUrl = (token: string) => `${appUrl()}/booking/${token}`;
+
+type MailJob =
+  | { kind: "booked"; booking: BookingRow; page: BookingPage; token: string }
+  | {
+      kind: "cancelled";
+      booking: BookingRow;
+      page: BookingPage;
+      reason: string | null;
+      by: string;
+      actorId: string | null;
+      team: TeamMember[];
+    }
+  | {
+      kind: "rescheduled";
+      booking: BookingRow;
+      page: BookingPage;
+      token: string;
+      old: BookingRow;
+      by: string;
+      actorId: string | null;
+      team: TeamMember[];
+    };
+
+async function send(
+  to: string,
+  replyTo: string,
+  content: MailContent,
+  subject: string,
+  ics?: string,
+  cancel = false,
+) {
+  const { text, html } = renderMail(content);
+  return sendEmail({
+    to,
+    replyTo,
+    subject,
+    text,
+    html,
+    ...(ics
+      ? {
+          attachments: [
+            {
+              filename: cancel ? "cancel.ics" : "invite.ics",
+              content: ics,
+              contentType: `text/calendar; method=${cancel ? "CANCEL" : "REQUEST"}`,
+            },
+          ],
+        }
+      : {}),
+  });
+}
+
+/**
+ * Emails the person who booked and the rep's team. With a Google event, Google sends the
+ * calendar invites, so no calendar file is attached. Never throws: the booking is saved.
+ */
+async function sendBookingEmails(db: Db, job: MailJob) {
+  if (!emailConfigured()) return;
+  const { booking: b, page } = job;
   try {
-    await sendEmail({
-      to: b.inviteeEmail,
-      replyTo: page.host.email,
-      subject: cancelled
-        ? `Cancelled: ${page.type.name} with ${page.host.name}`
-        : `Confirmed: ${page.type.name} with ${page.host.name}`,
-      text: cancelled
-        ? `Hi ${b.inviteeName.split(" ")[0]},\n\nYour ${page.type.name} with ${page.host.name} on ${inZone(b.startsAt, b.inviteeTimeZone)} is cancelled.${n.reason && n.reason !== "Rescheduled" ? `\nReason: ${n.reason}` : ""}\n\nBook another time: ${bookingLink(page.profile.slug, page.type.slug)}${sign}`
-        : `Hi ${b.inviteeName.split(" ")[0]},\n\nYour ${page.type.name} (${page.type.durationMin} min) with ${page.host.name} is booked for ${inZone(b.startsAt, b.inviteeTimeZone)}.${where}\n\nThe calendar invite is attached.\n\nNeed to change it? Reschedule or cancel from the link on your confirmation page.${sign}`,
-      attachments,
-    });
-    await sendEmail({
-      to: page.host.email,
-      replyTo: b.inviteeEmail,
-      subject: cancelled
-        ? `Cancelled: ${page.type.name} with ${b.inviteeName}`
-        : `New booking: ${page.type.name} with ${b.inviteeName}`,
-      text: `${b.inviteeName} (${b.inviteeCompany}, ${b.inviteeEmail}) ${cancelled ? "cancelled" : "booked"} ${page.type.name} on ${formatIst(b.startsAt, "EEE d MMM yyyy, h:mm aaa")} IST.${n.reason ? `\nReason: ${n.reason}` : ""}${b.inviteeNote && !cancelled ? `\nTheir note: ${b.inviteeNote}` : ""}\n\nSee it in Lumor Sales Hub: ${appUrl()}/calendar`,
-      attachments,
-    });
+    const team = "team" in job ? job.team : await teamOf(db, b);
+    const where = whereOf(b, page);
+    const first = b.inviteeName.split(" ")[0];
+    const fromGoogle = Boolean(b.googleEventId);
+    const cancel = job.kind === "cancelled";
+    const ics = fromGoogle
+      ? undefined
+      : buildIcs(eventOf(b, page, cancel ? "CANCEL" : "REQUEST", team));
+    const meetingRows: [string, string][] = [
+      ["What", `${page.type.name} (${page.type.durationMin} min)`],
+      ["When", inZone(b.startsAt, b.inviteeTimeZone)],
+      ["With", team.map((m) => m.name).join(", ")],
+      ...(where ? ([["Where", where]] as [string, string][]) : []),
+    ];
+
+    // The person who booked.
+    if (job.kind === "booked" || job.kind === "rescheduled") {
+      const moved = job.kind === "rescheduled";
+      await send(
+        b.inviteeEmail,
+        page.host.email,
+        {
+          heading: moved ? "Your meeting has moved" : "You're booked",
+          intro: moved
+            ? `Hi ${first}, your ${page.type.name} with ${page.host.name} has moved to a new time${job.actorId ? ` (changed by ${job.by})` : ""}.`
+            : `Hi ${first}, your ${page.type.name} with ${page.host.name} is confirmed.`,
+          rows: moved
+            ? [["Was", inZone(job.old.startsAt, b.inviteeTimeZone)], ...meetingRows]
+            : meetingRows,
+          button: b.meetLink ? { label: "Join with Google Meet", url: b.meetLink } : undefined,
+          links: [{ label: "Reschedule or cancel", url: manageUrl(job.token) }],
+          foot: fromGoogle
+            ? "A Google Calendar invite is on its way separately."
+            : "The calendar invite is attached.",
+        },
+        moved
+          ? `Moved: ${page.type.name} with ${page.host.name}`
+          : `Confirmed: ${page.type.name} with ${page.host.name}`,
+        ics,
+      );
+    } else {
+      await send(
+        b.inviteeEmail,
+        page.host.email,
+        {
+          heading: "Your meeting is cancelled",
+          intro: `Hi ${first}, your ${page.type.name} with ${page.host.name} is cancelled${job.actorId ? ` by ${job.by}` : ""}.`,
+          rows: [
+            ["When", inZone(b.startsAt, b.inviteeTimeZone)],
+            ...(job.reason ? ([["Reason", job.reason]] as [string, string][]) : []),
+          ],
+          button: page.type.active
+            ? { label: "Book another time", url: bookingLink(page.profile.slug, page.type.slug) }
+            : undefined,
+        },
+        `Cancelled: ${page.type.name} with ${page.host.name}`,
+        ics,
+        true,
+      );
+    }
+
+    // The rep and teammates (not whoever made the change).
+    const actorId = "actorId" in job ? job.actorId : null;
+    const heading =
+      job.kind === "booked"
+        ? `New booking: ${page.type.name} with ${b.inviteeName}`
+        : job.kind === "cancelled"
+          ? `Cancelled: ${page.type.name} with ${b.inviteeName}`
+          : `Rescheduled: ${page.type.name} with ${b.inviteeName}`;
+    const intro =
+      job.kind === "booked"
+        ? `${b.inviteeName} (${b.inviteeCompany}) booked a meeting from your link.`
+        : job.kind === "cancelled"
+          ? `Cancelled by ${job.by}.${job.reason ? ` Reason: ${job.reason}` : ""}`
+          : `Moved from ${whenIst(job.old.startsAt)} by ${job.by}.`;
+    for (const m of team.filter((x) => x.id !== actorId)) {
+      await send(
+        m.notifyTo,
+        b.inviteeEmail,
+        {
+          heading,
+          intro,
+          rows: [
+            ["When", whenIst(b.startsAt)],
+            ["Who", `${b.inviteeName}, ${b.inviteeCompany} (${b.inviteeEmail})`],
+            ...(b.inviteePhone ? ([["Phone", b.inviteePhone]] as [string, string][]) : []),
+            ["On the meeting", teamLine(team)],
+            ...(where && !cancel ? ([["Where", where]] as [string, string][]) : []),
+            ...b.answers
+              .filter((a) => a.answer)
+              .map((a) => [a.question, a.answer] as [string, string]),
+          ],
+          button: { label: "Open in Lumor", url: `${appUrl()}${meetingLink(b.id)}` },
+        },
+        heading,
+        // The host gets Google's own invite; teammates without Google get our file.
+        m.host ? undefined : ics,
+        cancel,
+      );
+    }
   } catch (e) {
     console.error("Booking email failed:", e instanceof Error ? e.message : e);
+  }
+}
+
+async function sendTeammateEmail(
+  db: Db,
+  j: {
+    b: BookingRow;
+    page: BookingPage;
+    team: TeamMember[];
+    mate: Host;
+    by: string;
+    added: boolean;
+  },
+) {
+  if (!emailConfigured()) return;
+  try {
+    const [profile] = await db
+      .select({ notifyEmail: calendarProfile.notifyEmail })
+      .from(calendarProfile)
+      .where(eq(calendarProfile.userId, j.mate.id));
+    const to = profile?.notifyEmail ?? j.mate.email;
+    const where = whereOf(j.b, j.page);
+    const subject = j.added
+      ? `${j.by} added you to ${j.page.type.name} with ${j.b.inviteeName}`
+      : `${j.by} removed you from ${j.page.type.name} with ${j.b.inviteeName}`;
+    const ics = j.b.googleEventId
+      ? undefined
+      : buildIcs(
+          eventOf(
+            j.b,
+            j.page,
+            j.added ? "REQUEST" : "CANCEL",
+            j.added ? j.team : [...j.team, { ...j.mate, notifyTo: to, host: false }],
+          ),
+        );
+    await send(
+      to,
+      j.page.host.email,
+      {
+        heading: subject,
+        intro: j.added
+          ? `You're on this meeting now. ${j.by} added you.`
+          : "You're no longer on this meeting.",
+        rows: [
+          ["When", whenIst(j.b.startsAt)],
+          ["Who", `${j.b.inviteeName}, ${j.b.inviteeCompany} (${j.b.inviteeEmail})`],
+          ["On the meeting", teamLine(j.team)],
+          ...(where && j.added ? ([["Where", where]] as [string, string][]) : []),
+        ],
+        button: { label: "Open in Lumor", url: `${appUrl()}${meetingLink(j.b.id)}` },
+      },
+      subject,
+      ics,
+      !j.added,
+    );
+  } catch (e) {
+    console.error("Teammate email failed:", e instanceof Error ? e.message : e);
   }
 }

@@ -1,4 +1,4 @@
-import { CalendarPlus, Clock, Download, MapPin } from "lucide-react";
+import { CalendarPlus, CheckCircle2, Clock, Download, MapPin, Video } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -11,7 +11,14 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { appNow } from "@/lib/clock";
 import { getDb } from "@/lib/db/client";
 import { formatIst } from "@/lib/time";
-import { bookingGoogleLink, bookingLink, findByToken, freeSlots } from "@/server/calendar";
+import {
+  bookingGoogleLink,
+  bookingLink,
+  findByToken,
+  freeSlots,
+  teamOf,
+  whereOf,
+} from "@/server/calendar";
 
 export const metadata: Metadata = { title: { absolute: "Your booking · Lumor" } };
 
@@ -38,15 +45,23 @@ async function Booking({
   const now = await appNow();
   const cancelled = b.status === "Cancelled";
   const upcoming = !cancelled && b.startsAt > now;
-  const slots = upcoming && page.type.active ? await freeSlots(db, page, now, b.id) : [];
-  const location = page.type.location;
+  const [slots, team] = await Promise.all([
+    upcoming && page.type.active ? freeSlots(db, page, now, b.id) : Promise.resolve([]),
+    teamOf(db, b),
+  ]);
+  const location = whereOf(b, page);
 
   return (
     <div className={styles.stack}>
       {query.new && !cancelled && (
-        <Alert tone="success">
-          You&rsquo;re booked. A confirmation is on its way to {b.inviteeEmail}.
-        </Alert>
+        <div className={styles.successHead}>
+          <CheckCircle2 size={40} aria-hidden className={styles.successIcon} />
+          <h1 className={styles.bookingTitle}>You&rsquo;re booked</h1>
+          <p className={styles.muted}>
+            A confirmation{b.googleEventId ? " and a calendar invite are" : " is"} on its way to{" "}
+            <strong>{b.inviteeEmail}</strong>.
+          </p>
+        </div>
       )}
       {query.moved && !cancelled && (
         <Alert tone="success">Your meeting has moved to the new time.</Alert>
@@ -59,8 +74,12 @@ async function Booking({
         </Alert>
       )}
       <div className={styles.bookingHead}>
-        <p className={styles.host}>{page.host.name} · Lumor</p>
-        <h1 className={styles.bookingTitle}>{page.type.name}</h1>
+        <p className={styles.host}>With {team.map((m) => m.name).join(", ")}</p>
+        {query.new && !cancelled ? (
+          <h2 className={styles.bookingTitle}>{page.type.name}</h2>
+        ) : (
+          <h1 className={styles.bookingTitle}>{page.type.name}</h1>
+        )}
         <p className={styles.facts}>
           <span>
             <Clock size={14} aria-hidden />
@@ -70,16 +89,9 @@ async function Booking({
             />{" "}
             · {page.type.durationMin} min
           </span>
-          {location && (
+          {location && !/^https?:\/\//.test(location) && (
             <span>
-              <MapPin size={14} aria-hidden />
-              {/^https?:\/\//.test(location) ? (
-                <a href={location} target="_blank" rel="noopener noreferrer">
-                  Join link
-                </a>
-              ) : (
-                location
-              )}
+              <MapPin size={14} aria-hidden /> {location}
             </span>
           )}
         </p>
@@ -89,7 +101,14 @@ async function Booking({
         </p>
       </div>
 
-      {!cancelled && (
+      {!cancelled && location && /^https?:\/\//.test(location) && (
+        <a className={styles.joinButton} href={location} target="_blank" rel="noopener noreferrer">
+          <Video size={18} aria-hidden />
+          {b.meetLink ? "Join with Google Meet" : "Join the meeting"}
+        </a>
+      )}
+      {/* With Google, the invite came from Google already: no second calendar entry. */}
+      {!cancelled && !b.googleEventId && (
         <div className={styles.row}>
           <a
             className={styles.typeLink}

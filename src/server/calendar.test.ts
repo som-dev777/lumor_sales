@@ -178,7 +178,7 @@ describe("booking from the public page", () => {
   });
 
   it("an existing person (by email) gets Meeting booked: stage, Hold meeting date and a note", async () => {
-    await demo();
+    await demo({ questions: [{ label: "What should we cover?", required: false }] });
     const p = await createPerson(
       t.db,
       rep,
@@ -190,7 +190,7 @@ describe("booking from the public page", () => {
         stage: "Replied",
       }),
     );
-    const { booking: b } = await book({ note: "Keen on panels" });
+    const { booking: b } = await book({ answers: ["Keen on panels"] });
     expect(b.personId).toBe(p.id);
     const [after] = await t.db.select().from(person).where(eq(person.id, p.id));
     expect(after).toMatchObject({
@@ -228,7 +228,7 @@ describe("booking from the public page", () => {
 
   it("3 bookings per email per day; the spam trap; required questions; switched-off links", async () => {
     await demo({ questions: [{ label: "What do you research?", required: true }] });
-    await expect(book()).rejects.toThrow('Answer "What do you research?"');
+    await expect(book()).rejects.toThrow("What do you research?: This question is required.");
     const slots = ["11:00", "12:00", "14:00", "15:00"].map((h) =>
       fromIstLocal(`2026-11-03T${h}`)!.toISOString(),
     );
@@ -315,7 +315,9 @@ describe("cancel and reschedule", () => {
     const { booking: b } = await book();
     await expect(cancelByHost(t.db, other, b.id, null, NOW)).rejects.toThrow(PermissionError);
     await cancelByHost(t.db, admin, b.id, "Sick", NOW);
-    expect((await listBookings(t.db, rep.id, "upcoming", NOW))[0].status).toBe("Cancelled");
+    expect((await listBookings(t.db, { userId: rep.id }, "upcoming", NOW))[0].status).toBe(
+      "Cancelled",
+    );
   });
 });
 
