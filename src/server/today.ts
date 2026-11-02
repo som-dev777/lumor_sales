@@ -36,6 +36,8 @@ export type TaskKind =
   | "nurture" // Nurture ended: enrol again or Lost
   | "quick" // a quick-log (Mark replied, Meeting held, Recap sent)
   | "nudge" // a reply-by date passed (F18): draft a nudge, or close the loop
+  | "followup" // a next action is due (D-044): do it, then set the next follow-up
+  | "setdate" // an active person with no follow-up date (D-044)
   | "open"; // nothing to log here: open the lead
 
 export type Task = {
@@ -65,6 +67,9 @@ export type Task = {
   daysLate?: number;
   /** For a backlog task: the section it came from. */
   origin?: SectionKey;
+  /** The person's next action and its date (follow-up tasks, D-044). */
+  nextAction?: string | null;
+  nextActionDate?: string | null;
 };
 
 const QUICK_DONE: Record<string, { log: QuickLog; label: string }> = {
@@ -113,8 +118,20 @@ export type LeadFacts = {
   nudgeCount: number;
   nurtureUntil: string | null;
   stage: string;
+  converted: boolean;
   createdAt: Date;
 };
+
+/** Stages where someone is being worked on and needs a follow-up date (D-044). */
+const ACTIVE_STAGES = [
+  "Contacted",
+  "Connected",
+  "Replied",
+  "Meeting scheduled",
+  "Meeting done",
+  "Proposal sent",
+  "Trial",
+];
 
 export type Classified = {
   section: SectionKey;
@@ -198,8 +215,8 @@ export function classifyLead(
         due: null,
       };
     }
-    if (plan.status !== "Active") return null; // paused: they're in a conversation
-    if (plan.waitingForAcceptance) {
+    // A paused plan (they replied) doesn't hide them: their next action shows below (D-044).
+    if (plan.status === "Active" && plan.waitingForAcceptance) {
       if (plan.nextDueDate !== null && plan.nextDueDate <= today) {
         return {
           section: "due",
@@ -210,16 +227,29 @@ export function classifyLead(
       }
       return null;
     }
-    if (plan.nextDueDate && plan.nextDueDate <= today) {
-      return {
-        section: plan.planType === "Trial" ? "trial" : "due",
-        kind: "step",
-        detail: `Step ${plan.currentStep} of ${plan.stepCount}: ${plan.channel}`,
-        due: plan.nextDueDate,
-        step: true,
-      };
+    if (plan.status === "Active") {
+      if (plan.nextDueDate && plan.nextDueDate <= today) {
+        return {
+          section: plan.planType === "Trial" ? "trial" : "due",
+          kind: "step",
+          detail: `Step ${plan.currentStep} of ${plan.stepCount}: ${plan.channel}`,
+          due: plan.nextDueDate,
+          step: true,
+        };
+      }
+      // The plan sets the dates: nothing due yet.
+      return null;
     }
-    return null;
+  }
+  const closed = (CLOSED as readonly string[]).includes(p.stage) || p.converted;
+  // Any next action due today or earlier, whatever it says (D-044). Overdue ones become Backlog.
+  if (!closed && !snoozed && due(p.nextActionDate) && !(p.nurtureUntil && p.nurtureUntil > today)) {
+    return {
+      section: "followup",
+      kind: "followup",
+      detail: `${p.nextAction?.trim() || "Follow up"} · ${formatIstDate(p.nextActionDate!)}`,
+      due: withSnooze(p.nextActionDate),
+    };
   }
   // 8. Nurture checks.
   if (p.nurtureUntil) {
@@ -232,6 +262,15 @@ export function classifyLead(
       };
     }
     return null;
+  }
+  // Someone being worked on with no follow-up date at all (D-044).
+  if (!closed && !snoozed && !p.nextActionDate && ACTIVE_STAGES.includes(p.stage)) {
+    return {
+      section: "nodate",
+      kind: "setdate",
+      detail: `${p.stage} · no next follow-up date`,
+      due: null,
+    };
   }
   // 9. Stale leads not on any plan.
   if (!snoozed && !(CLOSED as readonly string[]).includes(p.stage)) {
@@ -332,6 +371,9 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
         : c.detail,
       ...(c.since ? { since: c.since } : {}),
       ...(c.due ? { dueDate: c.due } : {}),
+      ...(c.kind === "followup" || c.kind === "setdate"
+        ? { nextAction: p.nextAction, nextActionDate: p.nextActionDate }
+        : {}),
       ...(late ? { daysLate: lateBy, origin: c.section } : {}),
       ...(facts && (c.kind === "step" || c.kind === "withdraw" || c.kind === "finished")
         ? { planName: facts.planName }
@@ -687,6 +729,56 @@ export async function snoozeLead(
       action: "Updated",
       before: { snoozedUntil: before.snoozedUntil },
       after: { snoozedUntil: after.snoozedUntil },
+    });
+    return after;
+  });
+}
+
+/**
+ * Set next follow-up (D-044): what to do next and when (today or later, within a year). Clears
+ * any snooze, so it shows on Today that day. Audited.
+ */
+export async function setFollowUp(
+  db: Db,
+  actor: Actor,
+  personId: string,
+  input: { nextAction: string | null; date: string },
+  now = new Date(),
+) {
+  const today = todayIst(now);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date) || input.date < today) {
+    throw new LeadError("Pick today or a later date.");
+  }
+  if (input.date > addDaysIst(today, 366)) throw new LeadError("Pick a date within a year.");
+  const text = input.nextAction?.trim().slice(0, 200) || null;
+  return db.transaction(async (tx) => {
+    const before = await loadPerson(tx, personId);
+    assertCan(actor, "lead.edit", before);
+    const [after] = await tx
+      .update(person)
+      .set({
+        nextAction: text ?? before.nextAction ?? "Follow up",
+        nextActionDate: input.date,
+        snoozedUntil: null,
+      })
+      .where(eq(person.id, personId))
+      .returning();
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Person",
+      recordId: personId,
+      recordName: after.fullName,
+      action: "Updated",
+      before: {
+        nextAction: before.nextAction,
+        nextActionDate: before.nextActionDate,
+        snoozedUntil: before.snoozedUntil,
+      },
+      after: {
+        nextAction: after.nextAction,
+        nextActionDate: after.nextActionDate,
+        snoozedUntil: null,
+      },
     });
     return after;
   });

@@ -372,6 +372,11 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
 - [ ] 14.17 **Today → Team**: columns Due today, **Backlog**, **Meetings today**, Done today, On
       active plans, Replies waiting. Click any number: the list behind it opens below.
 
+- [ ] 14.17a (v2.7.1) Everyone on **People** with an overdue next action is on **Today** (Backlog,
+      "Follow-up: …"). Click **Done · set next follow-up**, type what's next and pick a date: they
+      leave Today until then. Someone in Contacted to Trial with no next date shows under **Needs a
+      follow-up date**.
+
 **Plans and approvals**
 
 - [ ] 14.18 **Plans → New plan**: the dropdown says **Task**. Pick **Custom…** and type "Send a

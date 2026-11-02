@@ -35,7 +35,7 @@ import {
 import { fillCompany, fillPerson, type FillResult } from "../ai/autofill";
 import { AiError } from "../ai/client";
 import { LeadError } from "../leads/companies";
-import { completeTask, rankToday, snoozeLead, type Task } from "../today";
+import { completeTask, rankToday, setFollowUp, snoozeLead, type Task } from "../today";
 
 export type AiResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -165,6 +165,18 @@ export async function snoozeTask(personId: string, until?: string | null) {
   if (until != null && (typeof until !== "string" || until.length > 10)) return bad("Pick a date.");
   const now = await appNow();
   const r = await run(() => snoozeLead(getDb(), viewer, personId, now, until));
+  if (r.ok) refresh();
+  return r.ok ? { ok: true as const, data: null } : r;
+}
+
+/** Set next follow-up from Today (D-044): what and when. */
+export async function setFollowUpTask(personId: string, nextAction: string, date: string) {
+  const viewer = await requireUser();
+  if (!id.safeParse(personId).success) return bad("Unknown person.");
+  if (typeof nextAction !== "string" || nextAction.length > 200) return bad("Keep it short.");
+  if (typeof date !== "string" || date.length > 10) return bad("Pick a date.");
+  const now = await appNow();
+  const r = await run(() => setFollowUp(getDb(), viewer, personId, { nextAction, date }, now));
   if (r.ok) refresh();
   return r.ok ? { ok: true as const, data: null } : r;
 }

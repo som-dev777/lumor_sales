@@ -11,7 +11,13 @@ import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { SECTIONS } from "@/lib/today-sections";
 import { SuggestionCard } from "@/components/ai/SuggestionCard";
-import { doneTask, rankMyDay, snoozeTask, suggestNextMessage } from "@/server/actions/ai";
+import {
+  doneTask,
+  rankMyDay,
+  setFollowUpTask,
+  snoozeTask,
+  suggestNextMessage,
+} from "@/server/actions/ai";
 import { doStep, planCommand, type StepResult } from "@/server/actions/plans";
 import type { Task, TodayPlan } from "@/server/today";
 import styles from "./today.module.scss";
@@ -196,6 +202,7 @@ function TaskRow({
       say(r);
     });
   const [snoozing, setSnoozing] = useState(false);
+  const [following, setFollowing] = useState(false);
   const snooze = (until: string) =>
     start(async () => {
       const r =
@@ -350,7 +357,21 @@ function TaskRow({
             <Sparkles size={16} aria-hidden /> Draft nudge
           </Button>
         )}
-        {(task.kind === "open" || task.kind === "nudge") && (
+        {(task.kind === "followup" || task.kind === "setdate") && (
+          <Button
+            variant="secondary"
+            disabled={busy}
+            onClick={() => setFollowing(true)}
+            aria-label={`Set next follow-up for ${task.name}`}
+          >
+            <Check size={16} aria-hidden />{" "}
+            {task.kind === "followup" ? "Done · set next follow-up" : "Set follow-up date"}
+          </Button>
+        )}
+        {(task.kind === "open" ||
+          task.kind === "nudge" ||
+          task.kind === "followup" ||
+          task.kind === "setdate") && (
           <Link href={`/people/${task.personId}`} className={styles.linkButton}>
             Open
           </Link>
@@ -366,6 +387,21 @@ function TaskRow({
           </Button>
         )}
       </div>
+      {following && (
+        <FollowUpDialog
+          today={today}
+          task={task}
+          busy={busy}
+          onClose={() => setFollowing(false)}
+          onSave={(nextAction, date) =>
+            start(async () => {
+              const r = await setFollowUpTask(task.personId, nextAction, date);
+              say(r, `${task.name}: next follow-up on ${niceDate(date)}.`);
+              if (r.ok) setFollowing(false);
+            })
+          }
+        />
+      )}
       {snoozing && (
         <SnoozeDialog
           today={today}
@@ -475,6 +511,79 @@ function SnoozeDialog({
           </Button>
           <Button loading={busy} disabled={!date} onClick={() => onSnooze(date)}>
             Snooze to {date ? niceDate(date) : "…"}
+          </Button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+/** Set next follow-up (D-044): what to do next, and when. */
+function FollowUpDialog({
+  today,
+  task,
+  busy,
+  onClose,
+  onSave,
+}: {
+  today: string;
+  task: Task;
+  busy: boolean;
+  onClose: () => void;
+  onSave: (nextAction: string, date: string) => void;
+}) {
+  const [what, setWhat] = useState(task.kind === "followup" ? "" : (task.nextAction ?? ""));
+  const [date, setDate] = useState(plusDays(today, 3));
+  return (
+    <Dialog
+      open
+      onOpenChange={(o) => !o && onClose()}
+      title={`Next follow-up with ${task.name}`}
+      description={
+        task.kind === "followup"
+          ? `Was: ${task.nextAction ?? "Follow up"}. Log what you did on their page; here, set what comes next.`
+          : "Everyone you're working with needs a next step and a date, so they show on Today."
+      }
+    >
+      <div className={styles.dialogBody}>
+        <TextField
+          label="Next action"
+          placeholder="e.g. Call to fix a demo slot"
+          maxLength={200}
+          value={what}
+          onChange={(e) => setWhat(e.target.value)}
+        />
+        <div className={styles.snoozeChoices} role="group" aria-label="Quick dates">
+          {[
+            { label: "Tomorrow", d: plusDays(today, 1) },
+            { label: "In 3 days", d: plusDays(today, 3) },
+            { label: "In a week", d: plusDays(today, 7) },
+          ].map((c) => (
+            <Button
+              key={c.label}
+              variant={date === c.d ? "primary" : "secondary"}
+              onClick={() => setDate(c.d)}
+            >
+              {c.label} · {niceDate(c.d)}
+            </Button>
+          ))}
+        </div>
+        <TextField
+          label="Or pick a date"
+          type="date"
+          min={today}
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+        <div className={styles.taskActions}>
+          <Link href={`/people/${task.personId}`} className={styles.linkButton}>
+            Log on their page
+          </Link>
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button loading={busy} disabled={!date} onClick={() => onSave(what, date)}>
+            Save next follow-up
           </Button>
         </div>
       </div>

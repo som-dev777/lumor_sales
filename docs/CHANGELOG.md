@@ -7,7 +7,16 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.7.0.
+Next: the owner's QA of v2.7.1.
+
+## [2.7.1] - 2026-11-03
+
+Today shows every follow-up until a person is converted or lost (D-044).
+
+- Fixed: Today said "Nothing due" while People showed overdue next actions. Today only read "Hold meeting" and "Send recap"; now any next action that's due shows under **Follow-ups due**, and overdue ones stay in **Backlog** until dealt with.
+- New section **Needs a follow-up date**: people from Contacted to Trial with no next date, so nobody is forgotten.
+- **Done · set next follow-up** / **Set follow-up date** on those tasks: what comes next and when.
+- Someone whose plan is paused (they replied) now shows their next action; an active plan still follows its own dates.
 
 ## [2.7.0] - 2026-11-03
 

@@ -123,16 +123,23 @@ test("exit check: Today shows the rep's list and ranks it; Done and Snooze clear
     "requests this week",
   );
   const ranked = shown(rep.getByRole("list", { name: "Ranked tasks" }));
-  await expect(ranked.getByRole("listitem")).toHaveCount(2);
+  // The 2 replies, plus the earlier lead who now needs a follow-up date (D-044).
+  await expect(ranked.getByRole("listitem")).toHaveCount(3);
   await expect(ranked.getByText(/^Ranked: /).first()).toBeVisible();
   await rep.screenshot({ path: "test-results/r6-today.png", fullPage: true });
 
   await rep.getByRole("button", { name: "Done: Mark replied for Bilal Khan" }).click();
-  await expect(ranked.getByRole("listitem")).toHaveCount(1);
+  // Answered: Bilal now needs a next follow-up date (D-044). Set it, and he leaves Today.
+  await shown(rep.getByRole("button", { name: "Set next follow-up for Bilal Khan" })).click();
+  const next = rep.getByRole("dialog");
+  await next.getByLabel("Next action").fill("Check in after their budget review");
+  await next.getByRole("button", { name: "Save next follow-up" }).click();
+  await expect(rep.getByRole("listitem", { name: "Bilal Khan" })).toHaveCount(0);
+
   await rep.getByRole("button", { name: "Snooze Chitra Rao" }).click();
   await rep
     .getByRole("dialog")
     .getByRole("button", { name: /^Snooze to / })
     .click();
-  await expect(shown(rep.getByText("Nothing due. Time for new outreach."))).toBeVisible();
+  await expect(rep.getByRole("listitem", { name: "Chitra Rao" })).toHaveCount(0);
 });

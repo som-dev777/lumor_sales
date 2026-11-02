@@ -16,6 +16,7 @@ import {
   backlogOf,
   buildToday,
   completeTask,
+  setFollowUp,
   snoozeLead,
 } from "./today";
 import { snoozeStep } from "./plans/enrolment";
@@ -209,7 +210,10 @@ describe("Today v2 sections (F08)", () => {
     expect(await sections()).toEqual([]);
     expect((await buildToday(t.db, rep, on("2026-10-31"))).tasks[0]?.name).toBe("Reply Lead");
     await completeTask(t.db, rep, `reply:${r.id}`, on("2026-10-31"));
-    expect((await buildToday(t.db, rep, on("2026-10-31"))).tasks).toEqual([]);
+    // Answered, but Replied with no next date: Today asks for one (D-044).
+    expect(
+      (await buildToday(t.db, rep, on("2026-10-31"))).tasks.map((x) => [x.name, x.section]),
+    ).toEqual([["Reply Lead", "nodate"]]);
   });
 
   it("Snooze to a date: hidden until then, then due that day, not a backlog (D-043)", async () => {
@@ -356,5 +360,103 @@ describe("custom tasks and moving people to a new version (D-043)", () => {
     const e = (await liveEnrolment(t.db, a.id))!;
     expect(e).toMatchObject({ version: 3, currentStep: 1 });
     expect((await buildToday(t.db, rep, NOW)).tasks[0].detail).toBe("Step 1 of 3: Kick-off call");
+  });
+});
+
+describe("every follow-up shows until converted or lost (D-044)", () => {
+  it("custom next actions due or overdue show; no date in an active stage shows; closed don't", async () => {
+    // Like the owner's People page: overdue next actions in their own words.
+    const akhil = await lead("Akhil Valsarjan", {
+      stage: "Prospect",
+      nextAction: "Call him and fix an appointment",
+      nextActionDate: "2026-10-23",
+    });
+    await lead("Snigdha Mehra", {
+      stage: "Prospect",
+      nextAction: "Send message",
+      nextActionDate: "2026-10-26",
+    });
+    await lead("Due Today", {
+      stage: "Connected",
+      nextAction: "Message",
+      nextActionDate: "2026-10-30",
+    });
+    await lead("Mahesh Rao", {
+      stage: "Replied",
+      nextAction: "Respond",
+      nextActionDate: "2026-10-31",
+    });
+    const noDate = await lead("No Date", { stage: "Meeting done" });
+    await lead("Fresh Prospect", { stage: "Prospect" });
+    await lead("Won Already", {
+      stage: "Paid",
+      nextAction: "Invoice",
+      nextActionDate: "2026-10-20",
+    });
+
+    const plan = await buildToday(t.db, rep, NOW);
+    const row = (name: string) => plan.tasks.find((x) => x.name === name);
+    expect(row("Akhil Valsarjan")).toMatchObject({
+      section: "backlog",
+      origin: "followup",
+      kind: "followup",
+      daysLate: 7,
+    });
+    expect(row("Akhil Valsarjan")!.detail).toContain("Call him and fix an appointment");
+    expect(row("Snigdha Mehra")).toMatchObject({ section: "backlog", daysLate: 4 });
+    expect(row("Due Today")).toMatchObject({ section: "followup", kind: "followup" });
+    // A future date: not yet.
+    expect(row("Mahesh Rao")).toBeUndefined();
+    expect(row("No Date")).toMatchObject({ section: "nodate", kind: "setdate" });
+    // A prospect with no date isn't a task (until it's stale); Paid never is.
+    expect(row("Fresh Prospect")).toBeUndefined();
+    expect(row("Won Already")).toBeUndefined();
+
+    // Set next follow-up: it leaves Today until that date, audited.
+    await expect(
+      setFollowUp(t.db, rep, akhil.id, { nextAction: "Call again", date: "2026-10-29" }, NOW),
+    ).rejects.toThrow("Pick today or a later date.");
+    await setFollowUp(t.db, rep, akhil.id, { nextAction: "Call again", date: "2026-11-02" }, NOW);
+    await setFollowUp(
+      t.db,
+      rep,
+      noDate.id,
+      { nextAction: "Send the recap", date: "2026-11-03" },
+      NOW,
+    );
+    const after = await buildToday(t.db, rep, NOW);
+    expect(after.tasks.find((x) => x.name === "Akhil Valsarjan")).toBeUndefined();
+    expect(after.tasks.find((x) => x.name === "No Date")).toBeUndefined();
+    const later = await buildToday(t.db, rep, on("2026-11-02"));
+    expect(later.tasks.find((x) => x.name === "Akhil Valsarjan")!.detail).toContain("Call again");
+    await expect(
+      setFollowUp(t.db, other, akhil.id, { nextAction: "x", date: "2026-11-05" }, NOW),
+    ).rejects.toThrow(PermissionError);
+  });
+
+  it("a paused plan no longer hides the next action; an active plan follows its own dates", async () => {
+    const paused = await lead("Paused Plan", { stage: "Connected" });
+    await enrolPeople(t.db, rep, [paused.id], outreachId, on("2026-10-26"));
+    const e = (await liveEnrolment(t.db, paused.id))!;
+    await t.db.update(planEnrolment).set({ status: "Paused" }).where(eq(planEnrolment.id, e.id));
+    await t.db
+      .update(person)
+      .set({ nextAction: "Respond", nextActionDate: "2026-10-30" })
+      .where(eq(person.id, paused.id));
+    const active = await lead("Active Plan", { stage: "Contacted" });
+    await enrolPeople(t.db, rep, [active.id], outreachId, on("2026-10-30"));
+    await completeStep(t.db, rep, active.id, {}, NOW); // waiting for acceptance now
+    await t.db
+      .update(person)
+      .set({ nextAction: "Old note", nextActionDate: "2026-10-01" })
+      .where(eq(person.id, active.id));
+
+    const plan = await buildToday(t.db, rep, NOW);
+    expect(plan.tasks.find((x) => x.name === "Paused Plan")).toMatchObject({ section: "followup" });
+    expect(plan.tasks.find((x) => x.name === "Active Plan")).toBeUndefined();
+    // The badges and the Team tab count the same.
+    expect([...(await backlogByPerson(t.db, NOW)).keys()]).toEqual(
+      plan.tasks.filter((x) => x.section === "backlog").map((x) => x.personId),
+    );
   });
 });

@@ -834,3 +834,27 @@ replaces it.
   - **Pushing:** each push to GitHub costs a Netlify deploy (see the credits note on 2026-11-03),
     so this work is committed after each step but pushed once, at the release.
   - **Version 2.7.0** (MINOR): new features.
+
+## D-044: Today shows every person's next action until they're converted or lost (owner, 2026-11-03)
+
+- **Date:** 2026-11-03 · **Status:** Accepted
+- **Owner's request:** People showed five overdue next actions, but Today said "Nothing due".
+  Today must list every person's follow-up until they're converted or lost: a next action that's
+  due or overdue always shows (overdue ones stay until dealt with), and a person in an active
+  stage with no follow-up date shows too, so nobody is forgotten.
+- **Why it happened:** Today only read two next actions ("Hold meeting" and "Send recap"); any
+  other next action ("Send message", "Call him…") was ignored unless the person was on a plan.
+- **My choices:**
+  - **Follow-ups due** (new section): any next action whose date is today or earlier, whatever
+    its words, for people not converted, Paid, Active customer, Lost or Do not contact. Overdue
+    ones go to **Backlog** like everything else (D-043).
+  - **Needs a follow-up date** (new section, near the end): people in Contacted, Connected,
+    Replied, Meeting scheduled, Meeting done, Proposal sent or Trial with no next-action date
+    and nothing else on Today. (Prospects without a date are still covered by Stale leads.)
+  - **Plans come first:** someone on an active plan follows the plan's dates (a step due, or
+    waiting for acceptance). A **paused** plan (they replied) no longer hides them: their next
+    action shows.
+  - **Buttons:** **Set next follow-up** (what and when, today or later; audited) on both new
+    sections, plus Snooze and Open. Logging what you did stays on the person's page.
+  - The Team tab and the Backlog badges use the same rules, so they count these too.
+  - **Version 2.7.1** (PATCH): a fix to Today.

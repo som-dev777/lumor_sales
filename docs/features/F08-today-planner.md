@@ -95,6 +95,15 @@ is clicked. If AI isn't set up, fails, or takes over 30 seconds, the list stays 
   backlog); a snoozed plan step respects the weekly limit; the People and Companies backlog
   matches Today; the Team counters equal each person's My day; the Team details lists.
 
+## Every follow-up shows (v2.7.1, D-044)
+
+- **Follow-ups due:** any next action due today or earlier, whatever it says, until the person is
+  converted, Paid, an Active customer, Lost or Do not contact. Overdue ones are in Backlog.
+- **Needs a follow-up date:** people in Contacted to Trial with no next-action date and nothing
+  else on Today.
+- On a plan, the plan's dates rule; when the plan is paused (a reply), the next action shows.
+- **Set next follow-up** sets what and when (audited).
+
 ## Change history
 
 | Date       | Version | Change                                                                                                                                                                                                                                                                                                                   |
@@ -118,3 +127,4 @@ is clicked. If AI isn't set up, fails, or takes over 30 seconds, the list stays 
 | 2026-11-03 | 2.7.0   | Backlog section, dated snooze, backlog badges on People and Companies, Team tab counters and details written (D-043), before code.                                                                                                                                                                                       |
 | 2026-11-03 | 2.7.0   | Built: Backlog section (one shared rule set for Today, the Team tab and the badges), Snooze to a date (Tomorrow, In 2 days, Next Monday, or any day within 60), backlog badges and filter on People, Backlog column on Companies, Team tab counters (Backlog and Meetings today added) with the list behind each number. |
 | 2026-11-03 | 2.7.0   | Released in v2.7.0 (D-043).                                                                                                                                                                                                                                                                                              |
+| 2026-11-03 | 2.7.1   | Follow-ups due and Needs a follow-up date sections; Set next follow-up (D-044).                                                                                                                                                                                                                                          |
