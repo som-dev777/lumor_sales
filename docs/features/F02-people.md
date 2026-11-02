@@ -115,3 +115,4 @@ same LinkedIn profile twice, so two reps never message the same person.
 | 2026-11-03 | 2.7.0   | LinkedIn or email, Check details flag, Backlog badge and filter written (D-043), before code.                                                                                |
 | 2026-11-03 | 2.7.0   | Built: LinkedIn or email (duplicate check on email when there's no LinkedIn); review_note set by bookings and Calendly.                                                      |
 | 2026-11-03 | 2.7.0   | Built: Backlog badge on the list and the person page, Backlog only filter, Check details banner with Done checking.                                                          |
+| 2026-11-03 | 2.7.0   | Released in v2.7.0 (D-043).                                                                                                                                                  |

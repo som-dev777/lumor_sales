@@ -47,30 +47,31 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F19 | [Reports](features/F19-reports.md)                                   | P1       | R9      | Done (2.3.0)     |
 | F20 | [AI Resources](features/F20-ai-resources.md)                         | P0       | 2.1.0   | Done             |
 | F21 | [Industries](features/F21-industries.md)                             | P1       | 2.4.0   | Done (2.4.0)     |
-| F22 | [Calendar and booking links](features/F22-calendar.md)               | P1       | 2.5.0   | Done (2.6.0)     |
+| F22 | [Calendar and booking links](features/F22-calendar.md)               | P1       | 2.5.0   | Done (2.7.0)     |
 | F23 | [AI chat on a person](features/F23-ai-chat.md)                       | P1       | 2.5.0   | Done (2.5.0)     |
 | F24 | [Fill with AI](features/F24-ai-autofill.md)                          | P1       | 2.5.0   | Done (2.5.0)     |
 | F25 | [Notifications](features/F25-notifications.md)                       | P1       | 2.6.0   | Done (2.6.0)     |
 | F26 | [Google Calendar and Meet links](features/F26-google-meet.md)        | P1       | 2.6.0   | Done (2.6.0)     |
-| F27 | [Calendly integration](features/F27-calendly.md)                     | P1       | 2.7.0   | Planned          |
+| F27 | [Calendly integration](features/F27-calendly.md)                     | P1       | 2.7.0   | Done (2.7.0)     |
 
 ## Releases
 
-| Release          | Version | Features                | Status              |
-| ---------------- | ------- | ----------------------- | ------------------- |
-| R1 Foundation    | 1.0.0   | F01, F14, F16           | Released 2026-10-16 |
-| R2 Library       | 1.1.0   | F04, F05, F06, F07      | Released 2026-10-17 |
-| R3 Leads         | 1.2.0   | F02, F03                | Released 2026-10-17 |
-| R4 Daily work    | 1.3.0   | F15, F11                | Released 2026-10-17 |
-| R5 Settings      | 1.4.0   | F12, F13                | Released 2026-10-17 |
-| R6 AI            | 1.5.0   | F08, F09, F10           | Released 2026-10-17 |
-| R7 Plans         | 2.0.0   | F17, F08 (v2)           | Released 2026-10-18 |
-| AI Resources     | 2.1.0   | F20                     | Released 2026-10-22 |
-| R8 Conversations | 2.2.0   | F18, F08, F09, F10      | Released 2026-10-22 |
-| R9 Reports       | 2.3.0   | F19                     | Released 2026-10-30 |
-| QA round 1       | 2.4.0   | F02, F03, F21, F08, F01 | Released 2026-10-30 |
-| Calendar + AI    | 2.5.0   | F22, F23, F24           | Released 2026-11-02 |
-| Calendar round 2 | 2.6.0   | F22, F25, F26           | Released 2026-11-02 |
+| Release            | Version | Features                                    | Status              |
+| ------------------ | ------- | ------------------------------------------- | ------------------- |
+| R1 Foundation      | 1.0.0   | F01, F14, F16                               | Released 2026-10-16 |
+| R2 Library         | 1.1.0   | F04, F05, F06, F07                          | Released 2026-10-17 |
+| R3 Leads           | 1.2.0   | F02, F03                                    | Released 2026-10-17 |
+| R4 Daily work      | 1.3.0   | F15, F11                                    | Released 2026-10-17 |
+| R5 Settings        | 1.4.0   | F12, F13                                    | Released 2026-10-17 |
+| R6 AI              | 1.5.0   | F08, F09, F10                               | Released 2026-10-17 |
+| R7 Plans           | 2.0.0   | F17, F08 (v2)                               | Released 2026-10-18 |
+| AI Resources       | 2.1.0   | F20                                         | Released 2026-10-22 |
+| R8 Conversations   | 2.2.0   | F18, F08, F09, F10                          | Released 2026-10-22 |
+| R9 Reports         | 2.3.0   | F19                                         | Released 2026-10-30 |
+| QA round 1         | 2.4.0   | F02, F03, F21, F08, F01                     | Released 2026-10-30 |
+| Calendar + AI      | 2.5.0   | F22, F23, F24                               | Released 2026-11-02 |
+| Calendar round 2   | 2.6.0   | F22, F25, F26                               | Released 2026-11-02 |
+| Owner's list 3 Nov | 2.7.0   | F22, F27, F08, F17, F07, F19, F02, F03, F25 | Released 2026-11-03 |
 
 ## Running the app locally
 

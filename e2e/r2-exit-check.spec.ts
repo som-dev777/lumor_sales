@@ -63,7 +63,9 @@ test("the seeded playbook is there: 5 personas, A1–A6, 12 templates", async ()
 
 test("Official items are locked for a User", async () => {
   await rep.goto("/personas");
-  await expect(card(rep, "Product & Design").getByLabel(/only Admins can change it/)).toBeVisible();
+  await expect(
+    card(rep, "Product & Design").getByLabel(/only its creator or an Admin can change it/),
+  ).toBeVisible();
   await card(rep, "Product & Design")
     .getByRole("button", { name: "Actions for Product & Design" })
     .click();
@@ -72,7 +74,7 @@ test("Official items are locked for a User", async () => {
   await rep.keyboard.press("Escape");
 });
 
-test("exit check: a User creates a persona and proposes it", async () => {
+test("exit check: a User creates a persona and makes it Official (no approvals, D-043)", async () => {
   await rep.goto("/personas?tab=personal");
   await rep.getByRole("button", { name: "Add persona" }).click();
   const dialog = rep.getByRole("dialog");
@@ -84,83 +86,35 @@ test("exit check: a User creates a persona and proposes it", async () => {
   await dialog.getByRole("button", { name: "Create persona" }).click();
   await expect(card(rep, "Agency Operations Leads")).toContainText("Leadership, Operations");
 
-  await cardAction(rep, "Agency Operations Leads", "Propose as Official");
-  await confirm(rep, "Propose");
-  await expect(shown(rep.getByText("Waiting for an Admin"))).toBeVisible();
-  await expect(
-    card(rep, "Agency Operations Leads").getByText("Proposed", { exact: true }),
-  ).toBeVisible();
+  await cardAction(rep, "Agency Operations Leads", "Make Official");
+  await confirm(rep, "Make Official");
+  await expect(shown(rep.getByText("It's Official now: the whole team can use it."))).toBeVisible();
 });
 
-test("a User also proposes a template", async () => {
-  await rep.goto("/templates?tab=personal");
+test("exit check: the persona is Official straight away; its creator can still edit it", async () => {
+  await rep.goto("/personas");
+  const official = card(rep, "Agency Operations Leads");
+  await expect(official).toBeVisible();
+  await official.getByRole("button", { name: "Actions for Agency Operations Leads" }).click();
+  await expect(rep.getByRole("menuitem", { name: "Edit" })).toBeVisible();
+  await rep.keyboard.press("Escape");
+});
+
+test("a User adds an Official template directly; there's no Approvals page", async () => {
+  await rep.goto("/templates");
   await rep.getByRole("button", { name: "Add template" }).click();
   const dialog = rep.getByRole("dialog");
+  await expect(dialog.getByRole("heading", { name: "New Official template" })).toBeVisible();
   await dialog.getByLabel("Name").fill("Follow-up 1 – short");
   await dialog.getByLabel("Purpose").selectOption("Follow-up 1");
   await dialog
     .getByLabel("Message")
     .fill("{Name}, worth a 20-minute look at a study like {Company}'s?");
   await dialog.getByRole("button", { name: "Create template" }).click();
-  await cardAction(rep, "Follow-up 1 – short", "Propose as Official");
-  await confirm(rep, "Propose");
-  await expect(
-    card(rep, "Follow-up 1 – short").getByText("Proposed", { exact: true }),
-  ).toBeVisible();
-});
-
-test("Admins see how many proposals are waiting; Users can't open Approvals", async () => {
-  await admin.goto("/personas");
-  // 2 library proposals + the 3 draft seed plans waiting for approval (R7).
-  await expect(
-    admin.getByRole("link", { name: /Approvals/ }).getByLabel("5 waiting"),
-  ).toBeVisible();
-  await rep.goto("/approvals");
-  await expect(shown(rep.getByText("Not allowed", { exact: true }))).toBeVisible();
-});
-
-test("exit check: an Admin approves the persona", async () => {
+  await expect(card(rep, "Follow-up 1 – short")).toBeVisible();
+  await expect(admin.getByRole("link", { name: /Approvals/ })).toHaveCount(0);
   await admin.goto("/approvals");
-  const item = admin.getByRole("listitem", { name: "Agency Operations Leads" });
-  await expect(item).toContainText("Proposed by Ravi Rep");
-  await expect(item).toContainText("Run fieldwork without a research team");
-  await item.getByRole("button", { name: "Approve" }).click();
-  await confirm(admin, "Approve");
-  await expect(shown(admin.getByText(/is now Official/))).toBeVisible();
-  await expect(admin.getByRole("listitem", { name: "Agency Operations Leads" })).toHaveCount(0);
-});
-
-test("exit check: the persona is now Official and locked for the User", async () => {
-  await rep.goto("/personas");
-  const approved = card(rep, "Agency Operations Leads");
-  await expect(approved).toBeVisible();
-  await expect(approved.getByLabel(/only Admins can change it/)).toBeVisible();
-  await expect(approved.getByText("Approved", { exact: true })).toBeVisible();
-  await approved.getByRole("button", { name: "Actions for Agency Operations Leads" }).click();
-  await expect(rep.getByRole("menuitem", { name: "Edit" })).toHaveCount(0);
-  await rep.keyboard.press("Escape");
-  await expect(shown(rep.getByText("Approved", { exact: true }))).toBeVisible();
-});
-
-test("an Admin rejects the template with a note; the User sees it", async () => {
-  await admin.goto("/approvals");
-  const item = admin.getByRole("listitem", { name: "Follow-up 1 – short" });
-  await item.getByRole("button", { name: "Reject" }).click();
-  const dialog = admin.getByRole("dialog");
-  await dialog
-    .getByLabel("Note for the proposer (optional)")
-    .fill("Please add the {video} link like the Official one.");
-  await dialog.getByRole("button", { name: "Reject" }).click();
-  await expect(admin.getByRole("dialog")).toBeHidden();
-  await expect(admin.getByRole("heading", { name: "Recently decided" })).toBeVisible();
-  await expect(
-    shown(admin.getByText("Please add the {video} link like the Official one.", { exact: false })),
-  ).toBeVisible();
-
-  await rep.goto("/templates?tab=personal");
-  const rejected = card(rep, "Follow-up 1 – short");
-  await expect(rejected.getByText("Proposal rejected")).toBeVisible();
-  await expect(rejected).toContainText("Please add the {video} link like the Official one.");
+  await expect(admin).toHaveURL(/\/plans$/);
 });
 
 test("account filter codes: no second Official A1; copies get -copy", async () => {

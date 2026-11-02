@@ -7,9 +7,12 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Owner's list of 2026-11-03 (D-043), aiming for 2.7.0:
+Next: the owner's QA of v2.7.0.
 
-- Docs first: D-043, PRD "Version 2.7 additions", F27 Calendly integration, round 3 of F22, backlogs in F08, tasks in F17, F07 retired, F19 round 2, F25, F02, F03, and the owner's email wording in docs/email-templates/.
+## [2.7.0] - 2026-11-03
+
+The owner's list of 3 November: events and the booking form, reminders, bookings that update the person, Calendly, Schedule a meeting, Today backlogs, custom plan tasks, no approvals, and reports you can send (D-043).
+
 - Calendar round 3: "Meeting types" are now Events; each event's booking form lists email first, then name, company, phone, LinkedIn and "online or in person", each with Show and Required; reminders 24 hours and 1 hour before; the owner's email wording; the Lumor logo on booking pages; the phone box shows "IN +91"; the confirmation page offers only Reschedule and Cancel; Schedule a meeting with To and CC; the calendar shows one rep at a time, starting with you.
 - Fixed: a required checkbox question refused ticked answers ("Pick from the choices given"), which stopped the booking, so nothing reached the calendar, notifications or email.
 - Bookings update the person: Meeting booked with the answers, Meeting scheduled, plan paused; a cancel returns them to Replied and resumes the plan; a reschedule is one Meeting moved. Someone new is added (no LinkedIn needed) with a Check details flag.

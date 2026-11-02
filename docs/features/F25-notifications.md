@@ -57,3 +57,4 @@ address (set on Calendar → Availability).
 | 2026-11-02 | 2.6.0   | Released in v2.6.0.                                                             |
 | 2026-11-03 | 2.7.0   | Report shared and Calendly notifications written (D-043), before code.          |
 | 2026-11-03 | 2.7.0   | Built: Report shared and Calendly notifications.                                |
+| 2026-11-03 | 2.7.0   | Released in v2.7.0 (D-043).                                                     |

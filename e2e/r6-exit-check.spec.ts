@@ -129,6 +129,10 @@ test("exit check: Today shows the rep's list and ranks it; Done and Snooze clear
 
   await rep.getByRole("button", { name: "Done: Mark replied for Bilal Khan" }).click();
   await expect(ranked.getByRole("listitem")).toHaveCount(1);
-  await rep.getByRole("button", { name: "Snooze Chitra Rao to tomorrow" }).click();
+  await rep.getByRole("button", { name: "Snooze Chitra Rao" }).click();
+  await rep
+    .getByRole("dialog")
+    .getByRole("button", { name: /^Snooze to / })
+    .click();
   await expect(shown(rep.getByText("Nothing due. Time for new outreach."))).toBeVisible();
 });

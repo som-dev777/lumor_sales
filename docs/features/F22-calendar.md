@@ -1,6 +1,6 @@
 # F22: Calendar and booking links
 
-- **Priority:** P1 · **Release:** v2.5.0, round 2 in v2.6.0 · **Status:** Done (round 2 in 2.6.0)
+- **Priority:** P1 · **Release:** v2.5.0, round 2 in v2.6.0 · **Status:** Done (round 3 in 2.7.0)
 - **Decisions:** D-041 (the owner's requests of 2026-11-02), D-042 (round 2)
 
 ## What it does
@@ -210,3 +210,4 @@ These rules replace the matching v2.5.0 rules below where they differ.
 | 2026-11-02 | 2.6.0   | Round 2 released in v2.6.0.                                                                                                                                                                                                                                                                                           |
 | 2026-11-03 | 2.7.0   | Round 3 written (D-043), before code: events, booking form fields, online or in person, reminders, the owner's email copy, sync to the person, Schedule a meeting, calendar filter.                                                                                                                                   |
 | 2026-11-03 | 2.7.0   | Round 3 built: Events, booking form switches, online or in person, the owner's emails and reminders (with the 15-minute job), booking sync to the person (also creates people without LinkedIn, flagged Check details), Schedule a meeting with To and CC, one-rep calendar filter, logo, "IN +91", the checkbox fix. |
+| 2026-11-03 | 2.7.0   | Released in v2.7.0 (D-043).                                                                                                                                                                                                                                                                                           |

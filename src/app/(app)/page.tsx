@@ -91,7 +91,12 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
       ) : (
         <>
           <TodayMeetings meetings={meetings} />
-          <TodayList tasks={plan.tasks} outreach={plan.outreach} aiReady={aiMode() !== "off"} />
+          <TodayList
+            tasks={plan.tasks}
+            outreach={plan.outreach}
+            aiReady={aiMode() !== "off"}
+            today={plan.today}
+          />
         </>
       )}
     </>

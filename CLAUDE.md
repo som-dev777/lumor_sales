@@ -44,7 +44,7 @@ All dates are stored in UTC and shown in IST. Weeks run Monday to Sunday.
 2. Add a CHANGELOG.md entry (under "Unreleased" until a release).
 3. Versioning: bump MINOR once per completed release (R1 = 1.0.0, R2 = 1.1.0…)
    and PATCH for fixes. Version 2 starts at R7 = 2.0.0, then MINOR again (AI Resources = 2.1.0,
-   R8 = 2.2.0, R9 = 2.3.0, QA round 1 = 2.4.0, Calendar + AI = 2.5.0, Calendar round 2 = 2.6.0; D-028, D-037).
+   R8 = 2.2.0, R9 = 2.3.0, QA round 1 = 2.4.0, Calendar + AI = 2.5.0, Calendar round 2 = 2.6.0, Owner's list 3 Nov = 2.7.0; D-028, D-037).
    Do not bump the version on every commit.
 4. Update docs/README.md (feature index) if anything changed there.
 5. At a release or patch, add the AppRelease record (run `npm run releases:sync`).
@@ -79,6 +79,8 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-11-02): v2.6.0, Calendar round 2 (F22), Notifications (F25) and Google Meet (F26)
-(D-042). The owner checks it on the live site (docs/qa-checklist.md section 13). Work through the
-owner's lists without asking questions; report once at the end with a checklist.
+Done (2026-11-03): v2.7.0, the owner's list of 3 November (D-043): events, reminders, booking sync,
+Calendly (F27), Schedule a meeting, Today backlogs, custom plan tasks, no approvals, reports you
+can send. The owner checks it on the live site (docs/qa-checklist.md section 14). Work through the
+owner's lists without asking questions; report once at the end with a checklist. Each push to
+GitHub costs a Netlify deploy, so push once per release (D-043).

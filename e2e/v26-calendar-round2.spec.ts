@@ -35,8 +35,8 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test("exit check: a meeting type with a dropdown, checkboxes and a paragraph question", async () => {
-  await dana.goto("/calendar/meeting-types");
-  await shown(dana.getByRole("button", { name: "New meeting type" })).click();
+  await dana.goto("/calendar/events");
+  await shown(dana.getByRole("button", { name: "New event" })).click();
   const dialog = dana.getByRole("dialog");
   await dialog.getByLabel("Name", { exact: true }).fill("Discovery call");
   await dialog.getByLabel("Link name").fill("discovery");
@@ -48,7 +48,7 @@ test("exit check: a meeting type with a dropdown, checkboxes and a paragraph que
   await dialog.getByLabel("Question 1", { exact: true }).fill("Team size");
   await dialog.getByLabel("Type").nth(0).selectOption("dropdown");
   await dialog.getByLabel("Choices (one per line)").fill("1–10\n11–50\n51+");
-  await dialog.getByLabel("Required").nth(0).check();
+  await dialog.getByLabel("Required", { exact: true }).nth(0).check();
 
   await dialog.getByRole("button", { name: "Add a question" }).click();
   await dialog.getByLabel("Question 2", { exact: true }).fill("Topics");
@@ -59,7 +59,7 @@ test("exit check: a meeting type with a dropdown, checkboxes and a paragraph que
   await dialog.getByLabel("Question 3", { exact: true }).fill("Anything else?");
   await dialog.getByLabel("Type").nth(2).selectOption("paragraph");
   await dana.screenshot({ path: "test-results/v26-meeting-type.png", fullPage: true });
-  await dialog.getByRole("button", { name: "Create meeting type" }).click();
+  await dialog.getByRole("button", { name: "Create event" }).click();
   await expect(shown(dana.getByText("Discovery call saved."))).toBeVisible();
   await expect(shown(dana.getByRole("region", { name: "Discovery call" }))).toContainText("25 min");
   link = new URL(await shown(dana.getByLabel("Booking link for Discovery call")).inputValue())
@@ -96,7 +96,8 @@ test("exit check: a client books on a phone, in IST, with checks on every field"
   const phone = await ctx.newPage();
   await phone.goto(link);
   await expect(phone.getByRole("heading", { name: "Discovery call" })).toBeVisible();
-  await expect(phone.getByText("Lumor", { exact: true })).toBeVisible();
+  // The owner's logo, top and foot (D-043).
+  await expect(phone.getByRole("img", { name: "Lumor" }).first()).toBeVisible();
   await expect(phone.getByText("Scheduling by Lumor")).toHaveCount(0);
   await expect(phone.getByLabel("Time zone")).toHaveValue("Asia/Kolkata");
   await expect(phone.getByText("Times in India Standard Time")).toBeVisible();
@@ -122,7 +123,8 @@ test("exit check: a client books on a phone, in IST, with checks on every field"
   await expect(
     phone.getByText("Enter a valid phone number for the country you picked."),
   ).toBeVisible();
-  await expect(phone.getByText("This question is required.")).toBeVisible();
+  await expect(phone.getByText("Pick one.")).toBeVisible();
+  await expect(phone.getByText("Choose online or in person.")).toBeVisible();
 
   await phone.getByLabel("Work email").fill("pia@acme-insights.in");
   await phone.getByRole("textbox", { name: "Phone (optional)" }).fill("98765 43210");
@@ -130,6 +132,7 @@ test("exit check: a client books on a phone, in IST, with checks on every field"
   await phone.getByRole("checkbox", { name: "Panels" }).check();
   await phone.getByRole("checkbox", { name: "AI" }).check();
   await phone.getByLabel("Anything else?").fill("We run monthly trackers.");
+  await phone.getByRole("radio", { name: /Online/ }).check();
   await phone.screenshot({ path: "test-results/v26-phone-form.png", fullPage: true });
   const formFits = await phone.evaluate(() =>
     [...document.querySelectorAll("input, select, textarea")].every(

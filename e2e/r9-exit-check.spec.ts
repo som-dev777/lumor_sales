@@ -96,20 +96,27 @@ test("exit check: an Admin makes a team report; the print layout and the CSV wor
     "Contacted → Connected",
   );
 
-  // Download PDF opens the browser's print dialog, over a layout without the sidebar or buttons.
+  // Download PDF gives a real PDF made by the app (D-043).
+  const pdfHref = await admin.getByRole("link", { name: "Download PDF" }).getAttribute("href");
+  expect(pdfHref).toMatch(/^\/reports\/[0-9a-f-]{36}\/pdf$/);
+  const pdf = await admin.request.get(pdfHref!);
+  expect(pdf.headers()["content-type"]).toBe("application/pdf");
+  expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
+
+  // Print opens the browser's print dialog, over a layout without the sidebar or buttons.
   await admin.evaluate(() => {
     (window as unknown as { printed: boolean }).printed = false;
     window.print = () => {
       (window as unknown as { printed: boolean }).printed = true;
     };
   });
-  await admin.getByRole("button", { name: "Download PDF" }).click();
+  await admin.getByRole("button", { name: "Print" }).click();
   expect(await admin.evaluate(() => (window as unknown as { printed: boolean }).printed)).toBe(
     true,
   );
   await admin.emulateMedia({ media: "print" });
   await expect(admin.getByRole("link", { name: "Dashboard" })).toBeHidden();
-  await expect(admin.getByRole("button", { name: "Download PDF" })).toBeHidden();
+  await expect(admin.getByRole("link", { name: "Download PDF" })).toBeHidden();
   await admin.screenshot({ path: "test-results/r9-print.png", fullPage: true });
   await admin.emulateMedia({ media: "screen" });
 
@@ -146,7 +153,8 @@ test("exit check: an Admin adds a schedule and runs it now; it's in Report histo
 
   await row.getByRole("button", { name: "Run Friday wrap-up now" }).click();
   await expect(shown(admin.getByText("1 report made. See Report history."))).toBeVisible();
-  await admin.reload();
+  // Scheduled reports are under All reports (and the recipients' Shared with me, D-043).
+  await admin.goto("/reports?tab=all");
   const history = shown(admin.getByRole("region", { name: "Report history" }));
   await expect(history.getByRole("row").nth(1)).toContainText("Scheduled");
   await admin.screenshot({ path: "test-results/r9-reports.png", fullPage: true });

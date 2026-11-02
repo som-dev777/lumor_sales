@@ -141,7 +141,7 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
       <TextField
         label="LinkedIn profile link"
         placeholder="https://www.linkedin.com/in/…"
-        hint="The public profile link (linkedin.com/in/…). Used to stop duplicates."
+        hint="The public profile link (linkedin.com/in/…), used to stop duplicates. If you don't have it, add their email below instead."
         error={errors.linkedinUrl?.message}
         {...register("linkedinUrl")}
       />

@@ -16,10 +16,16 @@ import { doStep, planCommand, type StepResult } from "@/server/actions/plans";
 import type { Task, TodayPlan } from "@/server/today";
 import styles from "./today.module.scss";
 
-type Props = { tasks: Task[]; outreach: TodayPlan["outreach"]; aiReady: boolean };
+type Props = {
+  tasks: Task[];
+  outreach: TodayPlan["outreach"];
+  aiReady: boolean;
+  /** Today in IST, from the server (it follows the app's clock). */
+  today: string;
+};
 
 /** Today's list (F08): grouped by section, or in the AI's order after Rank with AI. */
-export function TodayList({ tasks, outreach, aiReady }: Props) {
+export function TodayList({ tasks, outreach, aiReady, today }: Props) {
   const [ranking, setRanking] = useState<{ order: Task[]; summary: string | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, start] = useTransition();
@@ -109,7 +115,7 @@ export function TodayList({ tasks, outreach, aiReady }: Props) {
       {ranked ? (
         <ol className={styles.list} aria-label="Ranked tasks">
           {ranked.map((t) => (
-            <TaskRow key={t.id} task={t} aiReady={aiReady} showSection />
+            <TaskRow key={t.id} task={t} aiReady={aiReady} today={today} showSection />
           ))}
         </ol>
       ) : (
@@ -131,7 +137,7 @@ export function TodayList({ tasks, outreach, aiReady }: Props) {
               )}
               <ul className={styles.list}>
                 {items.map((t) => (
-                  <TaskRow key={t.id} task={t} aiReady={aiReady} />
+                  <TaskRow key={t.id} task={t} aiReady={aiReady} today={today} />
                 ))}
               </ul>
             </section>
@@ -151,10 +157,12 @@ type Draft = Extract<Awaited<ReturnType<typeof suggestNextMessage>>, { ok: true 
 function TaskRow({
   task,
   aiReady,
+  today,
   showSection = false,
 }: {
   task: Task;
   aiReady: boolean;
+  today: string;
   showSection?: boolean;
 }) {
   const notify = useToast();
@@ -360,6 +368,7 @@ function TaskRow({
       </div>
       {snoozing && (
         <SnoozeDialog
+          today={today}
           name={task.name}
           busy={busy}
           onClose={() => setSnoozing(false)}
@@ -397,10 +406,6 @@ function TaskRow({
   );
 }
 
-/** Today's date in India, "YYYY-MM-DD". */
-const istToday = () =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
-
 const plusDays = (date: string, n: number) => {
   const [y, m, d] = date.split("-").map(Number);
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
@@ -417,17 +422,18 @@ const niceDate = (date: string) =>
 
 /** Snooze until a date (D-043): quick choices or any day in the next 60. */
 function SnoozeDialog({
+  today,
   name,
   busy,
   onClose,
   onSnooze,
 }: {
+  today: string;
   name: string;
   busy: boolean;
   onClose: () => void;
   onSnooze: (until: string) => void;
 }) {
-  const today = istToday();
   const weekday = new Date(`${today}T00:00:00Z`).getUTCDay();
   const nextMonday = plusDays(today, (8 - weekday) % 7 || 7);
   const choices = [

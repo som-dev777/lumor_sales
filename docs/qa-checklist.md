@@ -319,7 +319,86 @@ Set it back to today when you're done.
       **Join with Google Meet**, the event is in your Google Calendar with the booker invited,
       and a busy time in your Google Calendar is no longer offered on your booking page.
 
-## 14. Phone check
+## 14. The owner's list of 3 November (v2.7.0)
+
+Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (emails), **CRON_SECRET**
+(reminders), and **GOOGLE_CLIENT_ID** / **GOOGLE_CLIENT_SECRET** (Meet links), then a fresh deploy.
+
+**Calendar and booking**
+
+- [ ] 14.1 **Calendar → Events** (was Meeting types). Open your demo event → **Edit**. Under
+      **Booking form**: Work email and Your name are ticked and locked; tick or untick **Show**
+      and **Required** for Company, Phone, LinkedIn and "How would you like to meet?".
+- [ ] 14.2 Same dialog, **Emails**: **Name in emails** = "Lumor demo"; **Note in emails** = "To get
+      the most from the 30 minutes, have a study you're working on to hand. We'll show you Lumor
+      on something like it." Add your office under **In person: address**. Save.
+- [ ] 14.3 **Calendar → Availability**: **Your title in emails** = "Co-founder, Lumor". Save.
+- [ ] 14.4 Open your booking link in a private window on your phone. The Lumor logo is at the top
+      and the bottom. Pick a time: **Work email** is the first box; there's no "* Required" line
+      at the bottom.
+- [ ] 14.5 The phone box: pick India from the list; once closed it shows **🇮🇳 IN +91**.
+- [ ] 14.6 Tick choices in your required checkbox question (the one that failed before), choose
+      **Online** or **In person**, and book. You get **You're booked** with only **Reschedule**
+      and **Cancel** below it (no "add to calendar" links).
+- [ ] 14.7 Your email inbox (the address you booked with): "You're booked: Lumor demo on …" in
+      your wording, with the Meet link (or the address for In person), "With: Somnath
+      Chakraborty, Co-founder, Lumor", and **Reschedule or cancel**.
+- [ ] 14.8 Your rep inbox: "Lumor demo booked: {name}, {company} · {date} at {time} IST" with the
+      answers and **Open in Sales Hub**. The bell shows the booking; the meeting is on
+      **Calendar**.
+- [ ] 14.9 Click **Open in Sales Hub**: the person is at **Meeting scheduled**, with Meeting
+      booked (date, link, answers) on the timeline; if they were new, a yellow "From the booking
+      page: check details" banner with **Done checking**. If they were on a plan, the plan is
+      paused.
+- [ ] 14.10 Reminders: book a meeting for the day after tomorrow. About 24 hours before, an email
+      "Tomorrow: your Lumor demo at …"; 1 hour before, "Starting in an hour: Lumor demo".
+- [ ] 14.11 From the confirmation link, **Cancel** with a reason: the person goes back to
+      **Replied**, the plan resumes, and your rep inbox gets "Lumor demo cancelled: …".
+- [ ] 14.12 **Calendar**: the person box sits level with Month/Week/Day/List, starts on you, and
+      has no "Everyone". Pick another rep to see theirs.
+- [ ] 14.13 **Schedule a meeting**: title, date, time, length, "How to meet", **To** (two
+      addresses) and **CC**. Send. It's on your calendar; the To addresses get the invitation
+      with CC copied (and a Google invite when Google is connected). Click it: To, CC and the
+      message show; **Reschedule** lets you pick any date and time.
+
+**Today, People and Companies**
+
+- [ ] 14.14 **Today**: work from earlier days sits at the top under **Backlog (from earlier days)**,
+      each with "due … · n days late".
+- [ ] 14.15 **Snooze** on any task: choose **Tomorrow**, **In 2 days**, **Next Monday** or a date.
+      It disappears and comes back on that day.
+- [ ] 14.16 **People**: a red **Backlog · n days** badge on people with late work; **Next action →
+      Backlog only** filters to them. **Companies**: a **Backlog** column.
+- [ ] 14.17 **Today → Team**: columns Due today, **Backlog**, **Meetings today**, Done today, On
+      active plans, Replies waiting. Click any number: the list behind it opens below.
+
+**Plans and approvals**
+
+- [ ] 14.18 **Plans → New plan**: the dropdown says **Task**. Pick **Custom…** and type "Send a
+      case study". **Template purpose → Custom…** and type your own. **Add step** / **Remove
+      step**. Save. Make another plan: your custom names are offered in the list.
+- [ ] 14.19 Edit a plan with people on it, change a step, tick "also move the people on this plan"
+      and save: the message says how many moved.
+- [ ] 14.20 There's no **Approvals** in the sidebar. As a User: add an Official persona or plan
+      directly; on a Personal item, **⋯ → Make Official**.
+
+**Reports**
+
+- [ ] 14.21 **Reports → Make a report**: tick a teammate and type an email address under **Email
+      to** → **Generate and send**. The report opens; both get the email with the PDF attached.
+- [ ] 14.22 The report starts with **Pipeline**: a chart per rep, then people added, companies
+      added, new outreach, replied, converted, no response yet, and a stages chart.
+- [ ] 14.23 **Download PDF**: a real PDF with the charts and tables. **Email this report** sends
+      it again.
+- [ ] 14.24 Sign in as the teammate: the bell shows the report; **Reports → Shared with me** lists
+      it and it opens.
+
+**Calendly (only if you still use it)**
+
+- [ ] 14.25 Follow docs/deploy.md → "Calendly". Book on Calendly: the person gets Meeting booked
+      (or is created, flagged "From Calendly: check details") and their owner gets the email.
+
+## 15. Phone check
 
 - [ ] 14.1 On your phone (or Chrome's device toolbar), Today, People, a person's conversation and a booking page work: the menu collapses
       to a button, nothing runs off the side of the screen.

@@ -149,7 +149,7 @@ test("exit check: enrol, on time, wait for acceptance, weekend → Monday, late 
   // Done 3 days late, on Thursday 29 Oct: it's overdue, and the next step counts from the 29th.
   await setDate("2026-10-29");
   await rep.goto("/");
-  const overdue = shown(rep.getByRole("region", { name: "Overdue steps" }));
+  const overdue = shown(rep.getByRole("region", { name: "Backlog (from earlier days)" }));
   const task = overdue.getByRole("listitem", { name: "Ella Plan" });
   await expect(task).toContainText("due 26 Oct 2026");
   const box = task.getByLabel("Message to Ella Plan");

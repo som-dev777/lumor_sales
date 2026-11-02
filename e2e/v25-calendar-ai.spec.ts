@@ -50,18 +50,20 @@ test("exit check: a rep sets hours, creates a meeting type and copies its link",
   await shown(rep.getByRole("button", { name: "Save availability" })).click();
   await expect(shown(rep.getByText("Availability saved."))).toBeVisible();
 
-  await rep.goto("/calendar/meeting-types");
-  await expect(shown(rep.getByText("No meeting types yet"))).toBeVisible();
-  await shown(rep.getByRole("button", { name: "New meeting type" })).click();
+  await rep.goto("/calendar/events");
+  await expect(shown(rep.getByText("No events yet"))).toBeVisible();
+  await shown(rep.getByRole("button", { name: "New event" })).click();
   const dialog = rep.getByRole("dialog");
   await dialog.getByLabel("Name", { exact: true }).fill("Lumor demo");
   await expect(dialog.getByLabel("Link name")).toHaveValue("lumor-demo");
   await dialog.getByLabel("Link name").fill("demo");
   await dialog.getByLabel("Minimum notice (hours)").fill("1");
-  await dialog.getByLabel("Where").fill("https://meet.google.com/abc-defg-hij");
+  await dialog
+    .getByLabel("Online: meeting link or phone (optional)")
+    .fill("https://meet.google.com/abc-defg-hij");
   await dialog.getByRole("button", { name: "Add a question" }).click();
   await dialog.getByLabel("Question 1", { exact: true }).fill("What do you research?");
-  await dialog.getByRole("button", { name: "Create meeting type" }).click();
+  await dialog.getByRole("button", { name: "Create event" }).click();
   await expect(shown(rep.getByText("Lumor demo saved."))).toBeVisible();
   link = await shown(rep.getByLabel("Booking link for Lumor demo")).inputValue();
   expect(link).toMatch(/\/book\/cara\/demo$/);
@@ -83,11 +85,15 @@ test("exit check: a signed-out visitor books a slot and sees the confirmation", 
   await visitor.getByLabel("Company").fill("Visitor Research");
   await visitor.getByLabel("LinkedIn profile (optional)").fill("linkedin.com/in/vera-visitor-v25");
   await visitor.getByLabel("What do you research?").fill("Shopper habits");
+  await visitor.getByRole("radio", { name: /Online/ }).check();
   await visitor.screenshot({ path: "test-results/v25-booking-form.png", fullPage: true });
   await visitor.getByRole("button", { name: "Confirm booking" }).click();
   await expect(visitor).toHaveURL(/\/booking\/[A-Za-z0-9_-]+\?new=1$/);
   await expect(visitor.getByRole("heading", { name: "You’re booked" })).toBeVisible();
-  await expect(visitor.getByRole("link", { name: "Add to Google Calendar" })).toBeVisible();
+  // Only Reschedule and Cancel after booking (D-043).
+  await expect(visitor.getByRole("button", { name: "Reschedule" })).toBeVisible();
+  await expect(visitor.getByRole("button", { name: "Cancel booking" })).toBeVisible();
+  await expect(visitor.getByRole("link", { name: "Add to Google Calendar" })).toHaveCount(0);
   manageUrl = new URL(visitor.url()).pathname;
   await visitor.screenshot({ path: "test-results/v25-booked.png", fullPage: true });
 

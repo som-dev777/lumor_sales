@@ -68,3 +68,4 @@ deal once they become a customer.
 | 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                                                            |
 | 2026-11-03 | 2.7.0   | A **Backlog** column (people with a backlog, F08) written (D-043), before code.                                                                |
 | 2026-11-03 | 2.7.0   | Built: Backlog column (people with a backlog).                                                                                                 |
+| 2026-11-03 | 2.7.0   | Released in v2.7.0 (D-043).                                                                                                                    |
