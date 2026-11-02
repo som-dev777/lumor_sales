@@ -127,6 +127,13 @@ slow. Two fixes, either is enough:
   same Netlify page), copy the data across (`turso db create lumor-sales-us --from-db
 lumor-sales --location <region>`), and update `DATABASE_URL` and `DATABASE_AUTH_TOKEN`.
 
+## Booking links (Calendar, F22)
+
+Booking links use the site address in `BETTER_AUTH_URL` (for example
+`https://your-site.netlify.app/book/somnath/demo`), so it must be the live address. Booking
+emails and calendar invites go through Resend (`RESEND_API_KEY`, `EMAIL_FROM`); without them,
+bookings still work and the confirmation page offers the calendar file. Nothing else to set up.
+
 ## The logo and tab icon
 
 Both use one file: `public/brand-icon.png` (a square PNG, ideally 512 × 512). To change it,

@@ -1,6 +1,6 @@
 # F23: AI chat on a person
 
-- **Priority:** P1 · **Release:** v2.5.0 · **Status:** Building
+- **Priority:** P1 · **Release:** v2.5.0 · **Status:** Done
 - **Decisions:** D-041 (the owner's requests of 2026-11-02)
 
 ## What it does
@@ -57,7 +57,8 @@ It replaces the **Suggest next message** tab on the person page. Today keeps its
 
 ## Change history
 
-| Date       | Version    | Change                                                                                 |
-| ---------- | ---------- | -------------------------------------------------------------------------------------- |
-| 2026-11-02 | Unreleased | Feature doc written (before code).                                                     |
-| 2026-11-02 | Unreleased | Built: chat tables (migration 0011), P07, the Chat tab, reply-type picker kept; tests. |
+| Date       | Version | Change                                                                                 |
+| ---------- | ------- | -------------------------------------------------------------------------------------- |
+| 2026-11-02 | 2.5.0   | Feature doc written (before code).                                                     |
+| 2026-11-02 | 2.5.0   | Built: chat tables (migration 0011), P07, the Chat tab, reply-type picker kept; tests. |
+| 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                    |

@@ -1,6 +1,6 @@
 # F24: Fill with AI (company and person forms)
 
-- **Priority:** P1 · **Release:** v2.5.0 · **Status:** Building
+- **Priority:** P1 · **Release:** v2.5.0 · **Status:** Done
 - **Decisions:** D-041 (the owner's requests of 2026-11-02)
 
 ## What it does
@@ -46,7 +46,8 @@ fills in the fields left empty. The rep checks and edits everything before savin
 
 ## Change history
 
-| Date       | Version    | Change                                                                                                                        |
-| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 2026-11-02 | Unreleased | Feature doc written (before code).                                                                                            |
-| 2026-11-02 | Unreleased | Built: P08/P09 with OpenAI web search (checked live: 10–15 seconds), Fill with AI on both forms, "Filled by AI" hints; tests. |
+| Date       | Version | Change                                                                                                                        |
+| ---------- | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-02 | 2.5.0   | Feature doc written (before code).                                                                                            |
+| 2026-11-02 | 2.5.0   | Built: P08/P09 with OpenAI web search (checked live: 10–15 seconds), Fill with AI on both forms, "Filled by AI" hints; tests. |
+| 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                                           |

@@ -1,6 +1,6 @@
 # F22: Calendar and booking links
 
-- **Priority:** P1 · **Release:** v2.5.0 · **Status:** Building
+- **Priority:** P1 · **Release:** v2.5.0 · **Status:** Done
 - **Decisions:** D-041 (the owner's requests of 2026-11-02)
 
 ## What it does
@@ -122,6 +122,8 @@ booking updates the sales records.
 
 ## Change history
 
-| Date       | Version    | Change                             |
-| ---------- | ---------- | ---------------------------------- |
-| 2026-11-02 | Unreleased | Feature doc written (before code). |
+| Date       | Version | Change                                                                                                                   |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 2026-11-02 | 2.5.0   | Feature doc written (before code).                                                                                       |
+| 2026-11-02 | 2.5.0   | Built: tables (migration 0012), slot rules, invites, public booking pages, Calendar pages, Today and person page; tests. |
+| 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                                      |

@@ -3,7 +3,7 @@
 Lumor Sales Hub is the internal web app where Lumor's sales team manages LinkedIn
 prospecting, from finding a lead in Sales Navigator to a paying customer.
 
-**Current version:** 2.4.0 (QA round 1, released 30 Oct 2026). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
+**Current version:** 2.5.0 (Calendar and AI chat, released 2 Nov 2026). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
 
 ## Documents
 
@@ -46,9 +46,9 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F19 | [Reports](features/F19-reports.md)                                   | P1       | R9      | Done (2.3.0)     |
 | F20 | [AI Resources](features/F20-ai-resources.md)                         | P0       | 2.1.0   | Done             |
 | F21 | [Industries](features/F21-industries.md)                             | P1       | 2.4.0   | Done (2.4.0)     |
-| F22 | [Calendar and booking links](features/F22-calendar.md)               | P1       | 2.5.0   | Building         |
-| F23 | [AI chat on a person](features/F23-ai-chat.md)                       | P1       | 2.5.0   | Building         |
-| F24 | [Fill with AI](features/F24-ai-autofill.md)                          | P1       | 2.5.0   | Building         |
+| F22 | [Calendar and booking links](features/F22-calendar.md)               | P1       | 2.5.0   | Done (2.5.0)     |
+| F23 | [AI chat on a person](features/F23-ai-chat.md)                       | P1       | 2.5.0   | Done (2.5.0)     |
+| F24 | [Fill with AI](features/F24-ai-autofill.md)                          | P1       | 2.5.0   | Done (2.5.0)     |
 
 ## Releases
 
@@ -65,6 +65,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | R8 Conversations | 2.2.0   | F18, F08, F09, F10      | Released 2026-10-22 |
 | R9 Reports       | 2.3.0   | F19                     | Released 2026-10-30 |
 | QA round 1       | 2.4.0   | F02, F03, F21, F08, F01 | Released 2026-10-30 |
+| Calendar + AI    | 2.5.0   | F22, F23, F24           | Released 2026-11-02 |
 
 ## Running the app locally
 

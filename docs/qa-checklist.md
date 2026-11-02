@@ -250,11 +250,42 @@ Set it back to today when you're done.
       you own every lead, both lists are the same; that's expected.
 - [ ] 11.10 Password reset: as the rep, type a wrong password 5 times; as Admin, create a reset
       link; the rep sets a new password and logs in straight away.
-- [ ] 11.11 AI: **Suggest next message** on a person page gives suggestions (no "key refused").
+- [ ] 11.11 AI: the AI tools on a person page answer (no "key refused"). Since v2.5.0 the first tab is **Chat**.
 
-## 12. Phone check
+## 12. Calendar, AI chat and Fill with AI (v2.5.0)
 
-- [ ] 12.1 On your phone (or Chrome's device toolbar), Today, People and a person's conversation work: the menu collapses
+- [ ] 12.1 The sidebar reads Today, **Calendar**, Companies, People… and the top-left shows your
+      new logo (also on the browser tab; Cmd + Shift + R if the old one sticks).
+- [ ] 12.2 **Calendar → Availability**: change your hours (add a second range on a day for a
+      lunch break), add a day off, **Save availability**.
+- [ ] 12.3 **Calendar → Meeting types → New meeting type**: "Lumor demo", 30 minutes, your Google
+      Meet link in **Where**, one question. **Create**. Click **Copy** on its booking link.
+- [ ] 12.4 Open the link in a private window (signed out). You see free days and times in your
+      time zone. Pick one, fill in a name, an email you can read, a company and a LinkedIn
+      link, **Confirm booking**: "You're booked." With email set up, both you and that email get
+      a confirmation with a calendar invite.
+- [ ] 12.5 Back in the app: **Calendar → Bookings** shows it; the person was added (or linked,
+      if the email matches someone), at **Meeting scheduled**, and it's on **Today** that day
+      under **Meetings today**. The time you picked is gone from the booking page.
+- [ ] 12.6 From the confirmation page (or the email), **Reschedule** to another time, then
+      **Cancel booking**. Each shows on the person's conversation as a note.
+- [ ] 12.7 Book once without a LinkedIn link: the booking shows **Add as person**; adding them
+      links the booking.
+- [ ] 12.8 A person page → **AI assistant → Chat**: ask "What should I send?", then "Make it
+      shorter". **Use this message** opens it below the chat; edit, **Mark as sent**: it's in the
+      conversation. Reload: the chat is still there. **New chat** starts fresh; **Chats** lists
+      the old one.
+- [ ] 12.9 The AI's drafts offer your own booking link when it suggests a demo.
+- [ ] 12.10 **Companies → Add company**: type only a name (e.g. a real company), **Fill with AI**.
+      Within a minute the empty fields fill, each marked "Filled by AI. Check it.", with a
+      Bangalore office where there is one and a foreign headquarters in the notes. Edit
+      anything, save.
+- [ ] 12.11 **People → Add person**: name and company, **Fill with AI**: title, persona, level
+      and seniority fill in. Fields you'd already filled stay as you typed them.
+
+## 13. Phone check
+
+- [ ] 13.1 On your phone (or Chrome's device toolbar), Today, People, a person's conversation and a booking page work: the menu collapses
       to a button, nothing runs off the side of the screen.
 
 ---

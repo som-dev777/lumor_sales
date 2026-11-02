@@ -5,16 +5,19 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 **Format** (`npm run releases:sync` reads this file into the About page, so keep it exact):
 
-- Work in progress goes under `## [Unreleased]` (skipped by the sync).
-- Each release: a `## [X.Y.Z] - YYYY-MM-DD` heading, one summary sentence, then `- ` bullets.
+- Work in progress goes under `## [Unreleased]
 
-## [Unreleased]
+Next: the owner's QA of v2.5.0.
 
-- The owner's own logo replaces the placeholder (top-left and the browser tab).
-- Sidebar: Companies now comes before People.
-- Building (D-041): F22 Calendar and booking links, F23 AI chat on a person, F24 Fill with AI.
+## [2.5.0] - 2026-11-02
+
+Calendar with booking links, an AI chat on every person, and Fill with AI on the company and person forms (D-041).
+
+- Calendar (F22): under Today in the sidebar. Set weekly hours (IST) and days off, create meeting types, and share a booking link for each; anyone books without an account, in their own time zone. Bookings email both sides a calendar invite, link to the person (logging Meeting booked) and show on Today. Reschedule and cancel from the visitor's link or from Calendar.
 - AI chat (F23): the person page's AI assistant opens on **Chat**: talk it through with the AI, then **Use this message** and Mark as sent. Chats are saved and private.
 - Fill with AI (F24): on the Add/Edit company and person forms, the AI searches the web and fills the empty fields (India office, Bangalore first; a foreign headquarters goes in the notes).
+- The AI offers each rep's own booking link to prospects.
+- Your logo is the brand icon; the sidebar lists Companies before People.
 
 ## [2.4.0] - 2026-10-30
 
