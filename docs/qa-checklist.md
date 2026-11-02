@@ -283,9 +283,45 @@ Set it back to today when you're done.
 - [ ] 12.11 **People → Add person**: name and company, **Fill with AI**: title, persona, level
       and seniority fill in. Fields you'd already filled stay as you typed them.
 
-## 13. Phone check
+## 13. Calendar round 2 (v2.6.0)
 
-- [ ] 13.1 On your phone (or Chrome's device toolbar), Today, People, a person's conversation and a booking page work: the menu collapses
+- [ ] 13.1 **Calendar → Meeting types → New meeting type**: Length → **Custom…** → 25. Add
+      questions: a **Dropdown (pick one)** with 3 choices (one per line) marked Required, a
+      **Checkboxes (pick any)** question, and a **Paragraph**. You can add up to 10. Create.
+- [ ] 13.2 **Calendar → Availability**: on Monday click **Add hours** a few times: 11:00–11:30,
+      then 12:00–12:30, 13:00–13:30 appear (edit them if you like). **Save**. The **What people
+      see** box lists the next free times for each meeting type; a meeting longer than every
+      range on a day shows a warning instead of silently offering nothing.
+- [ ] 13.3 Same page: **Send booking emails to** your work address (e.g. you@lumor.tech). Save.
+- [ ] 13.4 Open your booking link in a private window on your **phone**: meeting details at the
+      top, a month calendar of free days, the day's times, and **Time zone** set to India
+      Standard Time (change it and the times change). Pick a time.
+- [ ] 13.5 The form: only name, work email, company, phone (with a country flag dropdown, India
+      first), LinkedIn and **your own questions**; no "Anything you'd like to cover?" box.
+      Required ones have a red star. Try "name@company" (refused: needs .com/.in…), and a short
+      phone number (refused). Fix them, book: **You're booked**. The footer says just "Lumor".
+- [ ] 13.6 Change the link a little (e.g. add "x" to the end, or remove a letter): a plain "This
+      link doesn't work" page, with no link into the Sales Hub.
+- [ ] 13.7 Back in the app: the **bell** (top-left, next to the logo) shows **1**, and Calendar
+      shows 1. Open the bell: "New booking…". Click it: the meeting opens on the calendar.
+      With email set up, your notification address got an email too.
+- [ ] 13.8 **Calendar**: switch **Month / Week / Day / List**, go back and forward, **Today**.
+      **Whose meetings: Everyone / Just me / a rep**. Click a meeting: who booked, the answers,
+      the people on the meeting.
+- [ ] 13.9 In the meeting: **Add a teammate** (another rep) → **Add**. Sign in as that rep (or
+      ask them): their bell says who added them, the meeting is in their calendar and on their
+      Today, and that time is no longer offered on their own booking links.
+- [ ] 13.10 In the meeting: **Reschedule** → pick a new time → **Move to this time**. The booker
+      gets an email with the new time and a new link; your teammate gets a notification.
+      **Cancel** works the same way.
+- [ ] 13.11 **Google Meet (after the one-time Google setup in deploy.md):** Availability →
+      **Connect Google Calendar** → allow. Book a test meeting: the confirmation page shows
+      **Join with Google Meet**, the event is in your Google Calendar with the booker invited,
+      and a busy time in your Google Calendar is no longer offered on your booking page.
+
+## 14. Phone check
+
+- [ ] 14.1 On your phone (or Chrome's device toolbar), Today, People, a person's conversation and a booking page work: the menu collapses
       to a button, nothing runs off the side of the screen.
 
 ---

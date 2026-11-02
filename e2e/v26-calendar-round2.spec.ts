@@ -200,9 +200,11 @@ test("exit check: a teammate is added and notified; everyone sees the meeting", 
   await dana.screenshot({ path: "test-results/v26-detail.png", fullPage: true });
 
   await eli.goto("/calendar?view=list");
-  await expect(shown(eli.getByRole("table", { name: "Upcoming bookings" }))).toContainText(
-    "Dana Demo, Eli Expert",
-  );
+  await expect(
+    shown(eli.getByRole("table", { name: "Upcoming bookings" }))
+      .getByRole("row")
+      .filter({ hasText: "Pia Phone" }),
+  ).toContainText("Dana Demo, Eli Expert");
   await eli.goto("/");
   const bell = shown(eli.getByRole("button", { name: /Notifications, 1 new/ }));
   await bell.click();
@@ -220,8 +222,9 @@ test("exit check: the host reschedules from the calendar", async () => {
   await dana.goto("/calendar?view=list");
   const table = shown(dana.getByRole("table", { name: "Upcoming bookings" }));
   await table
+    .getByRole("row")
+    .filter({ hasText: "Pia Phone" })
     .getByRole("link", { name: /\d{4}, / })
-    .first()
     .click();
   const dialog = dana.getByRole("dialog");
   await dialog.getByRole("button", { name: "Reschedule" }).click();

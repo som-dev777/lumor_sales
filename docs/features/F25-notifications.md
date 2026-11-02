@@ -1,6 +1,6 @@
 # F25: Notifications
 
-- **Priority:** P1 · **Release:** v2.6.0 · **Status:** In progress
+- **Priority:** P1 · **Release:** v2.6.0 · **Status:** Done
 - **Decisions:** D-042
 
 ## What it does
@@ -47,3 +47,4 @@ address (set on Calendar → Availability).
 | ---------- | ------- | ------------------------------------------------------------------------------- |
 | 2026-11-02 | 2.6.0   | Feature doc written (before code), D-042.                                       |
 | 2026-11-02 | 2.6.0   | Built: notification table, bell with count, mark read (audited), emails; tests. |
+| 2026-11-02 | 2.6.0   | Released in v2.6.0.                                                             |

@@ -7,10 +7,18 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-In progress: Calendar round 2 (D-042), v2.6.0.
+Next: the owner's QA of v2.6.0.
 
-- Docs: F22 round 2 rules, new F25 Notifications and F26 Google Calendar and Meet links, decision D-042.
-- Calendar round 2 built: question types, custom length, more hours a day with a preview, booking email address, stricter booking form, public "link doesn't work" page, month/week/day calendar, teammates, rep reschedule, notifications, Google Meet links.
+## [2.6.0] - 2026-11-02
+
+Calendar round 2: question types, a friendlier booking page, notifications, teammates on meetings, a month/week/day calendar and Google Meet links (D-042).
+
+- Meeting types: questions can be Short answer, Paragraph, Dropdown or Checkboxes (with your own choices), up to 10; any length (Custom); optional Google Meet link per booking.
+- Availability: as many time ranges a day as you need (e.g. 11:00–11:30, 12:00–12:30); **What people see** previews the free times and warns when a meeting doesn't fit; choose where your booking emails go.
+- Booking page: month calendar and times side by side (one column on phones), India Standard Time first with every time zone in a dropdown, only your own questions, red stars on required fields, a real email check, phone with a country flag dropdown, footer "Lumor". Wrong or changed links show a plain "This link doesn't work" page with no way into the app.
+- Notifications (F25): a bell with the number of new ones (also on Calendar) for new bookings, cancellations, reschedules and teammate changes, each also emailed.
+- Calendar: month, week, day and list views; everyone sees everyone's meetings (filter by rep); click a meeting for details, **Add a teammate**, **Reschedule** and **Cancel**. Teammates are notified and their meetings block their own booking slots.
+- Google Calendar and Meet (F26): connect your Google account and every booking gets its own Meet link, lands in your Google Calendar (booker and teammates invited) and avoids your Google busy times. Needs a one-time setup (docs/deploy.md).
 
 ## [2.5.0] - 2026-11-02
 

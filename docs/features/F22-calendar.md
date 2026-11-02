@@ -1,6 +1,6 @@
 # F22: Calendar and booking links
 
-- **Priority:** P1 · **Release:** v2.5.0, round 2 in v2.6.0 · **Status:** In progress (2.6.0)
+- **Priority:** P1 · **Release:** v2.5.0, round 2 in v2.6.0 · **Status:** Done (round 2 in 2.6.0)
 - **Decisions:** D-041 (the owner's requests of 2026-11-02), D-042 (round 2)
 
 ## What it does
@@ -163,3 +163,4 @@ These rules replace the matching v2.5.0 rules below where they differ.
 | 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                                                                                                               |
 | 2026-11-02 | 2.6.0   | Round 2 rules written (before code), D-042.                                                                                                                                                       |
 | 2026-11-02 | 2.6.0   | Built round 2: migration 0013, question types, custom length, 12 ranges, preview, notification email, stricter form, public not-found, month/week/day calendar, teammates, rep reschedule; tests. |
+| 2026-11-02 | 2.6.0   | Round 2 released in v2.6.0.                                                                                                                                                                       |

@@ -26,11 +26,18 @@ const ago = (d: Date) => {
 };
 
 /** The bell with the unread count; opens the latest notifications (F25). */
-export function NotificationBell({ initialUnread }: { initialUnread: number }) {
+export function NotificationBell({
+  initialUnread,
+  initialItems,
+}: {
+  initialUnread: number;
+  /** The latest ones, sent with the page so the list opens at once. */
+  initialItems: NotificationView[];
+}) {
   const router = useRouter();
   const ref = useRef<HTMLButtonElement>(null);
   const [unread, setUnread] = useState(initialUnread);
-  const [items, setItems] = useState<NotificationView[] | null>(null);
+  const [items, setItems] = useState<NotificationView[] | null>(initialItems);
   const [, start] = useTransition();
 
   // Checks for new ones every minute while this bell is on screen and the tab is open.
@@ -47,12 +54,15 @@ export function NotificationBell({ initialUnread }: { initialUnread: number }) {
     return () => window.clearInterval(timer);
   }, []);
 
-  const load = () =>
-    start(async () => {
-      const r = await myNotifications();
-      setItems(r.items);
-      setUnread(r.unread);
-    });
+  // Refreshes in the background; the list from the page shows meanwhile.
+  const load = () => {
+    myNotifications()
+      .then((r) => {
+        setItems(r.items);
+        setUnread(r.unread);
+      })
+      .catch(() => {});
+  };
 
   const markAll = () =>
     start(async () => {

@@ -1,6 +1,6 @@
 # F26: Google Calendar and Meet links
 
-- **Priority:** P1 · **Release:** v2.6.0 · **Status:** In progress
+- **Priority:** P1 · **Release:** v2.6.0 · **Status:** Done
 - **Decisions:** D-042
 
 ## What it does
@@ -48,3 +48,4 @@ time that's taken in Google.
 | ---------- | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | 2026-11-02 | 2.6.0   | Feature doc written (before code), D-042.                                                                                     |
 | 2026-11-02 | 2.6.0   | Built: Connect/Disconnect, encrypted token, events with Meet links, move/cancel, guests, busy times; tests with Google faked. |
+| 2026-11-02 | 2.6.0   | Released in v2.6.0.                                                                                                           |
