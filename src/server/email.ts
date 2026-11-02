@@ -1,7 +1,15 @@
 // Sending email through Resend (D-023). Only used when RESEND_API_KEY and EMAIL_FROM are
 // set; otherwise the app shows links to copy instead (D-002).
 
-export type Email = { to: string; subject: string; text: string };
+export type Email = {
+  to: string;
+  subject: string;
+  text: string;
+  /** Files sent with it, e.g. a calendar invite (F22). */
+  attachments?: { filename: string; content: string; contentType?: string }[];
+  /** Where a reply goes (e.g. the rep, for booking emails). */
+  replyTo?: string;
+};
 
 export function emailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY?.trim() && process.env.EMAIL_FROM?.trim());
@@ -22,6 +30,16 @@ export async function sendEmail(email: Email, fetcher: typeof fetch = fetch): Pr
         to: [email.to],
         subject: email.subject,
         text: email.text,
+        ...(email.replyTo ? { reply_to: email.replyTo } : {}),
+        ...(email.attachments?.length
+          ? {
+              attachments: email.attachments.map((a) => ({
+                filename: a.filename,
+                content: Buffer.from(a.content).toString("base64"),
+                ...(a.contentType ? { content_type: a.contentType } : {}),
+              })),
+            }
+          : {}),
       }),
       signal: AbortSignal.timeout(10_000),
     });

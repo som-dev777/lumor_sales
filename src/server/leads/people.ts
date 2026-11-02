@@ -24,6 +24,7 @@ import {
   activity,
   aiChat,
   aiChatMessage,
+  booking,
   company,
   person,
   persona,
@@ -113,41 +114,50 @@ function columnsFrom(data: PersonData, before?: PersonRow) {
 
 export async function createPerson(db: Db, actor: Actor, data: PersonData) {
   assertCan(actor, "lead.create");
-  return db.transaction(async (tx) => {
-    const norm = normalised(data.linkedinUrl);
-    await assertNotDuplicate(tx, norm);
+  return db.transaction((tx) => createPersonTx(tx, actor, data));
+}
 
-    let ownerId = actor.id;
-    if (data.ownerId && data.ownerId !== actor.id) {
-      assertCan(actor, "lead.reassign");
-      await assertActiveOwner(tx, data.ownerId);
-      ownerId = data.ownerId;
-    }
-    const companyId = data.companyName
-      ? (await resolveCompanyByName(tx, actor, data.companyName, ownerId)).id
-      : null;
+/** Adds a person inside a transaction the caller already holds (also used by bookings, F22). */
+export async function createPersonTx(
+  tx: DbOrTx,
+  actor: Actor,
+  data: PersonData,
+  auditExtra: Record<string, unknown> = {},
+) {
+  assertCan(actor, "lead.create");
+  const norm = normalised(data.linkedinUrl);
+  await assertNotDuplicate(tx, norm);
 
-    const [row] = await tx
-      .insert(person)
-      .values({
-        ...columnsFrom(data),
-        linkedinUrlNormalised: norm,
-        companyId,
-        ownerId,
-        openerTemplateVersion: await openerVersion(tx, data.openerTemplateId),
-        createdBy: actor.id,
-      })
-      .returning();
-    await writeAudit(tx, {
-      userId: actor.id,
-      entityType: "Person",
-      recordId: row.id,
-      recordName: row.fullName,
-      action: "Created",
-      after: personAudit(row),
-    });
-    return row;
+  let ownerId = actor.id;
+  if (data.ownerId && data.ownerId !== actor.id) {
+    assertCan(actor, "lead.reassign");
+    await assertActiveOwner(tx, data.ownerId);
+    ownerId = data.ownerId;
+  }
+  const companyId = data.companyName
+    ? (await resolveCompanyByName(tx, actor, data.companyName, ownerId)).id
+    : null;
+
+  const [row] = await tx
+    .insert(person)
+    .values({
+      ...columnsFrom(data),
+      linkedinUrlNormalised: norm,
+      companyId,
+      ownerId,
+      openerTemplateVersion: await openerVersion(tx, data.openerTemplateId),
+      createdBy: actor.id,
+    })
+    .returning();
+  await writeAudit(tx, {
+    userId: actor.id,
+    entityType: "Person",
+    recordId: row.id,
+    recordName: row.fullName,
+    action: "Created",
+    after: { ...personAudit(row), ...auditExtra },
   });
+  return row;
 }
 
 export async function loadPerson(tx: DbOrTx, id: string) {
@@ -221,7 +231,8 @@ export async function deletePerson(db: Db, actor: Actor, id: string) {
       .where(eq(activity.personId, id))
       .returning({ id: activity.id });
     await tx.delete(planEnrolment).where(eq(planEnrolment.personId, id));
-    // Their AI chats (F23) go too.
+    // Bookings stay on the calendar, unlinked (F22); their AI chats (F23) go.
+    await tx.update(booking).set({ personId: null }).where(eq(booking.personId, id));
     const chats = tx.select({ id: aiChat.id }).from(aiChat).where(eq(aiChat.personId, id));
     await tx.delete(aiChatMessage).where(inArray(aiChatMessage.chatId, chats));
     await tx.delete(aiChat).where(eq(aiChat.personId, id));

@@ -207,6 +207,11 @@ export type ReportRecipients = (typeof REPORT_RECIPIENTS)[number];
 // --- AI Resources (F20) ---
 export const AI_PROMPT_IDS = ["P01", "P02", "P03", "P04"] as const;
 
+/** Calendar (F22). */
+export const BOOKING_STATUSES = ["Confirmed", "Cancelled"] as const;
+export const BOOKING_CANCELLERS = ["invitee", "host"] as const;
+export const MEETING_LENGTHS = [15, 20, 30, 45, 60, 90] as const;
+
 /** Who wrote a message in an AI chat (F23). */
 export const CHAT_ROLES = ["rep", "ai"] as const;
 export type AiPromptId = (typeof AI_PROMPT_IDS)[number];

@@ -56,6 +56,8 @@ test in `src/lib/permissions.test.ts`.
 | Add an industry (F21)                                                  | `lead.create`                                                         | Yes   | Yes                                         |
 | Rename or delete industries (F21)                                      | `settings.edit`                                                       | Yes   | No                                          |
 | Chat with the AI on a lead (F23); chats are private to their author    | `lead.edit` (owner or Admin)                                          | Yes   | Own leads                                   |
+| Calendar: hours, meeting types, cancel bookings (F22)                  | `calendar.manage` (own calendar; Admins anyone's)                     | Yes   | Own                                         |
+| Book, cancel or reschedule from a booking link (F22)                   | None: checked against the link or private code (D-041)                | —     | Anyone                                      |
 | Add and edit AI knowledge files; set the demo calendar link            | `knowledge.edit`                                                      | Yes   | No                                          |
 | Add and remove sales resources (files and links)                       | `resources.manage`                                                    | Yes   | No                                          |
 | View the Audit Log                                                     | `audit.view`                                                          | Yes   | No. Users see change history on each record |

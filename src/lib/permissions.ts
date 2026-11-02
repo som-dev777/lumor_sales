@@ -32,7 +32,10 @@ export type PlainAction =
   | "audit.modify";
 
 /** Actions on a lead or company: the record's owner matters. */
-type OwnedAction = "lead.edit";
+type OwnedAction =
+  | "lead.edit"
+  // Calendar (F22): a rep's own hours, meeting types and bookings; Admins can manage anyone's.
+  | "calendar.manage";
 
 /** Actions on a library item: its type (Official/Personal) and owner matter. */
 type LibraryAction =
@@ -90,6 +93,7 @@ export function can(actor: Actor, action: Action, record?: Partial<LibraryItem>)
     // Log outreach / edit a lead: its owner, or an Admin.
     // A User on someone else's lead sees "This lead is claimed by {owner}".
     case "lead.edit":
+    case "calendar.manage":
       return isOwner || isAdmin;
 
     // Official items: Admin only (Users see a lock). Personal items: create freely,

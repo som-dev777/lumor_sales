@@ -149,6 +149,15 @@ describe("PRD permission table", () => {
   });
 });
 
+describe("calendar (F22)", () => {
+  it("manage your own calendar; Admins manage anyone's", () => {
+    expect(can(rep, "calendar.manage", { ownerId: rep.id })).toBe(true);
+    expect(can(rep, "calendar.manage", { ownerId: admin.id })).toBe(false);
+    expect(can(admin, "calendar.manage", { ownerId: rep.id })).toBe(true);
+    expect(can(inactiveRep, "calendar.manage", { ownerId: inactiveRep.id })).toBe(false);
+  });
+});
+
 describe("deactivated users", () => {
   it("can do nothing, not even read", () => {
     for (const actor of [inactiveAdmin, inactiveRep]) {

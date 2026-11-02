@@ -336,6 +336,30 @@ chat_id (→ ai_chat), role (`rep` or `ai`), content, drafts (JSON list of {appr
 AI's ready-to-send messages), flags (JSON list), reply_by (JSON {date, reason} or empty),
 created_at. Index (chat_id, created_at). At most 200 per chat.
 
+### calendar_profile (F22)
+
+user_id (→ user, unique), slug (unique: the rep's part of the booking link), weekly_hours (JSON:
+ISO weekday "1"–"7" → list of {start, end} in IST "HH:mm"), days_off (JSON list of IST dates).
+Created the first time the rep saves their hours or a meeting type.
+
+### meeting_type (F22)
+
+owner_id (→ user), name, slug (unique per owner), duration_min (15, 20, 30, 45, 60 or 90),
+description, location (meeting link, phone or address), buffer_min (0–60), min_notice_hours
+(0–72), max_days_ahead (1–90), max_per_day (empty = no limit), questions (JSON list of {label,
+required}, up to 5), active (0/1).
+
+### booking (F22)
+
+meeting_type_id (→ meeting_type), host_id (→ user), starts_at, ends_at, status (`Confirmed` or
+`Cancelled`), invitee_name, invitee_email (lower case), invitee_company, invitee_phone,
+invitee_linkedin, invitee_note, answers (JSON list of {question, answer}), invitee_time_zone,
+manage_token_hash (unique; hash of the visitor's private code), person_id (→ person; emptied if
+the person is deleted), cancelled_at, cancelled_by (`invitee` or `host`), cancel_reason,
+rescheduled_from_id (the first booking in a reschedule chain, so calendar invites update one
+event). A partial unique index stops two confirmed bookings at the same start for one rep.
+Indexes (host_id, starts_at), person_id, (invitee_email, created_at).
+
 ### report_schedule (F19)
 
 name (unique), frequency (Report frequency), time_of_day (`HH:mm` IST, on the hour or half
@@ -400,4 +424,4 @@ tables, and dropping `sequence_step` and the old follow-up delays. 0007 adds the
 Resources tables (F20). 0008 (R8) adds `activity.direction` (filled in for old rows: messages
 and calls `out`, replies `in`) and `person.nudge_count`. 0009 (R9) adds `report_schedule`, `report_run` and
 `activity.plan_due_date`. 0010 adds `industry`. 0011 adds `ai_chat` and
-`ai_chat_message` (F23).
+`ai_chat_message` (F23). 0012 adds `calendar_profile`, `meeting_type` and `booking` (F22).
