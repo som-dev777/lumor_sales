@@ -8,6 +8,7 @@ import { PermissionError, type Actor } from "@/lib/permissions";
 import { personSchema } from "@/lib/validation/leads";
 import { scheduleSchema } from "@/lib/validation/reports";
 import { POST as cron } from "@/app/api/cron/reports/route";
+import type { Email } from "./email";
 import { createPerson } from "./leads/people";
 import {
   createSchedule,
@@ -210,7 +211,8 @@ describe("scheduled reports (D-039)", () => {
     vi.stubEnv("BETTER_AUTH_URL", "https://hub.example");
   };
   const sent: { to: string; subject: string; text: string }[] = [];
-  const send = async (e: { to: string; subject: string; text: string }) => {
+  const send = async (m: Email) => {
+    const e = { to: String(m.to), subject: m.subject, text: m.text };
     sent.push(e);
     return true;
   };

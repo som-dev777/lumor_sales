@@ -3,7 +3,7 @@ import styles from "./calendar.module.scss";
 
 const TABS = [
   { href: "/calendar", label: "Bookings" },
-  { href: "/calendar/meeting-types", label: "Meeting types" },
+  { href: "/calendar/events", label: "Events" },
   { href: "/calendar/availability", label: "Availability" },
 ] as const;
 

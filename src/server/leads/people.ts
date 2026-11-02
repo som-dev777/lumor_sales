@@ -54,13 +54,26 @@ function personAudit(row: PersonRow) {
   return rest;
 }
 
-/** The PRD's "Already added by {owner}" refusal, with a link to the existing person. */
-async function assertNotDuplicate(tx: DbOrTx, normalised: string, exceptId?: string) {
+/**
+ * The PRD's "Already added by {owner}" refusal, with a link to the existing person. Checked on
+ * the LinkedIn profile, or on the email when there's no profile (D-043).
+ */
+async function assertNotDuplicate(
+  tx: DbOrTx,
+  key: { normalised: string | null; email: string | null },
+  exceptId?: string,
+) {
+  const where = key.normalised
+    ? eq(person.linkedinUrlNormalised, key.normalised)
+    : key.email
+      ? sql`lower(${person.email}) = ${key.email.toLowerCase()} and ${person.linkedinUrlNormalised} is null`
+      : null;
+  if (!where) return;
   const [existing] = await tx
     .select({ id: person.id, ownerName: user.name })
     .from(person)
     .leftJoin(user, eq(user.id, person.ownerId))
-    .where(eq(person.linkedinUrlNormalised, normalised));
+    .where(where);
   if (existing && existing.id !== exceptId) {
     throw new LeadError(
       `Already added by ${existing.ownerName ?? "someone"}.`,
@@ -69,7 +82,8 @@ async function assertNotDuplicate(tx: DbOrTx, normalised: string, exceptId?: str
   }
 }
 
-function normalised(url: string) {
+function normalised(url: string | null) {
+  if (!url) return null;
   const r = normaliseLinkedInUrl(url);
   if (!r.ok) throw new LeadError(r.error);
   return r.normalised;
@@ -126,7 +140,7 @@ export async function createPersonTx(
 ) {
   assertCan(actor, "lead.create");
   const norm = normalised(data.linkedinUrl);
-  await assertNotDuplicate(tx, norm);
+  await assertNotDuplicate(tx, { normalised: norm, email: data.email });
 
   let ownerId = actor.id;
   if (data.ownerId && data.ownerId !== actor.id) {
@@ -171,7 +185,7 @@ export async function updatePerson(db: Db, actor: Actor, id: string, data: Perso
     const before = await loadPerson(tx, id);
     assertCan(actor, "lead.edit", before);
     const norm = normalised(data.linkedinUrl);
-    await assertNotDuplicate(tx, norm, id);
+    await assertNotDuplicate(tx, { normalised: norm, email: data.email }, id);
 
     let ownerId = before.ownerId;
     if (data.ownerId && data.ownerId !== before.ownerId) {

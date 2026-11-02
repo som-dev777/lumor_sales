@@ -113,3 +113,4 @@ same LinkedIn profile twice, so two reps never message the same person.
 | 2026-11-02 | 2.5.0   | **Fill with AI** on the person form (F24).                                                                                                                                   |
 | 2026-11-02 | 2.5.0   | Person page **Meetings** panel with booking links (F22); released in v2.5.0.                                                                                                 |
 | 2026-11-03 | 2.7.0   | LinkedIn or email, Check details flag, Backlog badge and filter written (D-043), before code.                                                                                |
+| 2026-11-03 | 2.7.0   | Built: LinkedIn or email (duplicate check on email when there's no LinkedIn); review_note set by bookings and Calendly.                                                      |

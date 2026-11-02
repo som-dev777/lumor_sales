@@ -2,7 +2,8 @@
 // Used in the browser and again on the server.
 import { parsePhoneNumberFromString, type CountryCode } from "libphonenumber-js";
 import { z } from "zod";
-import { QUESTION_TYPES } from "../db/enums";
+import { fieldRules, matchChoice, type FieldRules } from "../booking-fields";
+import { MEETING_MODES, QUESTION_TYPES } from "../db/enums";
 import { normaliseLinkedInUrl } from "../linkedin";
 import { checkRanges } from "../slots";
 import { isIstDate } from "../time";
@@ -82,6 +83,8 @@ export const availabilitySchema = z.object({
     .union([z.literal(""), z.null(), workEmail])
     .optional()
     .transform((v) => (v ? v : null)),
+  // "Co-founder, Lumor", after the rep's name in booking emails (D-043).
+  emailTitle: optionalText(120),
 });
 export type AvailabilityData = z.infer<typeof availabilitySchema>;
 
@@ -117,6 +120,8 @@ export const questionSchema = z
   });
 export type QuestionData = z.output<typeof questionSchema>;
 
+const fieldRule = z.object({ show: z.boolean(), required: z.boolean() });
+
 export const meetingTypeSchema = z.object({
   name: z.string().trim().min(2, "Enter a name.").max(80, "Use at most 80 characters."),
   slug: slugSchema,
@@ -136,6 +141,19 @@ export const meetingTypeSchema = z.object({
     .transform((v) => (typeof v === "number" ? v : null)),
   googleMeet: z.boolean().default(true),
   questions: z.array(questionSchema).max(MAX_QUESTIONS, `At most ${MAX_QUESTIONS} questions.`),
+  // Round 3 (D-043): the standard fields' switches, the email wording and the in-person address.
+  standardFields: z
+    .object({
+      company: fieldRule,
+      phone: fieldRule,
+      linkedin: fieldRule,
+      mode: fieldRule,
+    })
+    .optional()
+    .transform((v) => fieldRules(v)),
+  emailName: optionalText(60),
+  emailNote: optionalText(1000),
+  inPersonAddress: optionalText(300),
 });
 export type MeetingTypeInput = z.input<typeof meetingTypeSchema>;
 export type MeetingTypeData = z.output<typeof meetingTypeSchema>;
@@ -157,7 +175,15 @@ export const bookingFormSchema = z
     startsAt: z.iso.datetime({ message: "Pick a time." }),
     name: z.string().trim().min(2, "Enter your name.").max(120, "Name is too long."),
     email: workEmail,
-    company: z.string().trim().min(1, "Enter your company.").max(200, "Too long."),
+    // Checked against the event's switches by checkStandardFields (D-043).
+    company: z
+      .string()
+      .trim()
+      .max(200, "Too long.")
+      .optional()
+      .nullable()
+      .transform((v) => v ?? ""),
+    mode: z.enum(MEETING_MODES).optional().nullable(),
     phoneCountry: z
       .string()
       .regex(/^[A-Za-z]{2}$/)
@@ -200,7 +226,35 @@ export const bookingFormSchema = z
 export type BookingFormInput = z.input<typeof bookingFormSchema>;
 export type BookingFormData = z.output<typeof bookingFormSchema>;
 
-/** Checks the answers against the meeting type's questions; returns the stored answers. */
+/**
+ * Checks the standard fields against the event's switches (D-043): a required field must be
+ * filled in; a hidden one is ignored. Returns messages by field name (empty = fine).
+ */
+export function checkStandardFields(
+  saved: Partial<FieldRules> | null | undefined,
+  v: {
+    company?: string | null;
+    phone?: string | null;
+    linkedin?: string | null;
+    mode?: string | null;
+  },
+): Record<string, string> {
+  const rules = fieldRules(saved);
+  const out: Record<string, string> = {};
+  if (rules.company.required && !v.company?.trim()) out.company = "Enter your company.";
+  if (rules.phone.required && !v.phone?.trim()) out.phone = "Enter your phone number.";
+  if (rules.linkedin.required && !v.linkedin?.trim()) {
+    out.linkedin = "Add your LinkedIn profile link.";
+  }
+  if (rules.mode.required && !v.mode) out.mode = "Choose online or in person.";
+  return out;
+}
+
+/**
+ * Checks the answers against the event's questions; returns the stored answers. Choices are
+ * matched loosely and stored in the event's own spelling; a choice that isn't on the list
+ * (for example, a page opened before the event was edited) is dropped, not refused (D-043).
+ */
 export function checkAnswers(
   questions: { label: string; required: boolean; type?: string; options?: string[] }[],
   answers: (string | string[])[],
@@ -213,16 +267,16 @@ export function checkAnswers(
     const type = q.type ?? "short";
     let text: string;
     if (type === "checkboxes") {
-      const picked = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter(Boolean);
-      if (picked.some((p) => !q.options?.includes(p))) {
-        return { ok: false, index: i, message: "Pick from the choices given." };
-      }
-      text = picked.join(", ");
+      const picked = (Array.isArray(raw) ? raw : raw ? [raw] : [])
+        .map((p) => matchChoice(q.options, String(p)))
+        .filter((p): p is string => p !== null);
+      // In the event's order, each once.
+      text = (q.options ?? []).filter((o) => picked.includes(o)).join(", ");
+    } else if (type === "dropdown") {
+      const one = Array.isArray(raw) ? (raw[0] ?? "") : (raw ?? "");
+      text = matchChoice(q.options, one) ?? "";
     } else {
       text = (Array.isArray(raw) ? raw.join(", ") : (raw ?? "")).trim();
-      if (type === "dropdown" && text && !q.options?.includes(text)) {
-        return { ok: false, index: i, message: "Pick from the choices given." };
-      }
       if (type === "short" && text.length > 300) {
         return { ok: false, index: i, message: "Keep it under 300 characters." };
       }
@@ -231,10 +285,74 @@ export function checkAnswers(
       return {
         ok: false,
         index: i,
-        message: type === "checkboxes" ? "Pick at least one." : "This question is required.",
+        message:
+          type === "checkboxes"
+            ? "Pick at least one."
+            : type === "dropdown"
+              ? "Pick one."
+              : "This question is required.",
       };
     }
     out.push({ question: q.label, answer: text });
   }
   return { ok: true, answers: out };
 }
+
+export const MAX_RECIPIENTS = 20;
+export const SCHEDULE_HOW = ["meet", "in_person", "phone", "link"] as const;
+
+/** "a@x.com, b@y.in" or a list → clean, lower-case, each once. */
+const emailList = (label: string) =>
+  z
+    .union([z.string(), z.array(z.string())])
+    .optional()
+    .transform((v) =>
+      (Array.isArray(v) ? v : (v ?? "").split(/[,;\s]+/))
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean),
+    )
+    .pipe(
+      z
+        .array(workEmail)
+        .max(MAX_RECIPIENTS, `At most ${MAX_RECIPIENTS} ${label} addresses.`)
+        .transform((list) => [...new Set(list)]),
+    );
+
+/** A meeting the rep schedules themselves (D-043), with To and CC recipients. */
+export const scheduleMeetingSchema = z
+  .object({
+    title: z.string().trim().min(2, "Give the meeting a title.").max(120, "Too long."),
+    date: z.string().refine((d) => isIstDate(d), "Pick a date."),
+    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Pick a time."),
+    durationMin: z.coerce
+      .number()
+      .int("Use whole minutes.")
+      .min(5, "Use 5 to 480 minutes.")
+      .max(480, "Use 5 to 480 minutes."),
+    how: z.enum(SCHEDULE_HOW),
+    place: optionalText(500),
+    to: emailList("To"),
+    cc: emailList("CC"),
+    message: optionalText(2000),
+  })
+  .superRefine((v, ctx) => {
+    if (v.to.length === 0) {
+      ctx.addIssue({ code: "custom", message: "Add at least one To address.", path: ["to"] });
+    }
+    if (v.how === "in_person" && !v.place) {
+      ctx.addIssue({ code: "custom", message: "Add the address.", path: ["place"] });
+    }
+    if (v.how === "phone" && !v.place) {
+      ctx.addIssue({ code: "custom", message: "Add the phone number.", path: ["place"] });
+    }
+    if (v.how === "link" && !(v.place && /^https?:\/\/\S+$/.test(v.place))) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Paste the meeting link (https://…).",
+        path: ["place"],
+      });
+    }
+  })
+  .transform((v) => ({ ...v, cc: v.cc.filter((e) => !v.to.includes(e)) }));
+export type ScheduleMeetingInput = z.input<typeof scheduleMeetingSchema>;
+export type ScheduleMeetingData = z.output<typeof scheduleMeetingSchema>;

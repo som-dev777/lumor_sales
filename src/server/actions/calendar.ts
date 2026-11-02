@@ -15,9 +15,11 @@ import {
   availabilitySchema,
   bookingFormSchema,
   meetingTypeSchema,
+  scheduleMeetingSchema,
 } from "@/lib/validation/calendar";
 import {
   addTeammate,
+  BookingFieldsError,
   cancelByHost,
   cancelByToken,
   createBooking,
@@ -27,6 +29,7 @@ import {
   rescheduleSlots,
   saveAvailability,
   saveMeetingType,
+  scheduleMeeting,
   setMeetingTypeActive,
 } from "../calendar";
 import { disconnectGoogle } from "../google/google";
@@ -65,7 +68,7 @@ export async function saveMeetingTypeAction(
   const parsed = meetingTypeSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error.issues);
   if (meetingTypeId !== null && !id.safeParse(meetingTypeId).success) {
-    return { ok: false, error: "Unknown meeting type." };
+    return { ok: false, error: "Unknown event." };
   }
   return run(async () => {
     const row = await saveMeetingType(getDb(), viewer, meetingTypeId, parsed.data);
@@ -150,6 +153,22 @@ export async function rescheduleBookingAction(
   }
 }
 
+/** The rep schedules a meeting themselves, with To and CC recipients (D-043). */
+export async function scheduleMeetingAction(input: unknown): Promise<ActionResult> {
+  const viewer = await requireUser();
+  const parsed = scheduleMeetingSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error.issues);
+  const now = await appNow();
+  return run(async () => {
+    const b = await scheduleMeeting(getDb(), viewer, parsed.data, now);
+    refresh();
+    return {
+      ok: true,
+      message: `${b.title ?? "Meeting"} is on your calendar${parsed.data.to.length ? " and the invitation is on its way" : ""}.`,
+    };
+  });
+}
+
 export async function addTeammateAction(bookingId: string, userId: string) {
   const viewer = await requireUser();
   if (!id.safeParse(bookingId).success || !z.string().min(1).max(100).safeParse(userId).success) {
@@ -216,6 +235,9 @@ export async function bookSlot(
     const { token: t } = await createBooking(getDb(), profileSlug, typeSlug, parsed.data, now);
     return { ok: true, token: t };
   } catch (e) {
+    if (e instanceof BookingFieldsError) {
+      return { ok: false, error: e.message, fieldErrors: e.fields };
+    }
     if (e instanceof LeadError || e instanceof PermissionError) {
       return { ok: false, error: e.message };
     }

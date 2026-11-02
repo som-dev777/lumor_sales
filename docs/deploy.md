@@ -107,11 +107,12 @@ turso db create lumor-sales-backup-2026-10 --from-db lumor-sales
 login`.) On your own Mac, `npm run db:migrate` copies `data/app.db` into `data/backups/` by
 itself before changing anything.
 
-## Scheduled reports
+## Scheduled reports and booking reminders
 
 Netlify runs `netlify/functions/report-schedules.mts` every 15 minutes. It calls the app with
-`CRON_SECRET`, and the app makes the reports that are due (Reports page → Scheduled reports).
-Without `CRON_SECRET` nothing runs on a schedule (Run now still works). Without the Resend key,
+`CRON_SECRET`, and the app makes the reports that are due (Reports page → Scheduled reports)
+and emails the booking reminders that are due (24 hours and 1 hour before, D-043).
+Without `CRON_SECRET` nothing runs on a schedule (Run now still works, but no reminders go out). Without the Resend key,
 scheduled reports are saved in Report history but not emailed. To check it's running: Netlify →
 **Logs → Functions → report-schedules**.
 
@@ -132,8 +133,43 @@ lumor-sales --location <region>`), and update `DATABASE_URL` and `DATABASE_AUTH_
 Booking links use the site address in `BETTER_AUTH_URL` (for example
 `https://your-site.netlify.app/book/somnath/demo`), so it must be the live address. Booking
 emails and calendar invites go through Resend (`RESEND_API_KEY`, `EMAIL_FROM`); without them,
-bookings still work and the confirmation page offers the calendar file. Each rep sets where their
-own booking emails go on Calendar → Availability (it starts as their login email).
+bookings still work, but nobody is emailed (no confirmation, no reminders, no rep email). Each rep
+sets where their own booking emails go on Calendar → Availability (it starts as their login email),
+and their title for the emails ("Co-founder, Lumor").
+
+**Checklist when bookings don't email anyone:** on Netlify → Project configuration → Environment
+variables, `RESEND_API_KEY` and `EMAIL_FROM` must both be set (and the sending domain verified in
+Resend), then **Trigger deploy**. For reminders, `CRON_SECRET` must be set too.
+
+## Calendly (F27, optional)
+
+Only needed if some bookings still happen on Calendly. Calendly's webhooks need a paid Calendly
+plan (Standard or higher).
+
+1. Make a signing key: any long random text (Terminal: `openssl rand -base64 32`). Keep it secret.
+2. Netlify → Project configuration → Environment variables → **Add a variable**: key
+   `CALENDLY_WEBHOOK_SIGNING_KEY`, value = that text (untick "Contains secret values" on the free
+   plan; All scopes; Same value for all deploy contexts). Then **Deploys → Trigger deploy**.
+3. In Calendly: **Integrations → API and webhooks → Personal access tokens → Create new token**.
+   Copy it.
+4. Create the webhook subscription (Calendly has no button for this; it's one request). In
+   Terminal, replacing the three CAPITAL parts:
+
+   ```sh
+   curl -X POST https://api.calendly.com/webhook_subscriptions \
+     -H "Authorization: Bearer YOUR_CALENDLY_TOKEN" -H "Content-Type: application/json" \
+     -d '{"url":"https://YOUR-SITE.netlify.app/api/calendly/webhook",
+          "events":["invitee.created","invitee.canceled"],
+          "organization":"YOUR_ORGANIZATION_URI","scope":"organization",
+          "signing_key":"THE_SIGNING_KEY_FROM_STEP_1"}'
+   ```
+
+   Your organization URI is in the answer to
+   `curl -H "Authorization: Bearer YOUR_CALENDLY_TOKEN" https://api.calendly.com/users/me`
+   (`current_organization`).
+
+5. Book a test meeting on Calendly. The person appears in the Sales Hub (or gets Meeting booked)
+   within a minute, and their owner gets an email.
 
 ## Google Calendar and Meet (F26, one-time setup)
 

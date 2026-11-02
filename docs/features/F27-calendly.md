@@ -1,6 +1,6 @@
 # F27: Calendly integration
 
-- **Priority:** P1 · **Release:** v2.7.0 · **Status:** Planned
+- **Priority:** P1 · **Release:** v2.7.0 · **Status:** Built (released with v2.7.0)
 - **PRD:** [Version 2.7 additions](../PRD.md#version-27-additions-owner-2026-11-03)
 - **Decisions:** D-043
 
@@ -83,6 +83,7 @@ token to create the webhook subscription, and the signing key you choose, added 
 
 ## Change history
 
-| Date       | Version | Change                            |
-| ---------- | ------- | --------------------------------- |
-| 2026-11-03 | 2.7.0   | Doc written (D-043), before code. |
+| Date       | Version | Change                                                                                         |
+| ---------- | ------- | ---------------------------------------------------------------------------------------------- |
+| 2026-11-03 | 2.7.0   | Doc written (D-043), before code.                                                              |
+| 2026-11-03 | 2.7.0   | Built: webhook with signature check, booking, cancel and reschedule sync, owner emails, tests. |

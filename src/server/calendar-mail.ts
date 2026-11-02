@@ -1,15 +1,26 @@
-// Booking emails (F22 round 2, F25, D-042): one simple layout, as HTML and plain text.
-// Email apps ignore style sheets, so this HTML uses inline styles (the app's own pages don't).
+// Booking emails (F22, F25, D-042, D-043): one simple layout, as HTML and plain text, with the
+// Lumor logo on top. Email apps ignore style sheets, so this HTML uses inline styles (the app's
+// own pages don't).
+import { appUrl } from "@/lib/tokens";
 
 export type MailContent = {
-  heading: string;
-  intro: string;
+  /** A title line; letters in the owner's copy have none. */
+  heading?: string;
+  /** Paragraphs before the detail rows ("Hi Priya,"…). */
+  intro: string | string[];
   rows: [label: string, value: string][];
+  /** Paragraphs after the rows. */
+  after?: string[];
   button?: { label: string; url: string };
   /** Extra links under the button. */
   links?: { label: string; url: string }[];
+  /** The sign-off lines ("See you then,", "Somnath", "Lumor"). */
+  signoff?: string[];
   foot?: string;
 };
+
+// The logo's blue.
+const BLUE = "#1e3ac4";
 
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -17,22 +28,26 @@ const esc = (s: string) =>
 const linkify = (s: string) =>
   esc(s).replace(
     /(https?:\/\/[^\s<]+)/g,
-    (u) => `<a href="${u}" style="color:#1f7a4d;word-break:break-all">${u}</a>`,
+    (u) => `<a href="${u}" style="color:${BLUE};word-break:break-all">${u}</a>`,
   );
 
+const para = (s: string) =>
+  `<p style="margin:0 0 14px;color:#14171a;line-height:1.55">${linkify(s)}</p>`;
+
 export function renderMail(m: MailContent): { text: string; html: string } {
+  const intro = Array.isArray(m.intro) ? m.intro : [m.intro];
   const text = [
-    m.heading,
-    "",
-    m.intro,
-    "",
+    ...(m.heading ? [m.heading, ""] : []),
+    ...intro.flatMap((p) => [p, ""]),
     ...m.rows.map(([k, v]) => `${k}: ${v}`),
-    ...(m.button ? ["", `${m.button.label}: ${m.button.url}`] : []),
+    ...(m.after?.length ? ["", ...m.after.flatMap((p) => [p, ""])] : []),
+    ...(m.button ? ["", `[ ${m.button.label} ] → ${m.button.url}`] : []),
     ...(m.links ?? []).map((l) => `${l.label}: ${l.url}`),
+    ...(m.signoff?.length ? ["", ...m.signoff] : ["", "— Lumor"]),
     ...(m.foot ? ["", m.foot] : []),
-    "",
-    "— Lumor",
-  ].join("\n");
+  ]
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n");
 
   const rows = m.rows
     .map(
@@ -41,23 +56,27 @@ export function renderMail(m: MailContent): { text: string; html: string } {
     )
     .join("");
   const button = m.button
-    ? `<p style="margin:24px 0 8px"><a href="${esc(m.button.url)}" style="display:inline-block;background:#1f7a4d;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">${esc(m.button.label)}</a></p>`
+    ? `<p style="margin:22px 0 8px"><a href="${esc(m.button.url)}" style="display:inline-block;background:${BLUE};color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:600">${esc(m.button.label)}</a></p>`
     : "";
   const links = (m.links ?? [])
     .map(
       (l) =>
-        `<p style="margin:8px 0"><a href="${esc(l.url)}" style="color:#1f7a4d">${esc(l.label)}</a></p>`,
+        `<p style="margin:8px 0"><a href="${esc(l.url)}" style="color:${BLUE}">${esc(l.label)}</a></p>`,
     )
     .join("");
+  const signoff = m.signoff?.length
+    ? `<p style="margin:22px 0 0;color:#14171a;line-height:1.55">${m.signoff.map(esc).join("<br>")}</p>`
+    : "";
   const html = `<!doctype html><html><body style="margin:0;background:#f4f6f8;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f8;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;padding:28px">
 <tr><td>
-<p style="margin:0 0 16px;font-weight:700;color:#1f7a4d;font-size:15px">Lumor</p>
-<h1 style="margin:0 0 12px;font-size:20px;color:#14171a">${esc(m.heading)}</h1>
-<p style="margin:0 0 16px;color:#14171a;line-height:1.5">${linkify(m.intro)}</p>
-<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.4">${rows}</table>
-${button}${links}
+<p style="margin:0 0 20px"><img src="${appUrl()}/lumor-logo.png" alt="Lumor" width="104" height="30" style="display:block;border:0"></p>
+${m.heading ? `<h1 style="margin:0 0 12px;font-size:20px;color:#14171a">${esc(m.heading)}</h1>` : ""}
+${intro.map(para).join("")}
+${rows ? `<table role="presentation" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.4;margin:0 0 14px">${rows}</table>` : ""}
+${(m.after ?? []).map(para).join("")}
+${button}${links}${signoff}
 ${m.foot ? `<p style="margin:24px 0 0;color:#5b6470;font-size:13px;line-height:1.5">${linkify(m.foot)}</p>` : ""}
 </td></tr></table>
 </td></tr></table></body></html>`;

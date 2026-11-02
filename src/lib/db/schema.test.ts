@@ -68,6 +68,7 @@ describe("migrations", () => {
       "booking",
       "booking_participant",
       "calendar_profile",
+      "calendly_booking",
       "company",
       "google_connection",
       "industry",

@@ -145,8 +145,8 @@ Unique: the company name, ignoring case and surrounding spaces (`lower(trim(name
 | ----------------------- | ------------------------------------------------------------ |
 | full_name               | required                                                     |
 | title                   | text                                                         |
-| linkedin_url            | required, must contain `linkedin.com/in/`                    |
-| linkedin_url_normalised | required, **unique**, set by the server (see F02)            |
+| linkedin_url            | optional, must contain `linkedin.com/in/` (D-043)            |
+| linkedin_url_normalised | **unique** when set, set by the server (see F02)             |
 | sales_nav_url           | optional                                                     |
 | company_id              | → company                                                    |
 | persona_id              | → persona                                                    |
@@ -173,10 +173,12 @@ Unique: the company name, ignoring case and surrounding spaces (`lower(trim(name
 | nurture_until           | plain date; no touches until then (F17)                      |
 | awaiting_reply_until    | plain date; the reply-by date the rep confirmed (F18)        |
 | nudge_count             | nudges sent since the last reply, default 0 (F18: at most 2) |
+| review_note             | "From the booking page / Calendly: check details" (D-043)    |
 
+CHECK `person_contact_check`: a LinkedIn profile **or** an email (D-043).
 `sequence_step` was removed in v2 (D-032); a plan's current step replaces it.
 
-Indexes: owner_id, stage, next_action_date, company_id, persona_id.
+Indexes: owner_id, stage, next_action_date, company_id, persona_id, email.
 
 ### activity
 
@@ -267,8 +269,9 @@ skip_weekends (0/1, default 1).
 
 ### plan_step
 
-plan_id (→ plan), version, step_order, channels (JSON ordered list of `{channel, when}`; the
-first that applies is used, D-033), template_purpose (Template purpose, optional), template_id
+plan_id (→ plan), version, step_order, channels (JSON ordered list of `{channel, when, label}`;
+the first that applies is used, D-033; `label` names a Custom task, D-043), template_purpose
+(Template purpose, optional), custom_purpose (a purpose the author typed, D-043), template_id
 (→ template, optional), script (call script, task text or connection-request note), wait_days
 (≥ 0). Unique (plan_id, version, step_order).
 
@@ -340,7 +343,8 @@ created_at. Index (chat_id, created_at). At most 200 per chat.
 
 user_id (→ user, unique), slug (unique: the rep's part of the booking link), weekly_hours (JSON:
 ISO weekday "1"–"7" → list of {start, end} in IST "HH:mm", up to 12 a day), days_off (JSON list
-of IST dates), notify_email (where booking emails go; empty = the login email; D-042).
+of IST dates), notify_email (where booking emails go; empty = the login email; D-042),
+email_title ("Co-founder, Lumor" after the rep's name in booking emails; D-043).
 Created the first time the rep saves their hours or a meeting type.
 
 ### meeting_type (F22)
@@ -350,7 +354,11 @@ owner_id (→ user), name, slug (unique per owner), duration_min (5–240 in ste
 (0–60), min_notice_hours (0–72), max_days_ahead (1–90), max_per_day (empty = no limit),
 questions (JSON list of {label, required, type: short/paragraph/dropdown/checkboxes, options for
 dropdown and checkboxes}, up to 10; old rows without a type read as short), active (0/1),
-google_meet (0/1: make a Meet link per booking when Google is connected, F26).
+google_meet (0/1: make a Meet link per booking when Google is connected, F26), standard_fields
+(JSON: `{company, phone, linkedin, mode}` each `{show, required}`; empty = the defaults; D-043),
+email_name ("Lumor demo"), email_note (the paragraph in the confirmation), in_person_address,
+hidden (0/1: the rep's "Scheduled meeting" event that holds meetings they schedule themselves;
+never listed or bookable).
 
 ### booking (F22)
 
@@ -361,7 +369,10 @@ manage_token_hash (unique; hash of the visitor's private code), person_id (→ p
 the person is deleted), cancelled_at, cancelled_by (`invitee` or `host`), cancel_reason,
 rescheduled_from_id (the first booking in a reschedule chain, so calendar invites update one
 event), google_event_id and meet_link (the host's Google Calendar event and its Meet link, F26;
-carried across reschedules). invitee_note is only filled by v2.5.0 bookings (the note field was
+carried across reschedules), mode (`online` or `in_person`, D-043), manage_token_enc (the private
+code encrypted for reminder links, from 2.7.0), reminder_24_at and reminder_1_at (when each
+reminder was sent), and for meetings a rep scheduled: title, to_emails, cc_emails (JSON lists),
+message and location. invitee_note is only filled by v2.5.0 bookings (the note field was
 removed in v2.6.0). A partial unique index stops two confirmed bookings at the same start for one rep.
 Indexes (host_id, starts_at), person_id, (invitee_email, created_at).
 
@@ -374,7 +385,7 @@ block their own booking slots.
 ### notification (F25)
 
 user_id (→ user: only they see it), kind (`booked`, `cancelled`, `rescheduled`, `added`,
-`removed`, `google`), title, body, link (an app path), booking_id (→ booking), read_at (empty =
+`removed`, `google`, and from 2.7.0 `report` and `calendly`), title, body, link (an app path), booking_id (→ booking), read_at (empty =
 unread). created_by = who caused it (empty for a visitor). Indexes (user_id, created_at) and
 unread per user.
 
@@ -396,7 +407,15 @@ emails (JSON list, for recipients `emails`), active (0/1), next_run_at, last_run
 scope (`team` or `person`), person_user_id (→ user), from_date and to_date (plain IST dates,
 both included), title, data (JSON snapshot of every number, so a saved report never changes),
 ai_summary (P06), generated_by (→ user; empty when a schedule made it), schedule_id (→
-report_schedule), emailed_to (JSON list). Indexes on created_at and person_user_id.
+report_schedule), emailed_to (JSON list), shared_with (JSON list of user ids it was sent to; they
+can open it, D-043). Indexes on created_at and person_user_id.
+
+### calendly_booking (F27)
+
+invitee_uri (unique: each Calendly invitee is handled once), event_uri, event_name, starts_at,
+ends_at, join_url, invitee_name, invitee_email, answers (JSON list of {question, answer}), status
+(`Booked`, `Cancelled`, `Moved`), cancel_reason, person_id (→ person), replaces_uri (the Calendly
+invitee a reschedule replaced).
 
 ### app_release
 
@@ -450,4 +469,7 @@ and calls `out`, replies `in`) and `person.nudge_count`. 0009 (R9) adds `report_
 `ai_chat_message` (F23). 0012 adds `calendar_profile`, `meeting_type` and `booking` (F22).
 0013 (v2.6.0) adds `booking_participant`, `notification` and `google_connection`, and the
 columns `calendar_profile.notify_email`, `meeting_type.google_meet`, `booking.google_event_id`
-and `booking.meet_link`.
+and `booking.meet_link`. 0014 (v2.7.0, D-043) makes `person.linkedin_url` optional (with the
+LinkedIn-or-email check) and adds `person.review_note`; adds `calendly_booking`; the round 3
+calendar columns on `calendar_profile`, `meeting_type` and `booking`; `plan_step.custom_purpose`;
+`report_run.shared_with`; and the `report` and `calendly` notification kinds.

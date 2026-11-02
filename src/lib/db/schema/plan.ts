@@ -57,6 +57,8 @@ export const plan = sqliteTable(
 export type ChannelOption = {
   channel: (typeof STEP_CHANNELS)[number];
   when: (typeof CHANNEL_CONDITIONS)[number];
+  /** The name of a Custom task (D-043). */
+  label?: string;
 };
 
 export const planStep = sqliteTable(
@@ -71,6 +73,8 @@ export const planStep = sqliteTable(
     // Ordered channel options, as JSON: [{ channel, when }].
     channels: text("channels", { mode: "json" }).$type<ChannelOption[]>().notNull(),
     templatePurpose: text("template_purpose", { enum: TEMPLATE_PURPOSES }),
+    // A purpose the plan's author names (D-043): no template is picked for it.
+    customPurpose: text("custom_purpose"),
     templateId: text("template_id").references(() => template.id, { onDelete: "restrict" }),
     // Call script, task text, or the note sent with a connection request.
     script: text("script"),

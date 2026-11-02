@@ -1,6 +1,13 @@
 import { sql } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
-import { BOOKING_CANCELLERS, BOOKING_STATUSES, type QuestionType } from "../enums";
+import {
+  BOOKING_CANCELLERS,
+  BOOKING_STATUSES,
+  CALENDLY_STATUSES,
+  MEETING_MODES,
+  type QuestionType,
+  type StandardField,
+} from "../enums";
 import { baseColumns, flag, jsonList, oneOf, oneOfOrNull, timestamp } from "./_shared";
 import { user } from "./auth";
 import { person } from "./person";
@@ -21,6 +28,8 @@ export type BookingQuestion = {
   options?: string[];
 };
 export type BookingAnswer = { question: string; answer: string };
+/** Show/Required for each standard booking field (D-043). Missing = the defaults. */
+export type StandardFields = Record<StandardField, { show: boolean; required: boolean }>;
 
 export const calendarProfile = sqliteTable(
   "calendar_profile",
@@ -37,6 +46,8 @@ export const calendarProfile = sqliteTable(
     daysOff: jsonList("days_off"),
     // Where booking emails go; empty = the rep's login email (D-042).
     notifyEmail: text("notify_email"),
+    // "Co-founder, Lumor": after the rep's name in booking emails (D-043).
+    emailTitle: text("email_title"),
   },
   (t) => [check("calendar_profile_slug_check", sql`${t.slug} GLOB '[a-z0-9]*'`)],
 );
@@ -63,6 +74,13 @@ export const meetingType = sqliteTable(
     active: flag("active").notNull().default(true),
     // Make a Google Meet link for each booking when the rep has Google connected (F26).
     googleMeet: flag("google_meet").notNull().default(true),
+    // Round 3 (D-043): the standard fields, email wording, the in-person address, and the
+    // hidden per-rep event that holds meetings a rep schedules themselves.
+    standardFields: text("standard_fields", { mode: "json" }).$type<StandardFields>(),
+    emailName: text("email_name"),
+    emailNote: text("email_note"),
+    inPersonAddress: text("in_person_address"),
+    hidden: flag("hidden").notNull().default(false),
   },
   (t) => [
     uniqueIndex("meeting_type_owner_slug_unique").on(t.ownerId, t.slug),
@@ -105,9 +123,22 @@ export const booking = sqliteTable(
     // The event in the host's Google Calendar and its Meet link (F26). Kept across reschedules.
     googleEventId: text("google_event_id"),
     meetLink: text("meet_link"),
+    // Round 3 (D-043).
+    mode: text("mode", { enum: MEETING_MODES }).notNull().default("online"),
+    // The private manage code, encrypted (for reminder links). Older bookings have none.
+    manageTokenEnc: text("manage_token_enc"),
+    reminder24At: timestamp("reminder_24_at"),
+    reminder1At: timestamp("reminder_1_at"),
+    // A meeting the rep scheduled themselves: its title, recipients and message.
+    title: text("title"),
+    toEmails: jsonList("to_emails"),
+    ccEmails: jsonList("cc_emails"),
+    message: text("message"),
+    location: text("location"),
   },
   (t) => [
     check("booking_status_check", oneOf("status", BOOKING_STATUSES)),
+    check("booking_mode_check", oneOf("mode", MEETING_MODES)),
     check("booking_cancelled_by_check", oneOfOrNull("cancelled_by", BOOKING_CANCELLERS)),
     check("booking_times_check", sql`${t.endsAt} > ${t.startsAt}`),
     // Never two confirmed bookings at the same start for one rep.
@@ -154,3 +185,30 @@ export const googleConnection = sqliteTable("google_connection", {
   scope: text("scope").notNull(),
   lastError: text("last_error"),
 });
+
+/** A booking made on Calendly (F27), stored once per Calendly invitee. */
+export const calendlyBooking = sqliteTable(
+  "calendly_booking",
+  {
+    ...baseColumns(() => user.id),
+    // Calendly's address for the invitee: the key that makes each event count once.
+    inviteeUri: text("invitee_uri").notNull().unique(),
+    eventUri: text("event_uri"),
+    eventName: text("event_name").notNull(),
+    startsAt: timestamp("starts_at").notNull(),
+    endsAt: timestamp("ends_at").notNull(),
+    joinUrl: text("join_url"),
+    inviteeName: text("invitee_name").notNull(),
+    inviteeEmail: text("invitee_email").notNull(),
+    answers: jsonList<BookingAnswer>("answers"),
+    status: text("status", { enum: CALENDLY_STATUSES }).notNull().default("Booked"),
+    cancelReason: text("cancel_reason"),
+    personId: text("person_id").references(() => person.id, { onDelete: "restrict" }),
+    // The Calendly invitee this one replaced (a reschedule).
+    replacesUri: text("replaces_uri"),
+  },
+  (t) => [
+    check("calendly_booking_status_check", oneOf("status", CALENDLY_STATUSES)),
+    index("calendly_booking_person_idx").on(t.personId),
+  ],
+);

@@ -14,10 +14,10 @@ export const person = sqliteTable(
     ...baseColumns(() => user.id),
     fullName: text("full_name").notNull(),
     title: text("title"),
-    // Public profile link (linkedin.com/in/…), as pasted.
-    linkedinUrl: text("linkedin_url").notNull(),
+    // Public profile link (linkedin.com/in/…), as pasted. Optional when there's an email (D-043).
+    linkedinUrl: text("linkedin_url"),
     // Set by the server (F02 normalisation); the duplicate check relies on it being unique.
-    linkedinUrlNormalised: text("linkedin_url_normalised").notNull().unique(),
+    linkedinUrlNormalised: text("linkedin_url_normalised").unique(),
     salesNavUrl: text("sales_nav_url"),
     companyId: text("company_id").references(() => company.id, { onDelete: "restrict" }),
     personaId: text("persona_id").references(() => persona.id, { onDelete: "restrict" }),
@@ -55,9 +55,17 @@ export const person = sqliteTable(
     awaitingReplyUntil: text("awaiting_reply_until"),
     // Nudges sent since the last reply (F18: at most 2, then close the loop).
     nudgeCount: integer("nudge_count").notNull().default(0),
+    // "From the booking page: check details" on people created from a booking (D-043).
+    reviewNote: text("review_note"),
   },
   (t) => [
-    check("person_linkedin_url_check", sql`${t.linkedinUrl} LIKE '%linkedin.com/in/%'`),
+    check(
+      "person_linkedin_url_check",
+      sql`${t.linkedinUrl} IS NULL OR ${t.linkedinUrl} LIKE '%linkedin.com/in/%'`,
+    ),
+    // A LinkedIn profile or an email (D-043).
+    check("person_contact_check", sql`${t.linkedinUrl} IS NOT NULL OR ${t.email} IS NOT NULL`),
+    index("person_email_idx").on(t.email),
     check("person_level_check", oneOfOrNull("level", LEVELS)),
     check("person_stage_check", oneOf("stage", STAGES)),
     check("person_opener_version_check", oneOfOrNull("opener_template_version", TEMPLATE_VERSIONS)),

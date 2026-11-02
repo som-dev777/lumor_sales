@@ -16,7 +16,7 @@ Hi {invitee first name},
 
 Thanks for booking a demo of Lumor. Here are the details:
 
-_(The app writes "Thanks for booking {name in emails}." so it fits any event.)_
+_(The app writes "Thanks for booking a {name in emails}." ("a Lumor demo") so it fits any event.)_
 
 When: {event date}, {event time} ({invitee timezone}), {duration} minutes
 Where: Google Meet: {meeting link}

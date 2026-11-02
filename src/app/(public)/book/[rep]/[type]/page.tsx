@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { BookingWidget } from "@/components/calendar/BookingWidget";
 import styles from "@/components/calendar/calendar.module.scss";
 import { StatusMessage } from "@/components/ui/StatusMessage";
+import { fieldRules } from "@/lib/booking-fields";
 import { appNow } from "@/lib/clock";
 import { getDb } from "@/lib/db/client";
 import { findBookingPage, freeSlots } from "@/server/calendar";
@@ -34,6 +35,12 @@ async function Book({ params }: Pick<PageProps<"/book/[rep]/[type]">, "params">)
     page.type.googleMeet && googleConfigured() ? connectionView(db, page.host.id) : null,
   ]);
   const location = page.type.location;
+  const rules = fieldRules(page.type.standardFields);
+  const online = google
+    ? "Google Meet (link in your confirmation)"
+    : location && /^https?:\/\//.test(location)
+      ? "Video call (link in your confirmation)"
+      : (location ?? "We'll send the details");
   return (
     <div className={styles.bookingShell}>
       <aside className={styles.bookingInfo}>
@@ -43,7 +50,11 @@ async function Book({ params }: Pick<PageProps<"/book/[rep]/[type]">, "params">)
           <li>
             <Clock size={16} aria-hidden /> {page.type.durationMin} minutes
           </li>
-          {google ? (
+          {rules.mode.show ? (
+            <li>
+              <MapPin size={16} aria-hidden /> Online or in person: you choose
+            </li>
+          ) : google ? (
             <li>
               <Video size={16} aria-hidden /> Google Meet (the link comes with your confirmation)
             </li>
@@ -76,6 +87,9 @@ async function Book({ params }: Pick<PageProps<"/book/[rep]/[type]">, "params">)
             slots={slots.map((s) => s.toISOString())}
             questions={page.type.questions}
             durationMin={page.type.durationMin}
+            fields={rules}
+            address={page.type.inPersonAddress}
+            online={online}
           />
         ) : (
           <p className={styles.emptySlots}>This meeting isn&rsquo;t taking bookings right now.</p>

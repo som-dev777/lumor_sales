@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { CalendarTabs } from "@/components/calendar/CalendarTabs";
 import { HostLegend, MonthView, TimeGridView } from "@/components/calendar/CalendarViews";
 import { MeetingDetailDialog, type DetailData } from "@/components/calendar/MeetingDetailDialog";
+import { ScheduleMeetingDialog } from "@/components/calendar/ScheduleMeetingDialog";
 import { WhoFilter } from "@/components/calendar/WhoFilter";
 import styles from "@/components/calendar/calendar.module.scss";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -51,7 +52,7 @@ export default function CalendarPage({ searchParams }: PageProps<"/calendar">) {
     <>
       <PageHeader
         title="Calendar"
-        description="Everyone's booked meetings, in India time (IST). Click a meeting for details, teammates and changes."
+        description="Booked and scheduled meetings, in India time (IST). Pick a rep to see theirs; click a meeting for details, teammates and changes."
       />
       <CalendarTabs current="/calendar" />
       <Suspense fallback={<StatusMessage title="Loading…" />}>
@@ -72,18 +73,17 @@ async function Meetings({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
   const today = todayIst(now);
   const view = parseView(one(query.view));
   const date = parseDate(one(query.date), today);
-  const whoParam = one(query.who) ?? "all";
+  // One rep at a time, starting on the signed-in rep (D-043).
   const reps = await teammateChoices(db);
-  const who = whoParam === "me" || reps.some((r) => r.id === whoParam) ? whoParam : "all";
-  const filter: MeetingFilter = {
-    userId: who === "all" ? null : who === "me" ? viewer.id : who,
-  };
+  const whoParam = one(query.who);
+  const who = whoParam && reps.some((r) => r.id === whoParam) ? whoParam : viewer.id;
+  const filter: MeetingFilter = { userId: who };
   const past = one(query.show) === "past";
 
   const current = {
     view,
     date,
-    who: who === "all" ? null : who,
+    who: who === viewer.id ? null : who,
     show: past ? "past" : null,
     booking: one(query.booking) ?? null,
   };
@@ -157,9 +157,8 @@ async function Meetings({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
               </Link>
             ))}
           </nav>
-          <div className={styles.whoBox}>
-            <WhoFilter value={who} reps={reps} />
-          </div>
+          <WhoFilter value={who} me={viewer.id} reps={reps} />
+          {can(viewer, "calendar.manage", { ownerId: viewer.id }) && <ScheduleMeetingDialog />}
         </div>
       </div>
 
@@ -188,7 +187,7 @@ async function Meetings({ searchParams }: Pick<PageProps<"/calendar">, "searchPa
           {meetings.length === 0 && (
             <p className={styles.muted}>
               No meetings {view === "day" ? "this day" : "this week"}. Share a booking link from
-              Meeting types.
+              Events, or schedule one.
             </p>
           )}
         </>
@@ -226,7 +225,7 @@ function ListView({
       </nav>
       {meetings.length === 0 ? (
         <StatusMessage title={past ? "No past bookings" : "No upcoming bookings"}>
-          Share a booking link from Meeting types; bookings show up here.
+          Share a booking link from Events, or schedule a meeting; they show up here.
         </StatusMessage>
       ) : (
         <div className={styles.tableWrap}>
@@ -297,7 +296,11 @@ async function Detail({ id, viewer, now }: { id: string; viewer: Viewer; now: Da
     teammateChoices(db),
     leadFormOptions(db),
   ]);
-  const where = m.meetLink ?? m.location;
+  const where =
+    m.meetLink ??
+    (m.mode === "in_person"
+      ? `In person: ${m.location ?? m.typeAddress ?? "place to be confirmed"}`
+      : (m.location ?? m.typeLocation));
   const data: DetailData = {
     id: m.id,
     status: m.status,
@@ -321,6 +324,7 @@ async function Detail({ id, viewer, now }: { id: string; viewer: Viewer; now: Da
     rescheduled: Boolean(m.rescheduledFromId),
     person: m.personId && m.personName ? { id: m.personId, name: m.personName } : null,
     team: m.team.map((t) => ({ id: t.id, name: t.name, host: t.host })),
+    scheduled: m.anyTime ? { to: m.toEmails, cc: m.ccEmails, message: m.message } : null,
   };
   return (
     <MeetingDetailDialog

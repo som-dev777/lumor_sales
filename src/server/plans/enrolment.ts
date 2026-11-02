@@ -778,33 +778,74 @@ export async function pausePlan(db: Db, actor: Actor, personId: string, now = ne
   });
 }
 
+/**
+ * Pauses the person's plan inside an open transaction, if they're on an active one (a booked
+ * meeting, D-043). Returns true when it paused.
+ */
+export async function pausePlanTx(
+  tx: DbOrTx,
+  actor: Actor,
+  personId: string,
+  why: string,
+  now = new Date(),
+) {
+  const p = await loadPerson(tx, personId);
+  assertCan(actor, "lead.edit", p);
+  const e = await liveEnrolment(tx, personId);
+  if (!e || e.status !== "Active") return false;
+  const pl = await loadPlan(tx, e.planId);
+  await updateEnrolment(tx, actor, e, { status: "Paused", pausedAt: now }, p.fullName, why);
+  await logPlanEvent(tx, actor, p, e.id, `${pl.name} paused: ${why}`, now);
+  return true;
+}
+
 /** Resume: the current step is due today (a weekday, within the guardrails); ends_by moves on. */
 export async function resumePlan(db: Db, actor: Actor, personId: string, now = new Date()) {
   return db.transaction(async (tx) => {
-    const { p, e, pl } = await loadLive(tx, actor, personId);
-    if (e.status !== "Paused") return e;
-    if (p.doNotContact) throw new PlanError("This person is marked Do not contact.");
-    const today = todayIst(now);
-    const paused = e.pausedAt ? daysBetween(toIstDate(e.pausedAt), today) : 0;
-    const settings = await getPlaybookSettings(tx);
-    const due = e.waitingForAcceptance
-      ? e.nextDueDate
-      : fitWeeklyLimit(
-          rollOffWeekend(today, pl.skipWeekends),
-          touchDates(await touchHistory(tx, personId)),
-          settings.weeklyTouchLimit,
-          pl.skipWeekends,
-        );
-    const after = await updateEnrolment(
-      tx,
-      actor,
-      e,
-      { status: "Active", pausedAt: null, nextDueDate: due, endsBy: extendBy(e.endsBy, paused) },
-      p.fullName,
-    );
-    await logPlanEvent(tx, actor, p, e.id, `${pl.name} resumed`, now);
-    return after;
+    await loadLive(tx, actor, personId);
+    const after = await resumePlanTx(tx, actor, personId, null, now);
+    return after ?? (await liveEnrolment(tx, personId))!;
   });
+}
+
+/**
+ * Resumes a paused plan inside an open transaction (also a cancelled meeting, D-043). Returns
+ * the enrolment, or null when there was no paused plan.
+ */
+export async function resumePlanTx(
+  tx: DbOrTx,
+  actor: Actor,
+  personId: string,
+  why: string | null,
+  now = new Date(),
+) {
+  const p = await loadPerson(tx, personId);
+  assertCan(actor, "lead.edit", p);
+  const e = await liveEnrolment(tx, personId);
+  if (!e || e.status !== "Paused") return null;
+  if (p.doNotContact) throw new PlanError("This person is marked Do not contact.");
+  const pl = await loadPlan(tx, e.planId);
+  const today = todayIst(now);
+  const paused = e.pausedAt ? daysBetween(toIstDate(e.pausedAt), today) : 0;
+  const settings = await getPlaybookSettings(tx);
+  const due = e.waitingForAcceptance
+    ? e.nextDueDate
+    : fitWeeklyLimit(
+        rollOffWeekend(today, pl.skipWeekends),
+        touchDates(await touchHistory(tx, personId)),
+        settings.weeklyTouchLimit,
+        pl.skipWeekends,
+      );
+  const after = await updateEnrolment(
+    tx,
+    actor,
+    e,
+    { status: "Active", pausedAt: null, nextDueDate: due, endsBy: extendBy(e.endsBy, paused) },
+    p.fullName,
+    why ?? undefined,
+  );
+  await logPlanEvent(tx, actor, p, e.id, `${pl.name} resumed${why ? `: ${why}` : ""}`, now);
+  return after;
 }
 
 export async function stopPlanTx(

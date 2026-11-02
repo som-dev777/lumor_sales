@@ -28,6 +28,7 @@ export function AvailabilityForm({
     weeklyHours: WeeklyHours;
     daysOff: string[];
     notifyEmail: string | null;
+    emailTitle: string | null;
   };
   baseUrl: string;
   today: string;
@@ -40,6 +41,7 @@ export function AvailabilityForm({
   const [daysOff, setDaysOff] = useState<string[]>(initial.daysOff);
   const [slug, setSlug] = useState(initial.slug);
   const [notifyEmail, setNotifyEmail] = useState(initial.notifyEmail ?? "");
+  const [emailTitle, setEmailTitle] = useState(initial.emailTitle ?? "");
   const [newDay, setNewDay] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +66,13 @@ export function AvailabilityForm({
       setError(null);
       setErrors({});
       const weeklyHours = Object.fromEntries(DAYS.map((d) => [d, hours[d] ?? []]));
-      const r = await saveAvailabilityAction({ slug, weeklyHours, daysOff, notifyEmail });
+      const r = await saveAvailabilityAction({
+        slug,
+        weeklyHours,
+        daysOff,
+        notifyEmail,
+        emailTitle,
+      });
       if (r.ok) notify("success", r.message ?? "Saved.");
       else {
         setError(r.error);
@@ -200,6 +208,15 @@ export function AvailabilityForm({
           error={errors.notifyEmail}
           hint={`New bookings, cancellations, reschedules and teammate changes. Empty = ${loginEmail}.`}
           onChange={(e) => setNotifyEmail(e.target.value)}
+        />
+        <TextField
+          label="Your title in emails"
+          placeholder="e.g. Co-founder, Lumor"
+          value={emailTitle}
+          maxLength={120}
+          error={errors.emailTitle}
+          hint="Shown after your name in the confirmation people get: “With: Your Name, Co-founder, Lumor”."
+          onChange={(e) => setEmailTitle(e.target.value)}
         />
       </section>
 

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { SelectField } from "@/components/ui/SelectField";
+import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import {
   addTeammateAction,
@@ -46,6 +47,8 @@ export type DetailData = {
   rescheduled: boolean;
   person: { id: string; name: string } | null;
   team: { id: string; name: string; host: boolean }[];
+  /** A meeting the rep scheduled themselves (D-043): its recipients and message. */
+  scheduled: { to: string[]; cc: string[]; message: string | null } | null;
 };
 
 /** A meeting's details on the calendar, opened from ?booking=… (F22 round 2). */
@@ -135,71 +138,95 @@ export function MeetingDetailDialog({
           )}
         </section>
 
-        <section className={styles.detailSection} aria-label="Booked by">
-          <h3 className={styles.sectionTitle}>Booked by</h3>
-          <p>
-            <strong>{data.invitee.name}</strong>, {data.invitee.company}
-          </p>
-          <p className={styles.row}>
-            <Mail size={14} aria-hidden />
-            <a href={`mailto:${data.invitee.email}`}>{data.invitee.email}</a>
-            {data.invitee.phone && (
-              <>
-                <Phone size={14} aria-hidden />
-                <a href={`tel:${data.invitee.phone.replace(/\s/g, "")}`}>{data.invitee.phone}</a>
-              </>
-            )}
-          </p>
-          {data.invitee.linkedin && (
+        {data.scheduled && (
+          <section className={styles.detailSection} aria-label="Invited">
+            <h3 className={styles.sectionTitle}>Invited</h3>
             <p>
-              <a href={data.invitee.linkedin} target="_blank" rel="noopener noreferrer">
-                LinkedIn profile
-              </a>
+              <strong>To:</strong> {data.scheduled.to.join(", ")}
             </p>
-          )}
-          {(data.answers.some((a) => a.answer) || data.note) && (
-            <dl className={styles.answers}>
-              {data.answers
-                .filter((a) => a.answer)
-                .map((a) => (
-                  <div key={a.question}>
-                    <dt>{a.question}</dt>
-                    <dd>{a.answer}</dd>
-                  </div>
-                ))}
-              {data.note && (
-                <div>
-                  <dt>Note</dt>
-                  <dd>{data.note}</dd>
-                </div>
-              )}
-            </dl>
-          )}
-          <div className={styles.row}>
-            {data.person ? (
-              <Link href={`/people/${data.person.id}`}>Open {data.person.name} →</Link>
-            ) : (
-              <PersonDialogButton
-                label="Add as person"
-                ariaLabel={`Add ${data.invitee.name} as a person`}
-                options={options}
-                canChooseOwner={canChooseOwner}
-                defaults={{
-                  ...EMPTY_PERSON,
-                  fullName: data.invitee.name,
-                  companyName: data.invitee.company,
-                  email: data.invitee.email,
-                  phone: data.invitee.phone ?? "",
-                  linkedinUrl: data.invitee.linkedin ?? "",
-                }}
-              />
+            {data.scheduled.cc.length > 0 && (
+              <p>
+                <strong>CC:</strong> {data.scheduled.cc.join(", ")}
+              </p>
             )}
-          </div>
-        </section>
+            {data.scheduled.message && <p className={styles.muted}>{data.scheduled.message}</p>}
+            {data.person && (
+              <Link href={`/people/${data.person.id}`}>Open {data.person.name} →</Link>
+            )}
+          </section>
+        )}
+
+        {!data.scheduled && (
+          <section className={styles.detailSection} aria-label="Booked by">
+            <h3 className={styles.sectionTitle}>Booked by</h3>
+            <p>
+              <strong>{data.invitee.name}</strong>, {data.invitee.company}
+            </p>
+            <p className={styles.row}>
+              <Mail size={14} aria-hidden />
+              <a href={`mailto:${data.invitee.email}`}>{data.invitee.email}</a>
+              {data.invitee.phone && (
+                <>
+                  <Phone size={14} aria-hidden />
+                  <a href={`tel:${data.invitee.phone.replace(/\s/g, "")}`}>{data.invitee.phone}</a>
+                </>
+              )}
+            </p>
+            {data.invitee.linkedin && (
+              <p>
+                <a href={data.invitee.linkedin} target="_blank" rel="noopener noreferrer">
+                  LinkedIn profile
+                </a>
+              </p>
+            )}
+            {(data.answers.some((a) => a.answer) || data.note) && (
+              <dl className={styles.answers}>
+                {data.answers
+                  .filter((a) => a.answer)
+                  .map((a) => (
+                    <div key={a.question}>
+                      <dt>{a.question}</dt>
+                      <dd>{a.answer}</dd>
+                    </div>
+                  ))}
+                {data.note && (
+                  <div>
+                    <dt>Note</dt>
+                    <dd>{data.note}</dd>
+                  </div>
+                )}
+              </dl>
+            )}
+            <div className={styles.row}>
+              {data.person ? (
+                <Link href={`/people/${data.person.id}`}>Open {data.person.name} →</Link>
+              ) : (
+                <PersonDialogButton
+                  label="Add as person"
+                  ariaLabel={`Add ${data.invitee.name} as a person`}
+                  options={options}
+                  canChooseOwner={canChooseOwner}
+                  defaults={{
+                    ...EMPTY_PERSON,
+                    fullName: data.invitee.name,
+                    companyName: data.invitee.company,
+                    email: data.invitee.email,
+                    phone: data.invitee.phone ?? "",
+                    linkedinUrl: data.invitee.linkedin ?? "",
+                  }}
+                />
+              )}
+            </div>
+          </section>
+        )}
 
         {open && canManage && (
           <div className={styles.detailActions}>
-            <RescheduleButton bookingId={data.id} onMoved={close} />
+            {data.scheduled ? (
+              <MoveToTime bookingId={data.id} onMoved={close} />
+            ) : (
+              <RescheduleButton bookingId={data.id} onMoved={close} />
+            )}
             <CancelBookingButton id={data.id} who={data.invitee.name} />
           </div>
         )}
@@ -332,6 +359,66 @@ function RescheduleButton({ bookingId, onMoved }: { bookingId: string; onMoved: 
           Move to this time
         </Button>
         <Button variant="ghost" onClick={() => setSlots(null)} disabled={busy}>
+          Keep the current time
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** A meeting the rep scheduled moves to any date and time they pick (D-043). */
+function MoveToTime({ bookingId, onMoved }: { bookingId: string; onMoved: () => void }) {
+  const notify = useToast();
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, start] = useTransition();
+  if (!open) {
+    return (
+      <Button variant="secondary" onClick={() => setOpen(true)}>
+        Reschedule
+      </Button>
+    );
+  }
+  return (
+    <div className={styles.stack}>
+      <h3 className={styles.sectionTitle}>Move to a new time (IST)</h3>
+      {error && <Alert tone="error">{error}</Alert>}
+      <div className={styles.grid2}>
+        <TextField
+          label="New date"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+        />
+        <TextField
+          label="New start time"
+          type="time"
+          step={300}
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+        />
+      </div>
+      <div className={styles.row}>
+        <Button
+          disabled={!date || !time}
+          loading={busy}
+          onClick={() =>
+            start(async () => {
+              setError(null);
+              const iso = new Date(`${date}T${time}:00+05:30`).toISOString();
+              const r = await rescheduleBookingAction(bookingId, iso);
+              if (r.ok) {
+                notify("success", "Meeting moved. Everyone invited has been emailed.");
+                onMoved();
+              } else setError(r.error);
+            })
+          }
+        >
+          Move to this time
+        </Button>
+        <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>
           Keep the current time
         </Button>
       </div>

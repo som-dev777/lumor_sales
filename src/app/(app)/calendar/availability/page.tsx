@@ -126,9 +126,7 @@ async function Availability({
           notice and your meetings are taken into account.
         </p>
         {!profile.saved || preview.length === 0 ? (
-          <p className={styles.muted}>
-            Save your hours and create a meeting type to see the times here.
-          </p>
+          <p className={styles.muted}>Save your hours and create an event to see the times here.</p>
         ) : (
           <ul className={styles.previewList}>
             {preview.map((p) => (

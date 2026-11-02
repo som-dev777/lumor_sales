@@ -30,9 +30,13 @@ export function useCountries() {
   }, []);
 }
 
-/** A phone number with a country (flag + code) dropdown (D-042). */
+/**
+ * A phone number with a country dropdown (D-042). The open list shows full names; once
+ * picked, the box shows just "🇮🇳 IN +91" (D-043): the real dropdown sits invisibly on top.
+ */
 export function PhoneField({
   label,
+  required = false,
   country,
   number,
   onCountry,
@@ -40,6 +44,7 @@ export function PhoneField({
   error,
 }: {
   label: string;
+  required?: boolean;
   country: string;
   number: string;
   onCountry: (code: string) => void;
@@ -48,29 +53,42 @@ export function PhoneField({
 }) {
   const id = useId();
   const countries = useCountries();
+  const picked = countries.find((c) => c.code === country) ?? countries[0];
   return (
     <div className={fieldStyles.field}>
       <label htmlFor={`${id}-number`} className={fieldStyles.label}>
         {label}
+        {required && (
+          <span className={fieldStyles.req} aria-hidden>
+            {" "}
+            *
+          </span>
+        )}
       </label>
       <div className={styles.phoneRow}>
-        <select
-          aria-label="Country code"
-          className={`${fieldStyles.input} ${styles.countrySelect}`}
-          value={country}
-          onChange={(e) => onCountry(e.target.value)}
-        >
-          {countries.map((c) => (
-            <option key={c.code} value={c.code}>
-              {flagOf(c.code)} {c.name} (+{c.dial})
-            </option>
-          ))}
-        </select>
+        <div className={`${fieldStyles.input} ${styles.countryBox}`}>
+          <span aria-hidden className={styles.countryShown}>
+            {flagOf(picked.code)} {picked.code} +{picked.dial}
+          </span>
+          <select
+            aria-label="Country code"
+            className={styles.countrySelect}
+            value={country}
+            onChange={(e) => onCountry(e.target.value)}
+          >
+            {countries.map((c) => (
+              <option key={c.code} value={c.code}>
+                {flagOf(c.code)} {c.name} (+{c.dial})
+              </option>
+            ))}
+          </select>
+        </div>
         <input
           id={`${id}-number`}
           type="tel"
           autoComplete="tel-national"
           inputMode="tel"
+          required={required}
           placeholder="98765 43210"
           className={`${fieldStyles.input} ${styles.phoneInput} ${error ? fieldStyles.invalid : ""}`}
           value={number}

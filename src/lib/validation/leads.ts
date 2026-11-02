@@ -38,11 +38,16 @@ export const personSchema = z
   .object({
     fullName: z.string().trim().min(2, "Enter the person's name.").max(120, "Name is too long."),
     title: optionalText(200),
+    // A LinkedIn profile or an email (D-043); empty = none.
     linkedinUrl: z
       .string()
       .trim()
       .max(500, "That link is too long.")
+      .optional()
+      .nullable()
+      .transform((v) => (v ? v : null))
       .superRefine((v, ctx) => {
+        if (v === null) return;
         const r = normaliseLinkedInUrl(v);
         if (!r.ok) ctx.addIssue({ code: "custom", message: r.error });
       }),
@@ -95,6 +100,10 @@ export const personSchema = z
       .transform((v) => (v ? v : null)),
     doNotContact: z.boolean().optional().default(false),
     dncReason: optionalText(500),
+  })
+  .refine((d) => d.linkedinUrl !== null || d.email !== null, {
+    message: "Add their LinkedIn profile or their email.",
+    path: ["linkedinUrl"],
   })
   .refine((d) => !d.doNotContact || d.dncReason !== null, {
     message: "Say why this person must not be contacted.",

@@ -9,8 +9,14 @@ import fieldStyles from "@/components/ui/TextField.module.scss";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
+import { MODE_LABELS, type FieldRules } from "@/lib/booking-fields";
 import type { BookingQuestion } from "@/lib/db/schema/calendar";
-import { bookingFormSchema, checkAnswers, formatPhone } from "@/lib/validation/calendar";
+import {
+  bookingFormSchema,
+  checkAnswers,
+  checkStandardFields,
+  formatPhone,
+} from "@/lib/validation/calendar";
 import { bookSlot } from "@/server/actions/calendar";
 import { PhoneField } from "./PhoneField";
 import { formatDay, formatTime, SlotPicker, useTimeZone, zoneName } from "./SlotPicker";
@@ -25,12 +31,21 @@ export function BookingWidget({
   slots,
   questions,
   durationMin,
+  fields,
+  address,
+  online,
 }: {
   profileSlug: string;
   typeSlug: string;
   slots: string[];
   questions: BookingQuestion[];
   durationMin: number;
+  /** Which standard fields show and which are required (D-043). */
+  fields: FieldRules;
+  /** The in-person address, when the event has one. */
+  address: string | null;
+  /** How an online meeting happens, e.g. "Google Meet". */
+  online: string;
 }) {
   const router = useRouter();
   const tz = useTimeZone();
@@ -43,6 +58,7 @@ export function BookingWidget({
     phoneCountry: "IN",
     phone: "",
     linkedin: "",
+    mode: "",
     website: "",
   });
   const [answers, setAnswers] = useState<Answer[]>(
@@ -95,6 +111,7 @@ export function BookingWidget({
     const found: Record<string, string> = {};
     const parsed = bookingFormSchema.safeParse({
       ...values,
+      mode: values.mode || null,
       startsAt: slot,
       answers,
       timeZone: tz.zone,
@@ -109,6 +126,7 @@ export function BookingWidget({
     if (values.phone.trim() && !formatPhone(values.phoneCountry, values.phone)) {
       found.phone ??= "Enter a valid phone number for the country you picked.";
     }
+    for (const [k, m] of Object.entries(checkStandardFields(fields, values))) found[k] ??= m;
     const a = checkAnswers(questions, answers);
     if (!a.ok) found[`answers.${a.index}`] = a.message;
     return found;
@@ -130,6 +148,7 @@ export function BookingWidget({
         start(async () => {
           const r = await bookSlot(profileSlug, typeSlug, {
             ...values,
+            mode: values.mode || null,
             startsAt: slot,
             answers,
             timeZone: tz.zone,
@@ -160,15 +179,8 @@ export function BookingWidget({
       </div>
       <h2 className={styles.stepTitle}>Your details</h2>
       {error && <Alert tone="error">{error}</Alert>}
+      {/* Email first: the confirmation and reminders go there (D-043). */}
       <div className={styles.grid2}>
-        <TextField
-          label="Your name"
-          required
-          autoComplete="name"
-          value={values.name}
-          onChange={set("name")}
-          error={errors.name}
-        />
         <TextField
           label="Work email"
           required
@@ -181,36 +193,92 @@ export function BookingWidget({
           error={errors.email}
         />
         <TextField
-          label="Company"
+          label="Your name"
           required
-          autoComplete="organization"
-          value={values.company}
-          onChange={set("company")}
-          error={errors.company}
+          autoComplete="name"
+          value={values.name}
+          onChange={set("name")}
+          error={errors.name}
         />
-        <PhoneField
-          label="Phone (optional)"
-          country={values.phoneCountry}
-          number={values.phone}
-          onCountry={(c) => {
-            setValues((v) => ({ ...v, phoneCountry: c }));
-            clear("phone");
-          }}
-          onNumber={(n) => {
-            setValues((v) => ({ ...v, phone: n }));
-            clear("phone");
-          }}
-          error={errors.phone}
-        />
+        {fields.company.show && (
+          <TextField
+            label={fields.company.required ? "Company" : "Company (optional)"}
+            required={fields.company.required}
+            autoComplete="organization"
+            value={values.company}
+            onChange={set("company")}
+            error={errors.company}
+          />
+        )}
+        {fields.phone.show && (
+          <PhoneField
+            label={fields.phone.required ? "Phone" : "Phone (optional)"}
+            required={fields.phone.required}
+            country={values.phoneCountry}
+            number={values.phone}
+            onCountry={(c) => {
+              setValues((v) => ({ ...v, phoneCountry: c }));
+              clear("phone");
+            }}
+            onNumber={(n) => {
+              setValues((v) => ({ ...v, phone: n }));
+              clear("phone");
+            }}
+            error={errors.phone}
+          />
+        )}
       </div>
-      <TextField
-        label="LinkedIn profile (optional)"
-        placeholder="https://www.linkedin.com/in/…"
-        inputMode="url"
-        value={values.linkedin}
-        onChange={set("linkedin")}
-        error={errors.linkedin}
-      />
+      {fields.linkedin.show && (
+        <TextField
+          label={fields.linkedin.required ? "LinkedIn profile" : "LinkedIn profile (optional)"}
+          required={fields.linkedin.required}
+          placeholder="https://www.linkedin.com/in/…"
+          inputMode="url"
+          value={values.linkedin}
+          onChange={set("linkedin")}
+          error={errors.linkedin}
+        />
+      )}
+      {fields.mode.show && (
+        <fieldset className={styles.choiceSet} aria-invalid={errors.mode ? true : undefined}>
+          <legend className={fieldStyles.label}>
+            How would you like to meet?
+            {fields.mode.required && (
+              <span className={fieldStyles.req} aria-hidden>
+                {" "}
+                *
+              </span>
+            )}
+          </legend>
+          <div className={styles.modeChoices}>
+            {(["online", "in_person"] as const).map((m) => (
+              <label key={m} className={styles.modeChoice}>
+                <input
+                  type="radio"
+                  name="mode"
+                  value={m}
+                  checked={values.mode === m}
+                  onChange={() => {
+                    setValues((v) => ({ ...v, mode: m }));
+                    clear("mode");
+                  }}
+                />
+                <span>
+                  <strong>{MODE_LABELS[m]}</strong>
+                  <span className={styles.muted}>
+                    {m === "online" ? online : (address ?? "We'll confirm the place with you")}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
+          {errors.mode && (
+            <p className={fieldStyles.error} role="alert">
+              {errors.mode}
+            </p>
+          )}
+        </fieldset>
+      )}
       {questions.map((q, i) => (
         <QuestionField
           key={`${i}-${q.label}`}
@@ -232,9 +300,6 @@ export function BookingWidget({
           />
         </label>
       </div>
-      <p className={styles.muted}>
-        <span className={fieldStyles.req}>*</span> Required
-      </p>
       <div className={styles.formActions}>
         <Button type="submit" loading={busy} className={styles.bigButton}>
           Confirm booking

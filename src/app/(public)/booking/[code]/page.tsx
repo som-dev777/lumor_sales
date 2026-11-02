@@ -1,4 +1,4 @@
-import { CalendarPlus, CheckCircle2, Clock, Download, MapPin, Video } from "lucide-react";
+import { CheckCircle2, Clock, MapPin, Video } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -12,18 +12,14 @@ import { appNow } from "@/lib/clock";
 import { getDb } from "@/lib/db/client";
 import { formatIst } from "@/lib/time";
 import { emailConfigured } from "@/server/email";
-import {
-  bookingGoogleLink,
-  bookingLink,
-  findByToken,
-  freeSlots,
-  teamOf,
-  whereOf,
-} from "@/server/calendar";
+import { findByToken, freeSlots, teamOf, whereOf } from "@/server/calendar";
 
 export const metadata: Metadata = { title: { absolute: "Your booking · Lumor" } };
 
-/** The visitor's booking: details, add to calendar, reschedule or cancel (F22). */
+/**
+ * The visitor's booking: the success message, the details and the Join button, and only
+ * Reschedule and Cancel (F22; D-043).
+ */
 export default function BookingPage({ params, searchParams }: PageProps<"/booking/[code]">) {
   return (
     <Suspense fallback={<StatusMessage title="Loading…" />}>
@@ -65,7 +61,7 @@ async function Booking({
                 <strong>{b.inviteeEmail}</strong>.
               </>
             ) : (
-              "Add it to your calendar below, and keep this page's link to change it later."
+              "Keep this page's link: it's where you can reschedule or cancel."
             )}
           </p>
         </div>
@@ -94,7 +90,7 @@ async function Booking({
               iso={b.startsAt.toISOString()}
               ist={`${formatIst(b.startsAt, "EEEE d MMMM yyyy, h:mm aaa")} IST`}
             />{" "}
-            · {page.type.durationMin} min
+            · {Math.round((b.endsAt.getTime() - b.startsAt.getTime()) / 60_000)} min
           </span>
           {location && !/^https?:\/\//.test(location) && (
             <span>
@@ -114,33 +110,7 @@ async function Booking({
           {b.meetLink ? "Join with Google Meet" : "Join the meeting"}
         </a>
       )}
-      {/* With Google, the invite came from Google already: no second calendar entry. */}
-      {!cancelled && !b.googleEventId && (
-        <div className={styles.row}>
-          <a
-            className={styles.typeLink}
-            href={bookingGoogleLink(b, page)}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span className={styles.row}>
-              <CalendarPlus size={16} aria-hidden /> Add to Google Calendar
-            </span>
-          </a>
-          <a className={styles.typeLink} href={`/booking/${code}/ics`} download="lumor-meeting.ics">
-            <span className={styles.row}>
-              <Download size={16} aria-hidden /> Calendar file (Outlook, Apple)
-            </span>
-          </a>
-        </div>
-      )}
-
       {upcoming && <ManageBooking code={code} slots={slots.map((s) => s.toISOString())} />}
-      {cancelled && b.cancelReason !== "Rescheduled" && page.type.active && (
-        <p>
-          <a href={bookingLink(page.profile.slug, page.type.slug)}>Book another time</a>
-        </p>
-      )}
     </div>
   );
 }

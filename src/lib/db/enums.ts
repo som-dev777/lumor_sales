@@ -134,6 +134,8 @@ export const STEP_CHANNELS = [
   "Call",
   "WhatsApp",
   "Manual task",
+  // A task the plan's author names (D-043); works like Manual task.
+  "Custom",
 ] as const;
 export type StepChannel = (typeof STEP_CHANNELS)[number];
 
@@ -213,6 +215,14 @@ export const BOOKING_CANCELLERS = ["invitee", "host"] as const;
 export const MEETING_LENGTHS = [15, 20, 30, 45, 60, 90, 120] as const;
 /** Booking question types (F22 round 2, D-042). */
 export const QUESTION_TYPES = ["short", "paragraph", "dropdown", "checkboxes"] as const;
+/** How a meeting happens (F22 round 3, D-043). */
+export const MEETING_MODES = ["online", "in_person"] as const;
+export type MeetingMode = (typeof MEETING_MODES)[number];
+/** The standard booking fields an event can show or require (D-043). Email and name always show. */
+export const STANDARD_FIELDS = ["company", "phone", "linkedin", "mode"] as const;
+export type StandardField = (typeof STANDARD_FIELDS)[number];
+/** A booking made on Calendly (F27). */
+export const CALENDLY_STATUSES = ["Booked", "Cancelled", "Moved"] as const;
 export type QuestionType = (typeof QUESTION_TYPES)[number];
 /** What a notification is about (F25). */
 export const NOTIFICATION_KINDS = [
@@ -222,6 +232,9 @@ export const NOTIFICATION_KINDS = [
   "added",
   "removed",
   "google",
+  // v2.7.0 (D-043): a report sent to you; a booking or cancellation from Calendly (F27).
+  "report",
+  "calendly",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 

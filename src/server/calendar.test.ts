@@ -78,6 +78,7 @@ const form = (extra: Partial<BookingFormData> = {}): BookingFormData =>
     name: "Priya Sharma",
     email: "Priya@Acme.example",
     company: "Acme",
+    mode: "online",
     answers: [],
     timeZone: "Europe/London",
     ...extra,
@@ -137,7 +138,7 @@ describe("the rep's calendar", () => {
     const m = await demo();
     await expect(setMeetingTypeActive(t.db, other, m.id, false)).rejects.toThrow(PermissionError);
     await setMeetingTypeActive(t.db, admin, m.id, false);
-    await expect(demo()).rejects.toThrow("already have a meeting type with that link name");
+    await expect(demo()).rejects.toThrow("already have an event with that link name");
     // Another rep can use the same link name.
     await expect(demo({}, other)).resolves.toBeTruthy();
   });
@@ -203,10 +204,18 @@ describe("booking from the public page", () => {
     expect(logged.content).toContain("Keen on panels");
   });
 
-  it("someone new is added only when they give a LinkedIn profile", async () => {
+  it("someone new is added, with or without LinkedIn, owned by the rep and flagged to check (D-043)", async () => {
     await demo();
-    const { booking: unlinked } = await book();
-    expect(unlinked.personId).toBeNull();
+    const { booking: noLinkedin } = await book();
+    const [first] = await t.db.select().from(person).where(eq(person.id, noLinkedin.personId!));
+    expect(first).toMatchObject({
+      fullName: "Priya Sharma",
+      email: "priya@acme.example",
+      linkedinUrl: null,
+      ownerId: rep.id,
+      stage: "Meeting scheduled",
+      reviewNote: "From the booking page: check details",
+    });
     const { booking: linked } = await book({
       startsAt: TUE_14,
       email: "ravi@beta.example",
@@ -248,7 +257,7 @@ describe("booking from the public page", () => {
 const linkedin = (b: { personId: string | null }) => b.personId!;
 
 describe("cancel and reschedule", () => {
-  it("the visitor cancels with their code; the person gets a note; twice is refused", async () => {
+  it("the visitor cancels with their code: logged with the reason, back to Replied; twice is refused", async () => {
     await demo();
     await createPerson(
       t.db,
@@ -266,7 +275,10 @@ describe("cancel and reschedule", () => {
     const cancelled = await cancelByToken(t.db, token, "Clash", NOW);
     expect(cancelled).toMatchObject({ status: "Cancelled", cancelledBy: "invitee" });
     const note = (await t.db.select().from(activity)).find((a) => a.type === "Meeting note")!;
-    expect(note.content).toContain("was cancelled by Priya Sharma. Reason: Clash");
+    expect(note.content).toContain('Meeting cancelled: "Lumor demo"');
+    expect(note.content).toContain("by Priya Sharma. Reason: Clash.");
+    const [after] = await t.db.select().from(person).where(eq(person.email, "priya@acme.example"));
+    expect(after).toMatchObject({ stage: "Replied", nextAction: "Respond" });
     await expect(cancelByToken(t.db, token, null, NOW)).rejects.toThrow("already cancelled");
     // The slot is free again.
     await expect(book()).resolves.toBeTruthy();

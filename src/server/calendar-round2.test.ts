@@ -41,6 +41,7 @@ let outsider: Actor;
 const NOW = fromIstLocal("2026-11-02T09:00")!;
 const at = (local: string) => fromIstLocal(local)!.toISOString();
 const TUE_11 = at("2026-11-03T11:00");
+const TUE_14 = at("2026-11-03T14:00");
 
 beforeEach(async () => {
   process.env.BETTER_AUTH_SECRET ??= "test-secret-for-google-token-encryption";
@@ -85,6 +86,7 @@ const form = (extra: Partial<BookingFormInput> = {}) =>
     name: "Priya Sharma",
     email: "priya@acme.example",
     company: "Acme",
+    mode: "online",
     answers: [],
     timeZone: "Asia/Kolkata",
     ...extra,
@@ -196,10 +198,44 @@ describe("question types and the booking form", () => {
     await demo({
       questions: [{ label: "Team size", required: true, type: "dropdown", options: ["S", "L"] }],
     });
-    await expect(book({ answers: [""] })).rejects.toThrow("Team size: This question is required.");
-    await expect(book({ answers: ["XL"] })).rejects.toThrow("Pick from the choices given.");
-    const { booking: b } = await book({ answers: ["L"] });
+    await expect(book({ answers: [""] })).rejects.toThrow("Team size: Pick one.");
+    // A choice that isn't on the list counts as no answer (D-043).
+    await expect(book({ answers: ["XL"] })).rejects.toThrow("Team size: Pick one.");
+    const { booking: b } = await book({ answers: [" l "] });
     expect(b.answers).toEqual([{ question: "Team size", answer: "L" }]);
+  });
+
+  it("a required checkbox question with ticked choices books (the owner's bug, D-043)", async () => {
+    const options = [
+      "Surveys and questionnaires",
+      "NPS / customer feedback",
+      "Concept or ad testing",
+      "Market research for clients",
+      "UX research",
+      "Other",
+    ];
+    await demo({
+      questions: [
+        { label: "Company name", required: true, type: "short" },
+        { label: "Your role", required: true, type: "short" },
+        { label: "What kind of research do you run?", required: true, type: "checkboxes", options },
+      ],
+    });
+    // Spacing, case and a choice from an older version of the page don't stop the booking.
+    const { booking: b } = await book({
+      answers: [
+        "Test",
+        "Research Head",
+        ["NPS  /  Customer feedback", "Surveys and questionnaires", "Retired choice"],
+      ],
+    });
+    expect(b.answers[2]).toEqual({
+      question: "What kind of research do you run?",
+      answer: "Surveys and questionnaires, NPS / customer feedback",
+    });
+    await expect(
+      book({ startsAt: TUE_14, email: "x@y.example", answers: ["T", "R", ["Retired choice"]] }),
+    ).rejects.toThrow("What kind of research do you run?: Pick at least one.");
   });
 });
 

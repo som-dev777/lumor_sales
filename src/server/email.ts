@@ -2,7 +2,10 @@
 // set; otherwise the app shows links to copy instead (D-002).
 
 export type Email = {
-  to: string;
+  /** One address, or several (a meeting's To list, D-043). */
+  to: string | string[];
+  /** Copied (a meeting's CC list, D-043). */
+  cc?: string[];
   subject: string;
   text: string;
   /** An HTML version (booking emails, D-042); `text` stays for plain-text mail apps. */
@@ -29,7 +32,8 @@ export async function sendEmail(email: Email, fetcher: typeof fetch = fetch): Pr
       },
       body: JSON.stringify({
         from: process.env.EMAIL_FROM!.trim(),
-        to: [email.to],
+        to: Array.isArray(email.to) ? email.to : [email.to],
+        ...(email.cc?.length ? { cc: email.cc } : {}),
         subject: email.subject,
         text: email.text,
         ...(email.html ? { html: email.html } : {}),
@@ -46,10 +50,11 @@ export async function sendEmail(email: Email, fetcher: typeof fetch = fetch): Pr
       }),
       signal: AbortSignal.timeout(10_000),
     });
-    if (!res.ok) console.error(`Email to ${email.to} failed: Resend answered ${res.status}.`);
+    if (!res.ok)
+      console.error(`Email to ${String(email.to)} failed: Resend answered ${res.status}.`);
     return res.ok;
   } catch (e) {
-    console.error(`Email to ${email.to} failed:`, e instanceof Error ? e.message : e);
+    console.error(`Email to ${String(email.to)} failed:`, e instanceof Error ? e.message : e);
     return false;
   }
 }

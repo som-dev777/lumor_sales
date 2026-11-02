@@ -158,15 +158,17 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
           </dl>
         </div>
         <div className={styles.headerActions}>
-          <a
-            href={profileHref(p.linkedinUrl)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.linkButton}
-          >
-            <ExternalLink size={16} aria-hidden />
-            LinkedIn
-          </a>
+          {p.linkedinUrl && (
+            <a
+              href={profileHref(p.linkedinUrl)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.linkButton}
+            >
+              <ExternalLink size={16} aria-hidden />
+              LinkedIn
+            </a>
+          )}
           {p.salesNavUrl && (
             <a
               href={profileHref(p.salesNavUrl)}
@@ -186,7 +188,7 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
               defaults={{
                 fullName: p.fullName,
                 title: p.title ?? "",
-                linkedinUrl: p.linkedinUrl,
+                linkedinUrl: p.linkedinUrl ?? "",
                 salesNavUrl: p.salesNavUrl ?? "",
                 companyName: p.companyName ?? "",
                 personaId: p.personaId ?? "",

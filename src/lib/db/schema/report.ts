@@ -57,6 +57,8 @@ export const reportRun = sqliteTable(
     generatedBy: text("generated_by").references(() => user.id, { onDelete: "restrict" }),
     scheduleId: text("schedule_id").references(() => reportSchedule.id, { onDelete: "restrict" }),
     emailedTo: jsonList("emailed_to"),
+    // Teammates it was sent to (D-043): they can open it and see it under Shared with me.
+    sharedWith: jsonList("shared_with"),
   },
   (t) => [
     check("report_run_scope_check", oneOfOrNull("scope", ["team", "person"])),
