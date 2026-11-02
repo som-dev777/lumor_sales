@@ -1,6 +1,6 @@
 "use server";
 
-// Server Actions for the AI features (F08, F10, F18, F23) and the changes their panels make. Each one:
+// Server Actions for the AI features (F08, F10, F18, F23, F24) and the changes their panels make. Each one:
 // requireUser() → the permission check and audit inside the rules → refresh the page.
 import { refresh } from "next/cache";
 import { z } from "zod";
@@ -32,6 +32,7 @@ import {
   type ChatView,
   type SavedReply,
 } from "../ai/chat";
+import { fillCompany, fillPerson, type FillResult } from "../ai/autofill";
 import { AiError } from "../ai/client";
 import { LeadError } from "../leads/companies";
 import { completeTask, rankToday, snoozeLead, type Task } from "../today";
@@ -223,4 +224,20 @@ export async function chatDelete(
     await deleteChat(db, viewer, chatId);
     return listChats(db, viewer, personId);
   });
+}
+
+// --- Fill with AI (F24) ----------------------------------------------------------------------
+
+/** Suggests values for the empty company fields. Nothing is saved. */
+export async function fillCompanyWithAi(form: unknown): Promise<AiResult<FillResult>> {
+  const viewer = await requireUser();
+  const now = await appNow();
+  return run(() => fillCompany(getDb(), viewer, form, now));
+}
+
+/** Suggests values for the empty person fields. Nothing is saved. */
+export async function fillPersonWithAi(form: unknown): Promise<AiResult<FillResult>> {
+  const viewer = await requireUser();
+  const now = await appNow();
+  return run(() => fillPerson(getDb(), viewer, form, now));
 }

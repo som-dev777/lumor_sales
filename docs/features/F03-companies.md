@@ -55,12 +55,13 @@ deal once they become a customer.
 
 ## Change history
 
-| Date       | Version | Change                                                                                                                                         |
-| ---------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | 1.2.0   | Placeholder doc created.                                                                                                                       |
-| 2026-10-17 | 1.2.0   | Full doc written (R3).                                                                                                                         |
-| 2026-10-17 | 1.2.0   | Rules built: unique names, create/edit, mark as customer, lists, combined timeline; with tests.                                                |
-| 2026-10-17 | 1.2.0   | Companies list and company page (deal, people, combined timeline, mark as customer, history) built.                                            |
-| 2026-10-17 | 1.2.0   | Released in v1.2.0 (R3 Leads).                                                                                                                 |
-| 2026-10-30 | 2.4.0   | Add person from the company page; editable notes; Admins delete (when empty) and merge companies; Industry from the shared list (F21) (D-040). |
-| 2026-10-30 | 2.4.0   | Released in v2.4.0 (QA round 1).                                                                                                               |
+| Date       | Version    | Change                                                                                                                                         |
+| ---------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.2.0      | Placeholder doc created.                                                                                                                       |
+| 2026-10-17 | 1.2.0      | Full doc written (R3).                                                                                                                         |
+| 2026-10-17 | 1.2.0      | Rules built: unique names, create/edit, mark as customer, lists, combined timeline; with tests.                                                |
+| 2026-10-17 | 1.2.0      | Companies list and company page (deal, people, combined timeline, mark as customer, history) built.                                            |
+| 2026-10-17 | 1.2.0      | Released in v1.2.0 (R3 Leads).                                                                                                                 |
+| 2026-10-30 | 2.4.0      | Add person from the company page; editable notes; Admins delete (when empty) and merge companies; Industry from the shared list (F21) (D-040). |
+| 2026-10-30 | 2.4.0      | Released in v2.4.0 (QA round 1).                                                                                                               |
+| 2026-11-02 | Unreleased | **Fill with AI** on the company form (F24).                                                                                                    |

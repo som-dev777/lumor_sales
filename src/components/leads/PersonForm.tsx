@@ -14,9 +14,11 @@ import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { LEVELS, LOST_REASONS, SENIORITIES, STAGES } from "@/lib/db/enums";
 import { personSchema, type PersonData, type PersonInput } from "@/lib/validation/leads";
+import { fillPersonWithAi } from "@/server/actions/ai";
 import { savePerson } from "@/server/actions/leads";
 import type { LeadFormOptions } from "@/server/leads/options";
 import styles from "./leads.module.scss";
+import { useAiFill } from "./useAiFill";
 
 export const EMPTY_PERSON: PersonInput = {
   fullName: "",
@@ -78,12 +80,26 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
     handleSubmit,
     setValue,
     setError,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<PersonInput, unknown, PersonData>({
     resolver: zodResolver(personSchema),
     defaultValues,
   });
   const { formError, apply } = useServerResult(setError);
+  // Fill with AI (F24): only fields left empty come back.
+  const ai = useAiFill(
+    () => fillPersonWithAi(getValues()),
+    (values) => {
+      for (const [name, value] of Object.entries(values)) {
+        setValue(name as keyof PersonInput, value, { shouldDirty: true });
+      }
+    },
+  );
+  const field = (name: keyof PersonInput) => ({
+    ...register(name, { onChange: () => ai.edited(name) }),
+    hint: ai.hint(name),
+  });
   const stage = useWatch({ control, name: "stage" });
   const companyName = useWatch({ control, name: "companyName" });
   const dnc = useWatch({ control, name: "doNotContact" });
@@ -120,7 +136,7 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
           error={errors.fullName?.message}
           {...register("fullName")}
         />
-        <TextField label="Title" error={errors.title?.message} {...register("title")} />
+        <TextField label="Title" error={errors.title?.message} {...field("title")} />
       </div>
       <TextField
         label="LinkedIn profile link"
@@ -172,9 +188,9 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
         <SelectField
           label="Persona"
           options={choices(options.personas, "No persona")}
-          {...register("personaId")}
+          {...field("personaId")}
         />
-        <SelectField label="Level" options={plain(LEVELS, "Not set")} {...register("level")} />
+        <SelectField label="Level" options={plain(LEVELS, "Not set")} {...field("level")} />
       </div>
       <div className={styles.row2}>
         <TextField
@@ -193,19 +209,15 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
       <SelectField
         label="Seniority (optional)"
         options={plain(SENIORITIES, "Not set")}
-        {...register("seniority")}
+        {...field("seniority")}
       />
       <div className={styles.row2}>
         <SelectField
           label="Account filter"
           options={choices(options.accountFilters, "No account filter")}
-          {...register("accountFilterId")}
+          {...field("accountFilterId")}
         />
-        <TextField
-          label="Market / country"
-          error={errors.market?.message}
-          {...register("market")}
-        />
+        <TextField label="Market / country" error={errors.market?.message} {...field("market")} />
       </div>
       <SelectField
         label="Opener template"
@@ -249,7 +261,7 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
           {...register("nextActionDate")}
         />
       </div>
-      <TextArea label="Notes" rows={3} error={errors.notes?.message} {...register("notes")} />
+      <TextArea label="Notes" rows={3} error={errors.notes?.message} {...field("notes")} />
       <label className={styles.checkRow}>
         <input type="checkbox" {...register("doNotContact")} />
         Do not contact (stops their plan and blocks outreach)
@@ -261,7 +273,9 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
           {...register("dncReason")}
         />
       )}
+      {ai.panel}
       <div className={styles.formActions}>
+        {ai.button}
         <Button variant="secondary" onClick={onDone} disabled={isSubmitting}>
           Cancel
         </Button>

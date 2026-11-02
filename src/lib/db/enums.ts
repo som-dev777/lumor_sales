@@ -38,6 +38,18 @@ export const TIERS = [1, 2, 3] as const;
 
 export const COMPANY_STATUSES = ["Target", "Engaged", "Customer", "Lost"] as const;
 
+/** Company size choices the AI picks from (F24); the field itself stays free text. */
+export const HEADCOUNT_BANDS = [
+  "1–10",
+  "11–50",
+  "51–200",
+  "201–500",
+  "501–1,000",
+  "1,001–5,000",
+  "5,001–10,000",
+  "10,001+",
+] as const;
+
 /** v2 stages (PRD Version 2 scope; D-029). Lost (with a reason) can be set from any stage. */
 export const STAGES = [
   "Prospect",

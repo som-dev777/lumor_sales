@@ -5,13 +5,15 @@ type Props = SelectHTMLAttributes<HTMLSelectElement> & {
   label: string;
   options: readonly { value: string; label: string }[];
   error?: string;
+  hint?: string;
   ref?: Ref<HTMLSelectElement>;
 };
 
-/** A labelled dropdown (the browser's own, so it works well on phones). */
-export function SelectField({ label, options, error, id, ref, ...rest }: Props) {
+/** A labelled dropdown (the browser's own, so it works well on phones), with an optional hint. */
+export function SelectField({ label, options, error, hint, id, ref, ...rest }: Props) {
   const autoId = useId();
   const selectId = id ?? autoId;
+  const hintId = hint ? `${selectId}-hint` : undefined;
   return (
     <div className={fieldStyles.field}>
       <label htmlFor={selectId} className={fieldStyles.label}>
@@ -22,6 +24,7 @@ export function SelectField({ label, options, error, id, ref, ...rest }: Props) 
         ref={ref}
         className={`${fieldStyles.input} ${error ? fieldStyles.invalid : ""}`}
         aria-invalid={error ? true : undefined}
+        aria-describedby={hintId}
         {...rest}
       >
         {options.map((o) => (
@@ -30,6 +33,11 @@ export function SelectField({ label, options, error, id, ref, ...rest }: Props) 
           </option>
         ))}
       </select>
+      {hint && !error && (
+        <p id={hintId} className={fieldStyles.hint}>
+          {hint}
+        </p>
+      )}
       {error && (
         <p className={fieldStyles.error} role="alert">
           {error}

@@ -90,14 +90,15 @@ same LinkedIn profile twice, so two reps never message the same person.
 
 ## Change history
 
-| Date       | Version | Change                                                                                                                                                                       |
-| ---------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-16 | 1.2.0   | Placeholder doc created.                                                                                                                                                     |
-| 2026-10-17 | 1.2.0   | Full doc written (R3).                                                                                                                                                       |
-| 2026-10-17 | 1.2.0   | Rules built: link normalising, duplicates, ownership, notes, stage changes, bulk reassign, filters; with tests.                                                              |
-| 2026-10-17 | 1.2.0   | People list (filters, My/All, bulk reassign, CSV) and person page (header, claimed message, notes, timeline, history) built; R3 browser test.                                |
-| 2026-10-17 | 1.2.0   | Released in v1.2.0 (R3 Leads).                                                                                                                                               |
-| 2026-10-18 | 2.0.0   | v2 (R7): phone, email, seniority, Do not contact; v2 stages; plan shown in the list and export.                                                                              |
-| 2026-10-18 | 2.0.0   | Released in v2.0.0 (R7 Plans).                                                                                                                                               |
-| 2026-10-30 | 2.4.0   | A company is required (dropdown of existing companies, or + Add a new company); Admins can delete a person; My leads / All leads show a loading dot while switching (D-040). |
-| 2026-10-30 | 2.4.0   | Released in v2.4.0 (QA round 1).                                                                                                                                             |
+| Date       | Version    | Change                                                                                                                                                                       |
+| ---------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-16 | 1.2.0      | Placeholder doc created.                                                                                                                                                     |
+| 2026-10-17 | 1.2.0      | Full doc written (R3).                                                                                                                                                       |
+| 2026-10-17 | 1.2.0      | Rules built: link normalising, duplicates, ownership, notes, stage changes, bulk reassign, filters; with tests.                                                              |
+| 2026-10-17 | 1.2.0      | People list (filters, My/All, bulk reassign, CSV) and person page (header, claimed message, notes, timeline, history) built; R3 browser test.                                |
+| 2026-10-17 | 1.2.0      | Released in v1.2.0 (R3 Leads).                                                                                                                                               |
+| 2026-10-18 | 2.0.0      | v2 (R7): phone, email, seniority, Do not contact; v2 stages; plan shown in the list and export.                                                                              |
+| 2026-10-18 | 2.0.0      | Released in v2.0.0 (R7 Plans).                                                                                                                                               |
+| 2026-10-30 | 2.4.0      | A company is required (dropdown of existing companies, or + Add a new company); Admins can delete a person; My leads / All leads show a loading dot while switching (D-040). |
+| 2026-10-30 | 2.4.0      | Released in v2.4.0 (QA round 1).                                                                                                                                             |
+| 2026-11-02 | Unreleased | **Fill with AI** on the person form (F24).                                                                                                                                   |

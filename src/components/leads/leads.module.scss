@@ -453,3 +453,18 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+
+// Fill with AI (F24): the button sits at the left of the form's buttons.
+.fillButton {
+  margin-right: auto;
+}
+
+.fillList {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-5);
+}
+
+.fillSources {
+  margin-top: var(--space-1);
+  font-size: var(--text-sm);
+}

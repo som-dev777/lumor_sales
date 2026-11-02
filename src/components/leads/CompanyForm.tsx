@@ -14,9 +14,11 @@ import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { COMPANY_STATUSES } from "@/lib/db/enums";
 import { companySchema, type CompanyData, type CompanyInput } from "@/lib/validation/leads";
+import { fillCompanyWithAi } from "@/server/actions/ai";
 import { saveCompany } from "@/server/actions/leads";
 import type { LeadFormOptions } from "@/server/leads/options";
 import styles from "./leads.module.scss";
+import { useAiFill } from "./useAiFill";
 
 export const EMPTY_COMPANY: CompanyInput = {
   name: "",
@@ -52,6 +54,7 @@ export function CompanyForm({ companyId, defaultValues, options, canChooseOwner,
     handleSubmit,
     setValue,
     setError,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<CompanyInput, unknown, CompanyData>({
     resolver: zodResolver(companySchema),
@@ -65,6 +68,25 @@ export function CompanyForm({ companyId, defaultValues, options, canChooseOwner,
     Boolean(defaultValues.industry) && !listed(defaultValues.industry ?? ""),
   );
   const { formError, apply } = useServerResult(setError);
+  // Fill with AI (F24): only empty fields come back; a listed industry is picked in the list.
+  const ai = useAiFill(
+    () => fillCompanyWithAi(getValues()),
+    (values) => {
+      for (const [field, value] of Object.entries(values)) {
+        if (field === "industry") {
+          const known = listed(value);
+          setNewIndustry(!known);
+          setValue("industry", known ?? value, { shouldDirty: true });
+        } else {
+          setValue(field as keyof CompanyInput, value, { shouldDirty: true });
+        }
+      }
+    },
+  );
+  const field = (name: keyof CompanyInput) => ({
+    ...register(name, { onChange: () => ai.edited(name) }),
+    hint: ai.hint(name),
+  });
 
   const onSubmit = handleSubmit(async (values) => {
     setExistingLink(null);
@@ -101,13 +123,13 @@ export function CompanyForm({ companyId, defaultValues, options, canChooseOwner,
           label="Website"
           placeholder="https://…"
           error={errors.website?.message}
-          {...register("website")}
+          {...field("website")}
         />
         <TextField
           label="LinkedIn page"
           placeholder="https://www.linkedin.com/company/…"
           error={errors.linkedinUrl?.message}
-          {...register("linkedinUrl")}
+          {...field("linkedinUrl")}
         />
       </div>
       <div className={styles.row2}>
@@ -115,8 +137,10 @@ export function CompanyForm({ companyId, defaultValues, options, canChooseOwner,
           <SelectField
             label="Industry"
             value={newIndustry ? NEW_INDUSTRY : (listed(industry) ?? "")}
+            hint={newIndustry ? undefined : ai.hint("industry")}
             onChange={(e) => {
               const v = e.target.value;
+              ai.edited("industry");
               setNewIndustry(v === NEW_INDUSTRY);
               setValue("industry", v === NEW_INDUSTRY ? "" : v);
             }}
@@ -131,7 +155,7 @@ export function CompanyForm({ companyId, defaultValues, options, canChooseOwner,
               label="New industry"
               autoFocus
               error={errors.industry?.message}
-              {...register("industry")}
+              {...field("industry")}
             />
           )}
         </div>
@@ -139,18 +163,18 @@ export function CompanyForm({ companyId, defaultValues, options, canChooseOwner,
           label="Headcount band"
           placeholder="e.g. 51–200"
           error={errors.headcountBand?.message}
-          {...register("headcountBand")}
+          {...field("headcountBand")}
         />
       </div>
       <div className={styles.row2}>
-        <TextField label="City" error={errors.city?.message} {...register("city")} />
-        <TextField label="Country" error={errors.country?.message} {...register("country")} />
+        <TextField label="City" error={errors.city?.message} {...field("city")} />
+        <TextField label="Country" error={errors.country?.message} {...field("country")} />
       </div>
       <div className={styles.row2}>
         <SelectField
           label="Account filter"
           options={choices(options.accountFilters, "No account filter")}
-          {...register("accountFilterId")}
+          {...field("accountFilterId")}
         />
         <SelectField
           label="Status"
@@ -165,8 +189,10 @@ export function CompanyForm({ companyId, defaultValues, options, canChooseOwner,
           {...register("ownerId")}
         />
       )}
-      <TextArea label="Notes" rows={3} error={errors.notes?.message} {...register("notes")} />
+      <TextArea label="Notes" rows={3} error={errors.notes?.message} {...field("notes")} />
+      {ai.panel}
       <div className={styles.formActions}>
+        {ai.button}
         <Button variant="secondary" onClick={onDone} disabled={isSubmitting}>
           Cancel
         </Button>

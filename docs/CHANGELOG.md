@@ -14,6 +14,7 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 - Sidebar: Companies now comes before People.
 - Building (D-041): F22 Calendar and booking links, F23 AI chat on a person, F24 Fill with AI.
 - AI chat (F23): the person page's AI assistant opens on **Chat**: talk it through with the AI, then **Use this message** and Mark as sent. Chats are saved and private.
+- Fill with AI (F24): on the Add/Edit company and person forms, the AI searches the web and fills the empty fields (India office, Bangalore first; a foreign headquarters goes in the notes).
 
 ## [2.4.0] - 2026-10-30
 

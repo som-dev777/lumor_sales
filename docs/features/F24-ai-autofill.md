@@ -46,6 +46,7 @@ fills in the fields left empty. The rep checks and edits everything before savin
 
 ## Change history
 
-| Date       | Version    | Change                             |
-| ---------- | ---------- | ---------------------------------- |
-| 2026-11-02 | Unreleased | Feature doc written (before code). |
+| Date       | Version    | Change                                                                                                                        |
+| ---------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-02 | Unreleased | Feature doc written (before code).                                                                                            |
+| 2026-11-02 | Unreleased | Built: P08/P09 with OpenAI web search (checked live: 10–15 seconds), Fill with AI on both forms, "Filled by AI" hints; tests. |
