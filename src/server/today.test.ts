@@ -8,7 +8,7 @@ import { planSchema } from "@/lib/validation/plans";
 import { createPerson } from "./leads/people";
 import { quickLog } from "./leads/quicklog";
 import { completeStep, enrolPeople, liveEnrolment } from "./plans/enrolment";
-import { createPlan } from "./plans/plans";
+import { createPlan, updatePlan } from "./plans/plans";
 import { seedPlans } from "./plans/seed";
 import {
   applyRanking,
@@ -297,5 +297,64 @@ describe("AI ranking (P01)", () => {
       ["A Lead", "Warm"],
       ["B Lead", undefined],
     ]);
+  });
+});
+
+describe("custom tasks and moving people to a new version (D-043)", () => {
+  const trial = (steps: unknown[], extra: Record<string, unknown> = {}) =>
+    planSchema.parse({
+      name: "Pilot plan",
+      planType: "Trial",
+      type: "Official",
+      steps,
+      ...extra,
+    });
+  const custom = (label: string, waitDays: number) => ({
+    channels: [{ channel: "Custom", when: "always", label }],
+    waitDays,
+  });
+
+  it("a Custom task shows its name on Today and Done logs it as a task", async () => {
+    const { plan: p } = await createPlan(t.db, rep, trial([custom("Send a case study", 0)]));
+    const d = await lead("Custom Lead");
+    await enrolPeople(t.db, rep, [d.id], p.id, NOW);
+    const [task] = (await buildToday(t.db, rep, NOW)).tasks;
+    expect(task).toMatchObject({ section: "trial", kind: "step", channel: "Manual task" });
+    expect(task.detail).toBe("Step 1 of 1: Send a case study");
+    await completeStep(t.db, rep, d.id, {}, NOW);
+    const done = (await t.db.select().from(activity).where(eq(activity.personId, d.id))).find(
+      (a) => a.type === "Task done",
+    )!;
+    expect(done.content).toContain("Send a case study");
+  });
+
+  it("saving changed steps can move the people on the old version, keeping their step", async () => {
+    const { plan: p } = await createPlan(
+      t.db,
+      rep,
+      trial([custom("Kick-off call", 0), custom("Check usage", 5)]),
+    );
+    const a = await lead("Mover");
+    await enrolPeople(t.db, rep, [a.id], p.id, NOW);
+    const kept = await updatePlan(
+      t.db,
+      rep,
+      p.id,
+      trial([custom("Kick-off call", 0), custom("Check usage", 4)]),
+    );
+    expect(kept).toMatchObject({ newVersion: true, moved: 0 });
+    expect((await liveEnrolment(t.db, a.id))!.version).toBe(1);
+    const moved = await updatePlan(
+      t.db,
+      rep,
+      p.id,
+      trial([custom("Kick-off call", 0), custom("Check usage", 4), custom("Renewal chat", 7)], {
+        moveEnrolled: true,
+      }),
+    );
+    expect(moved).toMatchObject({ newVersion: true, moved: 1 });
+    const e = (await liveEnrolment(t.db, a.id))!;
+    expect(e).toMatchObject({ version: 3, currentStep: 1 });
+    expect((await buildToday(t.db, rep, NOW)).tasks[0].detail).toBe("Step 1 of 3: Kick-off call");
   });
 });

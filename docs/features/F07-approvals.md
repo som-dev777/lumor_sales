@@ -73,3 +73,4 @@ The owner doesn't want approvals. From v2.7.0:
 | 2026-10-18 | 2.0.0   | v2 (R7): plan proposals are listed in Approvals and decided on the plan page (F17).                                                                                      |
 | 2026-10-18 | 2.0.0   | Released in v2.0.0 (R7 Plans).                                                                                                                                           |
 | 2026-11-03 | 2.7.0   | Retired (D-043): no Approvals page or proposals; anyone creates Official items.                                                                                          |
+| 2026-11-03 | 2.7.0   | Built: Approvals page and sidebar link removed (the address opens Plans); Propose replaced by Make Official; anyone creates Official items.                              |

@@ -3,7 +3,7 @@
 import type { ChannelCondition, StepChannel } from "./db/enums";
 
 type StepLike = {
-  channels: { channel: StepChannel; when: ChannelCondition }[];
+  channels: { channel: StepChannel; when: ChannelCondition; label?: string }[];
   waitDays: number;
   templatePurpose?: string | null;
   script?: string | null;
@@ -25,7 +25,9 @@ export function describeChannels(step: StepLike): string {
           : c.when === "email"
             ? " if an email is known"
             : "";
-      return `${i > 0 ? "otherwise " : ""}${c.channel}${cond}`;
+      // A Custom task shows its own name (D-043).
+      const task = c.channel === "Custom" ? (c.label ?? "Custom task") : c.channel;
+      return `${i > 0 ? "otherwise " : ""}${task}${cond}`;
     })
     .join(" → ");
 }

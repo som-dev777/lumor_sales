@@ -32,8 +32,8 @@ export function AddItemButton({
         title={`New ${type === "Official" ? "Official" : "Personal"} ${noun}`}
         description={
           type === "Official"
-            ? "Official items are the team's playbook. Only Admins can change them."
-            : "Personal items are yours to try out. You can propose a good one as Official."
+            ? "Official items are the team's playbook. You and Admins can change it later."
+            : "Personal items are yours to try out. You can make a good one Official later."
         }
       >
         {open && (

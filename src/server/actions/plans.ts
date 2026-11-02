@@ -74,12 +74,19 @@ export async function savePlan(id: string | null, input: unknown): Promise<PlanR
         findings: warnings,
       };
     }
-    const { plan, warnings, newVersion } = await updatePlan(getDb(), viewer, id, parsed.data);
+    const { plan, warnings, newVersion, moved } = await updatePlan(
+      getDb(),
+      viewer,
+      id,
+      parsed.data,
+    );
     refresh();
     return {
       ok: true,
       message: newVersion
-        ? `Saved as version ${plan.currentVersion}. People already enrolled keep their version.`
+        ? moved > 0
+          ? `Saved as version ${plan.currentVersion}. ${moved} ${moved === 1 ? "person" : "people"} moved to it.`
+          : `Saved as version ${plan.currentVersion}. People already enrolled keep their version.`
         : `${plan.name} saved.`,
       link: `/plans/${plan.id}`,
       findings: warnings,

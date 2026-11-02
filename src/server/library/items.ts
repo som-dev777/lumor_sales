@@ -394,7 +394,34 @@ export async function duplicateItem(db: Db, actor: Actor, kind: LibraryKind, id:
   });
 }
 
-// --- Propose as Official (F07) -------------------------------------------------------------
+// --- Make Official (D-043: no approvals) ---------------------------------------------------
+
+/** The creator (or an Admin) makes a Personal item Official, straight away. */
+export async function makeOfficial(db: Db, actor: Actor, kind: LibraryKind, id: string) {
+  return db.transaction(async (tx) => {
+    const item = await loadItem(tx, kind, id);
+    assertCan(actor, "library.edit", item);
+    if (item.type === "Official") throw new LibraryError("This is already Official.");
+    if (item.status === "Archived") throw new LibraryError("Restore it first.");
+    if ("code" in item) await assertOfficialCodeFree(tx, item.code, item.id);
+    const after = await setCommon(tx, kind, id, {
+      type: "Official",
+      proposalStatus: item.proposalStatus === "Proposed" ? "None" : item.proposalStatus,
+    });
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: KIND_LABEL[kind],
+      recordId: id,
+      recordName: itemName(item),
+      action: "Updated",
+      before: { type: item.type, proposalStatus: item.proposalStatus },
+      after: { type: after.type, proposalStatus: after.proposalStatus },
+    });
+    return after;
+  });
+}
+
+// --- Propose as Official (F07, retired in D-043; kept for old data) -----------------------
 
 export async function proposeItem(db: Db, actor: Actor, kind: LibraryKind, id: string) {
   return db.transaction(async (tx) => {

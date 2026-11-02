@@ -50,7 +50,7 @@ export function TemplateCard({
               <Lock
                 size={14}
                 className={styles.lock}
-                aria-label="Official: only Admins can change it"
+                aria-label="Official: only its creator or an Admin can change it"
               />
             )}
             <h3 className={styles.cardName}>{row.name}</h3>

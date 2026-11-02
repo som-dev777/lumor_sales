@@ -1,6 +1,5 @@
-import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { activity, auditLog, person, persona, proposal, templateRevision } from "@/lib/db/schema";
+import { activity, auditLog, person, persona, templateRevision } from "@/lib/db/schema";
 import { createTestDb, insertTestUser } from "@/lib/db/test-db";
 import { PermissionError, type Actor } from "@/lib/permissions";
 import {
@@ -10,19 +9,12 @@ import {
   templateSchema,
 } from "@/lib/validation/library";
 import {
-  approveProposal,
-  countPendingProposals,
-  listPendingProposals,
-  myProposals,
-  rejectProposal,
-} from "./approvals";
-import {
   createItem,
   deleteItem,
   duplicateItem,
   LibraryError,
   loadItem,
-  proposeItem,
+  makeOfficial,
   setArchived,
   updateItem,
 } from "./items";
@@ -133,7 +125,7 @@ describe("form rules", () => {
 });
 
 describe("create and edit (permissions)", () => {
-  it("anyone creates Personal items; only Admins create Official ones", async () => {
+  it("anyone creates Personal or Official items (no approvals, D-043)", async () => {
     const mine = await newPersona(rep);
     expect(mine).toMatchObject({
       type: "Personal",
@@ -141,11 +133,11 @@ describe("create and edit (permissions)", () => {
       status: "Active",
       proposalStatus: "None",
     });
-    await expect(newPersona(rep, "Official")).rejects.toThrow(PermissionError);
+    expect((await newPersona(rep, "Official", "Rep's official")).type).toBe("Official");
     expect((await newPersona(admin, "Official")).type).toBe("Official");
   });
 
-  it("only the owner edits a Personal item; only Admins edit Official ones", async () => {
+  it("only the owner edits a Personal item; an Official one its creator or an Admin", async () => {
     const mine = await newPersona(rep);
     const official = await newPersona(admin, "Official");
     const edit = (actor: Actor, id: string) =>
@@ -156,6 +148,9 @@ describe("create and edit (permissions)", () => {
     await expect(edit(admin, mine.id)).rejects.toThrow(PermissionError); // D-017
     await expect(edit(rep, official.id)).rejects.toThrow(PermissionError);
     expect((await edit(admin, official.id)).name).toBe("Renamed");
+    const repsOfficial = await newPersona(rep, "Official", "Rep's official");
+    expect((await edit(rep, repsOfficial.id)).name).toBe("Renamed");
+    await expect(edit(rep2, repsOfficial.id)).rejects.toThrow(PermissionError);
   });
 
   it("writes Created and Updated audit entries with before/after", async () => {
@@ -284,87 +279,24 @@ describe("duplicate", () => {
   });
 });
 
-describe("proposals (F07)", () => {
-  it("only the owner proposes a Personal item, once while pending", async () => {
+describe("Make Official (D-043: no approvals)", () => {
+  it("the creator makes their Personal item Official at once, audited; others can't", async () => {
     const mine = await newPersona(rep);
-    await expect(proposeItem(t.db, rep2, "persona", mine.id)).rejects.toThrow(PermissionError);
-    await proposeItem(t.db, rep, "persona", mine.id);
-    expect((await loadItem(t.db, "persona", mine.id)).proposalStatus).toBe("Proposed");
-    await expect(proposeItem(t.db, rep, "persona", mine.id)).rejects.toThrow(/already waiting/);
-    const official = await newPersona(admin, "Official");
-    await expect(proposeItem(t.db, admin, "persona", official.id)).rejects.toThrow(PermissionError);
-    expect(await countPendingProposals(t.db)).toBe(1);
+    await expect(makeOfficial(t.db, rep2, "persona", mine.id)).rejects.toThrow(PermissionError);
+    const after = await makeOfficial(t.db, rep, "persona", mine.id);
+    expect(after).toMatchObject({ type: "Official", ownerId: rep.id });
+    await expect(makeOfficial(t.db, rep, "persona", mine.id)).rejects.toThrow("already Official");
+    const entry = (await t.db.select().from(auditLog)).at(-1)!;
+    expect(entry.changes).toMatchObject({ type: { before: "Personal", after: "Official" } });
   });
 
-  it("approving makes it Official and Admin-owned; the proposer is kept", async () => {
-    const mine = await newPersona(rep);
-    const prop = await proposeItem(t.db, rep, "persona", mine.id);
-    await expect(approveProposal(t.db, rep, prop.id)).rejects.toThrow(PermissionError);
-
-    const approved = await approveProposal(t.db, admin, prop.id);
-    expect(approved).toMatchObject({
-      type: "Official",
-      ownerId: admin.id,
-      proposalStatus: "Approved",
-    });
-    const [p] = await t.db.select().from(proposal).where(eq(proposal.id, prop.id));
-    expect(p).toMatchObject({ decision: "Approved", decidedBy: admin.id, proposedBy: rep.id });
-
-    // Now locked for the User who proposed it
-    await expect(
-      updateItem(t.db, rep, mine.id, { kind: "persona", data: personaData() }),
-    ).rejects.toThrow(PermissionError);
-    await expect(approveProposal(t.db, admin, prop.id)).rejects.toThrow(/already been decided/);
-  });
-
-  it("rejecting keeps it Personal with the note; the owner can propose again", async () => {
-    const mine = await newPersona(rep);
-    const prop = await proposeItem(t.db, rep, "persona", mine.id);
-    await rejectProposal(t.db, admin, prop.id, "Too close to Research & Insights");
-    expect(await loadItem(t.db, "persona", mine.id)).toMatchObject({
-      type: "Personal",
-      proposalStatus: "Rejected",
-    });
-    const outcomes = await myProposals(t.db, rep.id, "persona");
-    expect(outcomes[0]).toMatchObject({
-      decision: "Rejected",
-      reviewerNote: "Too close to Research & Insights",
-      decidedByName: "Somnath",
-    });
-    await proposeItem(t.db, rep, "persona", mine.id);
-  });
-
-  it("an account filter whose code clashes with an Official one can't be approved", async () => {
-    await createItem(t.db, admin, "Official", { kind: "accountFilter", data: filterData("A1") });
+  it("an account filter whose code clashes with an Official one can't be made Official", async () => {
+    await createItem(t.db, admin, "Official", { kind: "accountFilter", data: filterData("B2") });
     const mine = await createItem(t.db, rep, "Personal", {
       kind: "accountFilter",
-      data: filterData("A1"),
+      data: filterData("B2"),
     });
-    const prop = await proposeItem(t.db, rep, "accountFilter", mine.id);
-    await expect(approveProposal(t.db, admin, prop.id)).rejects.toThrow(/already uses the code A1/);
-  });
-
-  it("archiving withdraws a pending proposal", async () => {
-    const mine = await newPersona(rep);
-    await proposeItem(t.db, rep, "persona", mine.id);
-    await setArchived(t.db, rep, "persona", mine.id, true);
-    expect(await countPendingProposals(t.db)).toBe(0);
-    const [p] = await t.db.select().from(proposal);
-    expect(p).toMatchObject({ decision: "Rejected", reviewerNote: "Withdrawn by the owner" });
-  });
-
-  it("the queue shows the item and who proposed it; audit has Created, Approved", async () => {
-    const mine = await newPersona(rep, "Personal", "Agency Ops");
-    const prop = await proposeItem(t.db, rep, "persona", mine.id);
-    const queue = await listPendingProposals(t.db);
-    expect(queue).toMatchObject([
-      { id: prop.id, kind: "persona", itemName: "Agency Ops", proposedByName: "Asha" },
-    ]);
-    await approveProposal(t.db, admin, prop.id);
-    const actions = (await t.db.select().from(auditLog).orderBy(auditLog.occurredAt)).map(
-      (e) => `${e.entityType}:${e.action}`,
-    );
-    expect(actions).toEqual(["Persona:Created", "Proposal:Created", "Persona:Approved"]);
+    await expect(makeOfficial(t.db, rep, "accountFilter", mine.id)).rejects.toThrow(/code B2/);
   });
 });
 

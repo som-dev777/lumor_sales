@@ -21,7 +21,7 @@ import {
   KIND_LABEL,
   KIND_NOUN,
   LibraryError,
-  proposeItem,
+  makeOfficial,
   setArchived,
   updateItem,
   type LibraryKind,
@@ -98,7 +98,7 @@ export async function updateLibraryItem(
   });
 }
 
-type SimpleAction = "archive" | "restore" | "delete" | "duplicate" | "propose";
+type SimpleAction = "archive" | "restore" | "delete" | "duplicate" | "official";
 
 export async function libraryAction(
   kind: LibraryKind,
@@ -130,9 +130,9 @@ export async function libraryAction(
         message = `Copied to your Personal ${noun}s as "${copy.name}".`;
         break;
       }
-      case "propose":
-        await proposeItem(db, viewer, kind, id);
-        message = `Proposed as Official. An Admin will review it.`;
+      case "official":
+        await makeOfficial(db, viewer, kind, id);
+        message = `It's Official now: the whole team can use it.`;
         break;
       default:
         return { ok: false, error: "Unknown action." };

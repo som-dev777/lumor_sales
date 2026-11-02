@@ -17,6 +17,8 @@ Owner's list of 2026-11-03 (D-043), aiming for 2.7.0:
 - Today: a Backlog section at the top for anything due on an earlier day (a reply not answered, a meeting not marked held, a nudge, a plan step, a withdraw), with how many days late. Snooze asks for a date and the task comes back that day.
 - People and Companies show a red Backlog badge; People has a "Backlog only" filter. A person added by a booking shows "Check details" until someone clicks Done checking.
 - Team tab: the counters follow each person's My day exactly (Backlog and Meetings today added); click any number to see the list behind it.
+- Plans: "Channel" is now "Task", with a Custom task (type your own name, offered again next time) and a custom template purpose; Remove step is labelled; saving changed steps can move the people already on the plan to the new version.
+- No more approvals: anyone creates Official or Personal plans, personas, account filters and templates; "Propose as Official" is now "Make Official"; the Approvals page is gone.
 
 ## [2.6.0] - 2026-11-02
 

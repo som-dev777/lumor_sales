@@ -37,7 +37,8 @@ export type PlanStepInput = {
 };
 
 const isRequest = (s: PlanStepInput) => s.channels[0]?.channel === "LinkedIn connection request";
-const isManual = (s: PlanStepInput) => s.channels.every((c) => c.channel === "Manual task");
+const isManual = (s: PlanStepInput) =>
+  s.channels.every((c) => c.channel === "Manual task" || c.channel === "Custom");
 /** A touch reaches the person: not a manual task, and not a connection request without a note. */
 const isTouch = (s: PlanStepInput) => !isManual(s) && !(isRequest(s) && !s.script?.trim());
 

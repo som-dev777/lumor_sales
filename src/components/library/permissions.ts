@@ -9,9 +9,8 @@ export function itemPermissions(
   return {
     canEdit: can(viewer, "library.edit", item),
     canDelete: can(viewer, "library.delete", item),
-    canPropose:
-      can(viewer, "library.propose", item) &&
-      item.status === "Active" &&
-      item.proposalStatus !== "Proposed",
+    // No approvals (D-043): the creator makes their own Personal item Official.
+    canMakeOfficial:
+      item.type === "Personal" && can(viewer, "library.edit", item) && item.status === "Active",
   };
 }

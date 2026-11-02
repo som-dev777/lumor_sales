@@ -57,8 +57,9 @@ async function Plan({ params }: Pick<PageProps<"/plans/[id]">, "params">) {
             planId={p.id}
             archived={p.status === "Archived"}
             canEdit={can(viewer, "plan.edit", p)}
-            canPropose={can(viewer, "plan.propose", p) && p.proposalStatus !== "Proposed"}
-            canDecide={can(viewer, "proposal.decide") && p.pendingProposal !== null}
+            // No approvals (D-043): anyone can make a plan Official by editing it.
+            canPropose={false}
+            canDecide={false}
           />
         </div>
       </section>
@@ -74,6 +75,7 @@ async function Plan({ params }: Pick<PageProps<"/plans/[id]">, "params">) {
                 <span className={styles.muted}>
                   {describeWait(p.steps, i)}
                   {s.templatePurpose ? ` · template: ${s.templatePurpose}` : ""}
+                  {s.customPurpose ? ` · purpose: ${s.customPurpose}` : ""}
                 </span>
                 {s.script && <p className={styles.script}>{s.script}</p>}
               </div>

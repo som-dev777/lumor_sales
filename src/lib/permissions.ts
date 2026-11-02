@@ -96,25 +96,25 @@ export function can(actor: Actor, action: Action, record?: Partial<LibraryItem>)
     case "calendar.manage":
       return isOwner || isAdmin;
 
-    // Official items: Admin only (Users see a lock). Personal items: create freely,
-    // edit and delete only your own.
+    // No approvals (D-043): anyone creates Official or Personal items. An Official item is
+    // changed by its creator or an Admin (others see a lock); a Personal one by its creator.
     case "library.create":
-      return record?.type === "Personal" || isAdmin;
+      return true;
     case "library.edit":
     case "library.delete":
-      return record?.type === "Official" ? isAdmin : isOwner;
+      return record?.type === "Official" ? isAdmin || isOwner : isOwner;
 
-    // Propose your own Personal item as Official.
+    // Proposing is retired (D-043): make your own item Official by editing it instead.
     case "library.propose":
     case "plan.propose":
-      return record?.type === "Personal" && isOwner;
+      return false;
 
-    // Plans (F17): Official plans are Admin-made and everyone's to use; Personal plans are
-    // their owner's (Admins can see and use all of them).
+    // Plans (F17): Official plans are everyone's to use; Personal plans are their owner's
+    // (Admins can see and use all of them). Anyone creates either kind (D-043).
     case "plan.create":
-      return record?.type === "Personal" || isAdmin;
+      return true;
     case "plan.edit":
-      return record?.type === "Official" ? isAdmin : isOwner;
+      return record?.type === "Official" ? isAdmin || isOwner : isOwner;
     case "plan.use":
       return record?.type === "Official" || isOwner || isAdmin;
   }

@@ -1,16 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { auditLog, proposal } from "@/lib/db/schema";
+import { auditLog } from "@/lib/db/schema";
 import { createTestDb, insertTestUser } from "@/lib/db/test-db";
 import { PermissionError, type Actor } from "@/lib/permissions";
 import { planSchema } from "@/lib/validation/plans";
 import {
   createPlan,
-  decidePlanProposal,
   duplicatePlan,
   getPlan,
   listPlans,
   PlanError,
-  proposePlan,
   setPlanArchived,
   stepsOf,
   updatePlan,
@@ -73,8 +71,13 @@ describe("plans (F17)", () => {
     expect(err.findings.map((f: { rule: number }) => f.rule)).toContain(1);
   });
 
-  it("Users make Personal plans only, and edit only their own", async () => {
-    await expect(createPlan(t.db, rep, outreach())).rejects.toThrow(PermissionError);
+  it("Users make Official and Personal plans (D-043), and edit only their own", async () => {
+    const { plan: team } = await createPlan(t.db, rep, outreach({ name: "Team plan" }));
+    expect(team).toMatchObject({ type: "Official", ownerId: rep.id });
+    await expect(updatePlan(t.db, other, team.id, outreach())).rejects.toThrow(PermissionError);
+    expect((await updatePlan(t.db, admin, team.id, outreach({ name: "Team" }))).plan.name).toBe(
+      "Team",
+    );
     const { plan } = await createPlan(t.db, rep, outreach({ type: "Personal", name: "Mine" }));
     await expect(updatePlan(t.db, other, plan.id, outreach({ type: "Personal" }))).rejects.toThrow(
       PermissionError,
@@ -105,40 +108,53 @@ describe("plans (F17)", () => {
     expect((await stepsOf(t.db, plan.id, 2))[1].waitDays).toBe(3);
   });
 
-  it("duplicate makes a Personal copy; propose → Admin approves → Official and Admin-owned", async () => {
+  it("duplicate makes a Personal copy; its creator can switch it to Official (D-043)", async () => {
     const { plan } = await createPlan(t.db, admin, outreach());
     const copy = await duplicatePlan(t.db, rep, plan.id);
     expect(copy).toMatchObject({ type: "Personal", ownerId: rep.id, name: "Fast outreach (copy)" });
     expect(await stepsOf(t.db, copy.id, 1)).toHaveLength(4);
-    await proposePlan(t.db, rep, copy.id);
-    await expect(proposePlan(t.db, rep, copy.id)).rejects.toThrow(/already proposed/);
-    expect((await usablePlans(t.db, rep)).map((p) => p.label)).not.toContain(
-      "Fast outreach (copy) (Personal)",
-    );
-    await expect(decidePlanProposal(t.db, rep, copy.id, "Approved", null)).rejects.toThrow(
-      PermissionError,
-    );
-    const approved = await decidePlanProposal(t.db, admin, copy.id, "Approved", null);
-    expect(approved).toMatchObject({
-      type: "Official",
-      ownerId: admin.id,
-      proposalStatus: "Approved",
-    });
-    expect((await t.db.select().from(proposal))[0]).toMatchObject({
-      decision: "Approved",
-      decidedBy: admin.id,
-    });
+    const { plan: shared } = await updatePlan(t.db, rep, copy.id, outreach({ name: copy.name }));
+    expect(shared).toMatchObject({ type: "Official", ownerId: rep.id });
+    expect((await usablePlans(t.db, other)).map((p) => p.id)).toContain(copy.id);
   });
 
-  it("rejecting needs a note; archived plans aren't offered for enrolment", async () => {
+  it("archived plans aren't offered for enrolment", async () => {
     const { plan } = await createPlan(t.db, rep, outreach({ type: "Personal", name: "Draft" }));
-    await proposePlan(t.db, rep, plan.id);
-    await expect(decidePlanProposal(t.db, admin, plan.id, "Rejected", " ")).rejects.toThrow(/why/);
-    expect(await decidePlanProposal(t.db, admin, plan.id, "Rejected", "Too fast")).toMatchObject({
-      proposalStatus: "Rejected",
-    });
     expect((await usablePlans(t.db, rep)).map((p) => p.id)).toContain(plan.id);
     await setPlanArchived(t.db, rep, plan.id, true);
     expect((await usablePlans(t.db, rep)).map((p) => p.id)).not.toContain(plan.id);
+  });
+
+  it("a Custom task and a custom purpose are saved; a Custom task needs a name (D-043)", async () => {
+    const bad = planSchema.safeParse({
+      name: "No name",
+      planType: "Trial",
+      type: "Personal",
+      steps: [step("Custom", 0)],
+    });
+    expect(bad.success).toBe(false);
+    const data = outreach({
+      planType: "Trial",
+      steps: [
+        {
+          channels: [{ channel: "Custom", when: "always", label: "Send a case study" }],
+          waitDays: 0,
+        },
+        step("LinkedIn message", 3, {
+          templatePurpose: "Message 1",
+          customPurpose: "Case study follow-up",
+        }),
+      ],
+    });
+    const { plan } = await createPlan(t.db, rep, data);
+    const steps = await stepsOf(t.db, plan.id, 1);
+    expect(steps[0].channels).toEqual([
+      { channel: "Custom", when: "always", label: "Send a case study" },
+    ]);
+    // A custom purpose replaces the template purpose.
+    expect(steps[1]).toMatchObject({
+      customPurpose: "Case study follow-up",
+      templatePurpose: null,
+    });
   });
 });

@@ -43,7 +43,8 @@ async function Edit({ params }: Pick<PageProps<"/plans/[id]/edit">, "params">) {
       />
       <PlanBuilder
         planId={p.id}
-        canMakeOfficial={false}
+        canMakeOfficial={can(viewer, "plan.create", { type: "Official" })}
+        enrolled={p.enrolled}
         {...options}
         initial={{
           name: p.name,
@@ -54,6 +55,7 @@ async function Edit({ params }: Pick<PageProps<"/plans/[id]/edit">, "params">) {
           steps: p.steps.map((s) => ({
             channels: s.channels,
             templatePurpose: s.templatePurpose ?? "",
+            customPurpose: s.customPurpose ?? "",
             templateId: s.templateId ?? "",
             script: s.script ?? "",
             waitDays: s.waitDays,

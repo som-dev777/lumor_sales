@@ -29,6 +29,7 @@ import {
   isSenior,
   nextBusinessDay,
   resolveChannel,
+  taskNameOf,
   rollOffWeekend,
   daysBetween,
 } from "./schedule";
@@ -157,6 +158,8 @@ export async function planState(db: DbOrTx, personId: string, today: string) {
   const steps = await stepsOf(db, e.planId, e.version);
   const step = steps[e.currentStep - 1] ?? null;
   const channel = step ? resolveChannel(step.channels, p) : null;
+  // A Custom task's own name, shown instead of "Manual task" (D-043).
+  const taskName = step ? taskNameOf(step.channels, p) : null;
   const finished = !step || (e.endsBy !== null && e.endsBy < today);
   let message: string | null = null;
   let templateId: string | null = null;
@@ -186,6 +189,7 @@ export async function planState(db: DbOrTx, personId: string, today: string) {
     steps,
     step,
     channel,
+    taskName,
     message,
     templateId,
     finished,
@@ -532,7 +536,10 @@ export async function completeStepTx(
       occurredAt: now,
       type: "Task done",
       channel: "LinkedIn",
-      content: [step.script, input.text?.trim()].filter(Boolean).join(" — ") || "Task done",
+      content:
+        [taskNameOf(step.channels, p), step.script, input.text?.trim()]
+          .filter(Boolean)
+          .join(" — ") || "Task done",
       ...link,
     });
   } else {

@@ -24,7 +24,7 @@ import styles from "./library.module.scss";
 export type ItemPermissions = {
   canEdit: boolean;
   canDelete: boolean;
-  canPropose: boolean;
+  canMakeOfficial: boolean;
 };
 
 type Props = {
@@ -41,7 +41,7 @@ type Props = {
   hasRevisions?: boolean;
 };
 
-type Confirm = "archive" | "delete" | "propose" | null;
+type Confirm = "archive" | "delete" | "official" | null;
 
 /** The ⋯ menu on a library card. What's offered depends on the server's permission check. */
 export function ItemActions({
@@ -64,7 +64,7 @@ export function ItemActions({
   const [revisionsOpen, setRevisionsOpen] = useState(false);
   const [busy, startTransition] = useTransition();
 
-  function run(action: "archive" | "restore" | "delete" | "duplicate" | "propose") {
+  function run(action: "archive" | "restore" | "delete" | "duplicate" | "official") {
     startTransition(async () => {
       const result = await libraryAction(kind, id, action);
       setConfirm(null);
@@ -100,11 +100,11 @@ export function ItemActions({
       label: "Delete",
       tone: "danger" as const,
     },
-    propose: {
-      title: `Propose "${name}" as Official?`,
+    official: {
+      title: `Make "${name}" Official?`,
       description:
-        "An Admin will review it. If approved, it becomes part of the team's Official playbook, owned by that Admin.",
-      label: "Propose",
+        "It becomes part of the team's Official playbook straight away. You (and Admins) can still change it.",
+      label: "Make Official",
       tone: "primary" as const,
     },
   };
@@ -127,9 +127,9 @@ export function ItemActions({
             <Menu.Item className={styles.menuItem} onSelect={() => run("duplicate")}>
               Duplicate to my Personal
             </Menu.Item>
-            {permissions.canPropose && (
-              <Menu.Item className={styles.menuItem} onSelect={() => setConfirm("propose")}>
-                Propose as Official
+            {permissions.canMakeOfficial && (
+              <Menu.Item className={styles.menuItem} onSelect={() => setConfirm("official")}>
+                Make Official
               </Menu.Item>
             )}
             {hasRevisions && (

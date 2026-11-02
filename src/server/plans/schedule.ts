@@ -65,16 +65,34 @@ export function isSenior(seniority: string | null | undefined): boolean {
 }
 
 /** The first channel option that applies to this person (D-033: ordered options). */
+export function resolveOption(
+  options: ChannelOption[],
+  person: { phone: string | null; email: string | null },
+): ChannelOption {
+  for (const o of options) {
+    if (o.when === "always") return o;
+    if (o.when === "phone" && person.phone) return o;
+    if (o.when === "email" && person.email) return o;
+  }
+  return options[options.length - 1];
+}
+
+/** The task to do. A Custom task works like a Manual task (D-043). */
 export function resolveChannel(
   options: ChannelOption[],
   person: { phone: string | null; email: string | null },
-): ChannelOption["channel"] {
-  for (const o of options) {
-    if (o.when === "always") return o.channel;
-    if (o.when === "phone" && person.phone) return o.channel;
-    if (o.when === "email" && person.email) return o.channel;
-  }
-  return options[options.length - 1].channel;
+): Exclude<ChannelOption["channel"], "Custom"> {
+  const o = resolveOption(options, person);
+  return o.channel === "Custom" ? "Manual task" : o.channel;
+}
+
+/** A Custom task's name ("Send a case study"), or null for the built-in tasks (D-043). */
+export function taskNameOf(
+  options: ChannelOption[],
+  person: { phone: string | null; email: string | null },
+): string | null {
+  const o = resolveOption(options, person);
+  return o.channel === "Custom" ? o.label?.trim() || "Custom task" : null;
 }
 
 /** Moves a date later by the days a plan was paused (pausing doesn't use up the limit). */

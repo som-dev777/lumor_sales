@@ -307,7 +307,8 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
           requestSentDate: state.enrolment.requestSentDate,
           planType: state.plan.planType,
           planName: state.plan.name,
-          channel: state.channel,
+          // What the rep sees: a Custom task's name, and a custom purpose (D-043).
+          channel: `${state.taskName ?? state.channel}${state.step?.customPurpose ? ` · ${state.step.customPurpose}` : ""}`,
         }
       : null;
     const c = classifyLead(p, latest.get(p.id), facts, today, staleBefore);
@@ -854,7 +855,7 @@ export async function backlogOf(db: DbOrTx, personId: string, now = new Date()) 
         requestSentDate: state.enrolment.requestSentDate,
         planType: state.plan.planType,
         planName: state.plan.name,
-        channel: state.channel,
+        channel: state.taskName ?? state.channel,
       }
     : null;
   const latest = await latestActivity(db, [personId]);

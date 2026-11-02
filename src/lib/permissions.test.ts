@@ -44,10 +44,13 @@ describe("PRD permission table", () => {
     expect(can(rep, "lead.reassign")).toBe(false);
   });
 
-  it("Create, edit and delete Official items: Admin yes, User no (lock icon)", () => {
-    for (const action of ["library.create", "library.edit", "library.delete"] as const) {
+  it("No approvals (D-043): anyone creates Official items; its creator or an Admin changes it", () => {
+    expect(can(rep, "library.create", { type: "Official" })).toBe(true);
+    const repsOfficial = { type: "Official" as const, ownerId: rep.id };
+    for (const action of ["library.edit", "library.delete"] as const) {
       expect(can(admin, action, official)).toBe(true);
-      expect(can(rep, action, official)).toBe(false);
+      expect(can(rep, action, repsOfficial)).toBe(true);
+      expect(can(otherRep, action, repsOfficial)).toBe(false);
     }
   });
 
@@ -70,19 +73,18 @@ describe("PRD permission table", () => {
     expect(can(otherRep, "library.duplicate")).toBe(true);
   });
 
-  it("Propose a Personal item as Official: both, for their own Personal items", () => {
-    expect(can(rep, "library.propose", repsPersonal)).toBe(true);
-    expect(can(admin, "library.propose", { type: "Personal", ownerId: admin.id })).toBe(true);
-    expect(can(otherRep, "library.propose", repsPersonal)).toBe(false);
-    expect(can(admin, "library.propose", official)).toBe(false);
+  it("Proposing is retired (D-043)", () => {
+    expect(can(rep, "library.propose", repsPersonal)).toBe(false);
+    expect(can(rep, "plan.propose", repsPersonal)).toBe(false);
   });
 
-  it("Plans (F17): Admins make Official plans; anyone makes and edits their own Personal ones", () => {
+  it("Plans (F17, D-043): anyone makes Official or Personal plans; creators (and Admins for Official) edit", () => {
     expect(can(admin, "plan.create", official)).toBe(true);
-    expect(can(rep, "plan.create", official)).toBe(false);
+    expect(can(rep, "plan.create", official)).toBe(true);
     expect(can(rep, "plan.create", repsPersonal)).toBe(true);
     expect(can(admin, "plan.edit", official)).toBe(true);
-    expect(can(rep, "plan.edit", official)).toBe(false);
+    expect(can(rep, "plan.edit", { type: "Official", ownerId: rep.id })).toBe(true);
+    expect(can(otherRep, "plan.edit", { type: "Official", ownerId: rep.id })).toBe(false);
     expect(can(rep, "plan.edit", repsPersonal)).toBe(true);
     expect(can(otherRep, "plan.edit", repsPersonal)).toBe(false);
     expect(can(admin, "plan.edit", repsPersonal)).toBe(false);
@@ -93,8 +95,6 @@ describe("PRD permission table", () => {
     expect(can(rep, "plan.use", repsPersonal)).toBe(true);
     expect(can(otherRep, "plan.use", repsPersonal)).toBe(false);
     expect(can(admin, "plan.use", repsPersonal)).toBe(true);
-    expect(can(rep, "plan.propose", repsPersonal)).toBe(true);
-    expect(can(otherRep, "plan.propose", repsPersonal)).toBe(false);
     expect(can(inactiveRep, "plan.use", official)).toBe(false);
   });
 

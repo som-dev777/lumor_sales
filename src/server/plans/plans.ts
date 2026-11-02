@@ -1,11 +1,20 @@
 // Plans (F17): create, edit (each save of the steps is a new version), duplicate, propose,
 // archive, and decide proposals. Every change checks the shared permission rules and the
 // cadence guardrails, and writes an audit entry in the same transaction.
-import { and, asc, count, desc, eq, inArray, like, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, like, lt, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
-import { persona, plan, planEnrolment, planStep, proposal, template, user } from "@/lib/db/schema";
+import {
+  person,
+  persona,
+  plan,
+  planEnrolment,
+  planStep,
+  proposal,
+  template,
+  user,
+} from "@/lib/db/schema";
 import { assertCan, can, type Actor } from "@/lib/permissions";
 import type { PlanData, PlanStepData } from "@/lib/validation/plans";
 import { getPlaybookSettings } from "../leads/quicklog";
@@ -96,6 +105,7 @@ const sameSteps = (a: StepRow[], b: PlanStepData[]) =>
     (s, i) =>
       JSON.stringify(s.channels) === JSON.stringify(b[i].channels) &&
       s.templatePurpose === b[i].templatePurpose &&
+      (s.customPurpose ?? null) === (b[i].customPurpose ?? null) &&
       s.templateId === b[i].templateId &&
       (s.script ?? null) === (b[i].script ?? null) &&
       s.waitDays === b[i].waitDays,
@@ -143,8 +153,8 @@ export async function updatePlan(db: Db, actor: Actor, id: string, data: PlanDat
   return db.transaction(async (tx) => {
     const before = await loadPlan(tx, id);
     assertCan(actor, "plan.edit", before);
-    if (data.type !== before.type)
-      throw new PlanError("Use Propose as Official to change the type.");
+    // No approvals (D-043): whoever may edit the plan may switch it between Personal and Official.
+    if (data.type !== before.type) assertCan(actor, "plan.create", { type: data.type });
     await assertUsablePersona(tx, data.personaId);
     const warnings = await guardPlan(tx, data);
     const current = await stepsOf(tx, id, before.currentVersion);
@@ -160,13 +170,43 @@ export async function updatePlan(db: Db, actor: Actor, id: string, data: PlanDat
         name: data.name,
         planType: data.planType,
         personaId: data.personaId,
+        type: data.type,
         skipWeekends: data.skipWeekends,
         currentVersion: version,
       })
       .where(eq(plan.id, id))
       .returning();
+    // Move the people on older versions to the new one, keeping their step and due date.
+    let moved = 0;
+    if (data.moveEnrolled && version !== before.currentVersion) {
+      const live = await tx
+        .select({ e: planEnrolment, name: person.fullName })
+        .from(planEnrolment)
+        .innerJoin(person, eq(person.id, planEnrolment.personId))
+        .where(
+          and(
+            eq(planEnrolment.planId, id),
+            inArray(planEnrolment.status, ["Active", "Paused"]),
+            lt(planEnrolment.version, version),
+          ),
+        );
+      for (const { e, name } of live) {
+        await tx.update(planEnrolment).set({ version }).where(eq(planEnrolment.id, e.id));
+        await writeAudit(tx, {
+          userId: actor.id,
+          entityType: "PlanEnrolment",
+          recordId: e.id,
+          recordName: name,
+          action: "Updated",
+          before: { version: e.version },
+          after: { version, note: "moved to the new version of the plan" },
+        });
+        moved++;
+      }
+    }
     const fields = (r: PlanRow) => ({
       name: r.name,
+      type: r.type,
       planType: r.planType,
       personaId: r.personaId,
       skipWeekends: r.skipWeekends,
@@ -184,7 +224,7 @@ export async function updatePlan(db: Db, actor: Actor, id: string, data: PlanDat
         ...(version !== before.currentVersion ? { steps: data.steps.length } : {}),
       },
     });
-    return { plan: after, warnings, newVersion: version !== before.currentVersion };
+    return { plan: after, warnings, newVersion: version !== before.currentVersion, moved };
   });
 }
 

@@ -48,6 +48,7 @@ async function Builder() {
           {
             channels: [{ channel: "LinkedIn connection request", when: "always" }],
             templatePurpose: "",
+            customPurpose: "",
             templateId: "",
             script: "",
             waitDays: 0,
@@ -55,6 +56,7 @@ async function Builder() {
           {
             channels: [{ channel: "LinkedIn message", when: "always" }],
             templatePurpose: "Message 1",
+            customPurpose: "",
             templateId: "",
             script: "",
             waitDays: 2,

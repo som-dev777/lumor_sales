@@ -24,8 +24,10 @@ import { checkPlan, type Finding, type GuardSettings } from "@/server/plans/guar
 import styles from "./plans.module.scss";
 
 export type BuilderStep = {
-  channels: { channel: StepChannel; when: ChannelCondition }[];
+  channels: { channel: StepChannel; when: ChannelCondition; label?: string }[];
   templatePurpose: string;
+  /** A purpose the author names (D-043). */
+  customPurpose: string;
   templateId: string;
   script: string;
   waitDays: number;
@@ -47,11 +49,22 @@ type Props = {
   templates: { id: string; label: string }[];
   canMakeOfficial: boolean;
   settings: GuardSettings;
+  /** Custom task names and purposes used in any plan (D-043). */
+  customTasks: string[];
+  customPurposes: string[];
+  /** People on this plan now (any version), when editing. */
+  enrolled?: number;
+};
+
+const CUSTOM = "__custom";
+const TASK_LABEL: Partial<Record<StepChannel, string>> = {
+  Custom: "Custom…",
 };
 
 const NEW_STEP: BuilderStep = {
   channels: [{ channel: "LinkedIn message", when: "always" }],
   templatePurpose: "",
+  customPurpose: "",
   templateId: "",
   script: "",
   waitDays: 3,
@@ -65,6 +78,9 @@ export function PlanBuilder({
   templates,
   canMakeOfficial,
   settings,
+  customTasks,
+  customPurposes,
+  enrolled = 0,
 }: Props) {
   const router = useRouter();
   const notify = useToast();
@@ -72,6 +88,10 @@ export function PlanBuilder({
   const [busy, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [serverFindings, setServerFindings] = useState<Finding[]>([]);
+  const [moveEnrolled, setMoveEnrolled] = useState(false);
+  const [customPurposeOn, setCustomPurposeOn] = useState<boolean[]>(
+    initial.steps.map((s) => Boolean(s.customPurpose)),
+  );
 
   const live = useMemo(
     () =>
@@ -106,7 +126,12 @@ export function PlanBuilder({
       setError(null);
       const r = await savePlan(planId, {
         ...plan,
-        steps: plan.steps.map((s) => ({ ...s, waitDays: Number(s.waitDays) })),
+        moveEnrolled,
+        steps: plan.steps.map((s, i) => ({
+          ...s,
+          customPurpose: customPurposeOn[i] ? s.customPurpose : "",
+          waitDays: Number(s.waitDays),
+        })),
       });
       if (!r.ok) {
         setError(r.error);
@@ -142,7 +167,7 @@ export function PlanBuilder({
               ...personas.map((p) => ({ value: p.id, label: p.label })),
             ]}
           />
-          {planId === null && canMakeOfficial ? (
+          {canMakeOfficial ? (
             <SelectField
               label="Official or Personal"
               value={plan.type}
@@ -193,9 +218,13 @@ export function PlanBuilder({
               <Button
                 variant="ghost"
                 aria-label={`Remove step ${i + 1}`}
-                onClick={() => setPlan({ ...plan, steps: plan.steps.filter((_, k) => k !== i) })}
+                disabled={plan.steps.length === 1}
+                onClick={() => {
+                  setPlan({ ...plan, steps: plan.steps.filter((_, k) => k !== i) });
+                  setCustomPurposeOn((on) => on.filter((_, k) => k !== i));
+                }}
               >
-                <Trash2 size={16} aria-hidden />
+                <Trash2 size={16} aria-hidden /> Remove step
               </Button>
             </div>
           </div>
@@ -203,7 +232,7 @@ export function PlanBuilder({
             {s.channels.map((c, k) => (
               <div key={k} className={styles.optionRow}>
                 <SelectField
-                  label={k === 0 ? "Channel" : `Otherwise, channel ${k + 1}`}
+                  label={k === 0 ? "Task" : `Otherwise, task ${k + 1}`}
                   value={c.channel}
                   onChange={(e) =>
                     setStep(i, {
@@ -212,8 +241,24 @@ export function PlanBuilder({
                       ),
                     })
                   }
-                  options={STEP_CHANNELS.map((x) => ({ value: x, label: x }))}
+                  options={STEP_CHANNELS.map((x) => ({ value: x, label: TASK_LABEL[x] ?? x }))}
                 />
+                {c.channel === "Custom" && (
+                  <TextField
+                    label={k === 0 ? "Custom task name" : `Custom task ${k + 1} name`}
+                    placeholder="e.g. Send a case study"
+                    list="custom-tasks"
+                    maxLength={60}
+                    value={c.label ?? ""}
+                    onChange={(e) =>
+                      setStep(i, {
+                        channels: s.channels.map((x, j) =>
+                          j === k ? { ...x, label: e.target.value } : x,
+                        ),
+                      })
+                    }
+                  />
+                )}
                 <SelectField
                   label={k === 0 ? "When" : `When ${k + 1}`}
                   value={c.when}
@@ -229,7 +274,7 @@ export function PlanBuilder({
                 {s.channels.length > 1 && (
                   <Button
                     variant="ghost"
-                    aria-label={`Remove channel option ${k + 1}`}
+                    aria-label={`Remove task option ${k + 1}`}
                     onClick={() => setStep(i, { channels: s.channels.filter((_, j) => j !== k) })}
                   >
                     <Trash2 size={16} aria-hidden />
@@ -246,20 +291,39 @@ export function PlanBuilder({
                   })
                 }
               >
-                <Plus size={16} aria-hidden /> Add a fallback channel
+                <Plus size={16} aria-hidden /> Add a fallback task
               </Button>
             )}
           </div>
           <div className={styles.grid3}>
             <SelectField
               label="Template purpose"
-              value={s.templatePurpose}
-              onChange={(e) => setStep(i, { templatePurpose: e.target.value, templateId: "" })}
+              value={customPurposeOn[i] ? CUSTOM : s.templatePurpose}
+              onChange={(e) => {
+                const custom = e.target.value === CUSTOM;
+                setCustomPurposeOn((on) => on.map((x, k) => (k === i ? custom : x)));
+                setStep(i, {
+                  templatePurpose: custom ? "" : e.target.value,
+                  templateId: "",
+                });
+              }}
               options={[
                 { value: "", label: "None" },
                 ...TEMPLATE_PURPOSES.map((p) => ({ value: p, label: p })),
+                { value: CUSTOM, label: "Custom…" },
               ]}
             />
+            {customPurposeOn[i] && (
+              <TextField
+                label="Custom purpose"
+                placeholder="e.g. Case study follow-up"
+                list="custom-purposes"
+                maxLength={60}
+                hint="No template is picked for it; you write the message."
+                value={s.customPurpose}
+                onChange={(e) => setStep(i, { customPurpose: e.target.value })}
+              />
+            )}
             <SelectField
               label="Or a fixed template"
               value={s.templateId}
@@ -292,7 +356,10 @@ export function PlanBuilder({
         <Button
           variant="secondary"
           disabled={plan.steps.length >= 12}
-          onClick={() => setPlan({ ...plan, steps: [...plan.steps, NEW_STEP] })}
+          onClick={() => {
+            setPlan({ ...plan, steps: [...plan.steps, NEW_STEP] });
+            setCustomPurposeOn((on) => [...on, false]);
+          }}
         >
           <Plus size={16} aria-hidden /> Add step
         </Button>
@@ -313,6 +380,27 @@ export function PlanBuilder({
         )}
       </section>
 
+      <datalist id="custom-tasks">
+        {customTasks.map((t) => (
+          <option key={t} value={t} />
+        ))}
+      </datalist>
+      <datalist id="custom-purposes">
+        {customPurposes.map((t) => (
+          <option key={t} value={t} />
+        ))}
+      </datalist>
+      {planId !== null && enrolled > 0 && (
+        <label className={styles.checkRow}>
+          <input
+            type="checkbox"
+            checked={moveEnrolled}
+            onChange={(e) => setMoveEnrolled(e.target.checked)}
+          />
+          If the steps changed, also move the {enrolled} {enrolled === 1 ? "person" : "people"} on
+          this plan to the new version (each keeps their current step and due date).
+        </label>
+      )}
       {error && <Alert tone="error">{error}</Alert>}
       <div className={styles.row}>
         <Button variant="secondary" onClick={() => router.back()} disabled={busy}>

@@ -57,7 +57,7 @@ export function AccountFilterCard({
               <Lock
                 size={14}
                 className={styles.lock}
-                aria-label="Official: only Admins can change it"
+                aria-label="Official: only its creator or an Admin can change it"
               />
             )}
             <Badge tone="primary">{row.code}</Badge>
