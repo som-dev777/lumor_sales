@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { WEEKDAYS, type TimeRange, type WeeklyHours } from "@/lib/slots";
-import { minutesOf } from "@/lib/slots";
+import { minutesOf, nextRange } from "@/lib/slots";
 import { formatIstDate } from "@/lib/time";
 import { MAX_RANGES_PER_DAY, toSlug } from "@/lib/validation/calendar";
 import { saveAvailabilityAction } from "@/server/actions/calendar";
@@ -53,9 +53,8 @@ export function AvailabilityForm({
   const addRange = (day: string) =>
     setHours((h) => {
       const list = h[day] ?? [];
-      const last = list.at(-1);
-      const next = last ? nextRange(last) : { start: "10:00", end: "18:00" };
-      return { ...h, [day]: [...list, next] };
+      const next = rangeAfter(list);
+      return next ? { ...h, [day]: [...list, next] } : h;
     });
   const removeRange = (day: string, i: number) =>
     setHours((h) => ({ ...h, [day]: (h[day] ?? []).filter((_, j) => j !== i) }));
@@ -132,7 +131,7 @@ export function AvailabilityForm({
                       it&rsquo;s longer than every range.
                     </p>
                   )}
-                  {list.length < MAX_RANGES_PER_DAY && (
+                  {list.length < MAX_RANGES_PER_DAY && rangeAfter(list) && (
                     <div>
                       <Button
                         variant="ghost"
@@ -228,15 +227,9 @@ export function AvailabilityForm({
   );
 }
 
-/** The next range after `last`: the same length, half an hour later (e.g. 11:00–11:30 → 12:00–12:30). */
-function nextRange(last: TimeRange): TimeRange {
-  const s = minutesOf(last.start);
-  const e = minutesOf(last.end);
-  if (s === null || e === null) return { start: "10:00", end: "18:00" };
-  const length = Math.max(15, e - s);
-  const start = Math.min(e + 30, 24 * 60 - 15 - Math.min(length, 60));
-  const end = Math.min(start + length, 23 * 60 + 59);
-  const hm = (m: number) =>
-    `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-  return { start: hm(start), end: hm(end) };
+/** The range "Add hours" adds: after the day's latest range (10:00–18:00 on an empty day). */
+function rangeAfter(list: TimeRange[]): TimeRange | null {
+  if (list.length === 0) return { start: "10:00", end: "18:00" };
+  const latest = [...list].sort((a, b) => a.end.localeCompare(b.end)).at(-1)!;
+  return nextRange(latest);
 }

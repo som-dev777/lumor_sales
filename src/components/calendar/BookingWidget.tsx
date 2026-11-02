@@ -10,7 +10,7 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
 import type { BookingQuestion } from "@/lib/db/schema/calendar";
-import { bookingFormSchema, checkAnswers } from "@/lib/validation/calendar";
+import { bookingFormSchema, checkAnswers, formatPhone } from "@/lib/validation/calendar";
 import { bookSlot } from "@/server/actions/calendar";
 import { PhoneField } from "./PhoneField";
 import { formatDay, formatTime, SlotPicker, useTimeZone, zoneName } from "./SlotPicker";
@@ -51,10 +51,22 @@ export function BookingWidget({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, start] = useTransition();
-  const set = (k: keyof typeof values) => (e: { target: { value: string } }) =>
+  // Fixing a field clears its message.
+  const clear = (key: string) =>
+    setErrors((all) => {
+      if (!(key in all)) return all;
+      const next = { ...all };
+      delete next[key];
+      return next;
+    });
+  const set = (k: keyof typeof values) => (e: { target: { value: string } }) => {
     setValues((v) => ({ ...v, [k]: e.target.value }));
-  const setAnswer = (i: number, a: Answer) =>
+    clear(k);
+  };
+  const setAnswer = (i: number, a: Answer) => {
     setAnswers((all) => all.map((x, j) => (j === i ? a : x)));
+    clear(`answers.${i}`);
+  };
 
   if (step === "pick" || !slot) {
     return (
@@ -92,6 +104,10 @@ export function BookingWidget({
         const key = String(issue.path[0] ?? "");
         if (key && !found[key]) found[key] = issue.message;
       }
+    }
+    // The phone is checked on its own too (the schema only checks it once the rest is valid).
+    if (values.phone.trim() && !formatPhone(values.phoneCountry, values.phone)) {
+      found.phone ??= "Enter a valid phone number for the country you picked.";
     }
     const a = checkAnswers(questions, answers);
     if (!a.ok) found[`answers.${a.index}`] = a.message;
@@ -176,8 +192,14 @@ export function BookingWidget({
           label="Phone (optional)"
           country={values.phoneCountry}
           number={values.phone}
-          onCountry={(c) => setValues((v) => ({ ...v, phoneCountry: c }))}
-          onNumber={(n) => setValues((v) => ({ ...v, phone: n }))}
+          onCountry={(c) => {
+            setValues((v) => ({ ...v, phoneCountry: c }));
+            clear("phone");
+          }}
+          onNumber={(n) => {
+            setValues((v) => ({ ...v, phone: n }));
+            clear("phone");
+          }}
           error={errors.phone}
         />
       </div>

@@ -11,6 +11,7 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { appNow } from "@/lib/clock";
 import { getDb } from "@/lib/db/client";
 import { formatIst } from "@/lib/time";
+import { emailConfigured } from "@/server/email";
 import {
   bookingGoogleLink,
   bookingLink,
@@ -58,8 +59,14 @@ async function Booking({
           <CheckCircle2 size={40} aria-hidden className={styles.successIcon} />
           <h1 className={styles.bookingTitle}>You&rsquo;re booked</h1>
           <p className={styles.muted}>
-            A confirmation{b.googleEventId ? " and a calendar invite are" : " is"} on its way to{" "}
-            <strong>{b.inviteeEmail}</strong>.
+            {emailConfigured() || b.googleEventId ? (
+              <>
+                A confirmation{b.googleEventId ? " and a calendar invite are" : " is"} on its way to{" "}
+                <strong>{b.inviteeEmail}</strong>.
+              </>
+            ) : (
+              "Add it to your calendar below, and keep this page's link to change it later."
+            )}
           </p>
         </div>
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Globe } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { SelectField } from "@/components/ui/SelectField";
 import styles from "./calendar.module.scss";
@@ -127,7 +127,6 @@ const WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export function TimeZonePicker({ tz }: { tz: TimeZoneState }) {
   return (
     <div className={styles.zoneBar}>
-      <Globe size={16} aria-hidden className={styles.zoneIcon} />
       <div className={styles.zoneSelect}>
         <SelectField
           label="Time zone"

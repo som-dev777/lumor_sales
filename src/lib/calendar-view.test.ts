@@ -50,3 +50,13 @@ describe("calendar views", () => {
     expect(by.d).toMatchObject({ row: 1, span: 2, clipped: true });
   });
 });
+
+describe("Add hours", () => {
+  it("adds the next range half an hour after the last, up to an hour long", async () => {
+    const { nextRange } = await import("./slots");
+    expect(nextRange({ start: "11:00", end: "11:30" })).toEqual({ start: "12:00", end: "12:30" });
+    expect(nextRange({ start: "10:00", end: "18:00" })).toEqual({ start: "18:30", end: "19:30" });
+    expect(nextRange({ start: "22:00", end: "23:00" })).toEqual({ start: "23:30", end: "23:59" });
+    expect(nextRange({ start: "22:30", end: "23:40" })).toBeNull();
+  });
+});

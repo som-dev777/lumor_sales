@@ -74,7 +74,7 @@ test("exit check: a signed-out visitor books a slot and sees the confirmation", 
   const visitor = await newPage(browser);
   await visitor.goto(new URL(link).pathname);
   await expect(shown(visitor.getByRole("heading", { name: "Lumor demo" }))).toBeVisible();
-  await expect(visitor.getByText("Cara Calendar · Lumor")).toBeVisible();
+  await expect(visitor.getByText("Cara Calendar", { exact: true })).toBeVisible();
   const firstTime = visitor.getByRole("group", { name: "Times" }).getByRole("button").first();
   const chosen = (await firstTime.innerText()).trim();
   await firstTime.click();
@@ -82,11 +82,11 @@ test("exit check: a signed-out visitor books a slot and sees the confirmation", 
   await visitor.getByLabel("Work email").fill("vera@visitor.example");
   await visitor.getByLabel("Company").fill("Visitor Research");
   await visitor.getByLabel("LinkedIn profile (optional)").fill("linkedin.com/in/vera-visitor-v25");
-  await visitor.getByLabel("What do you research? (optional)").fill("Shopper habits");
+  await visitor.getByLabel("What do you research?").fill("Shopper habits");
   await visitor.screenshot({ path: "test-results/v25-booking-form.png", fullPage: true });
   await visitor.getByRole("button", { name: "Confirm booking" }).click();
   await expect(visitor).toHaveURL(/\/booking\/[A-Za-z0-9_-]+\?new=1$/);
-  await expect(visitor.getByText("You’re booked.")).toBeVisible();
+  await expect(visitor.getByRole("heading", { name: "You’re booked" })).toBeVisible();
   await expect(visitor.getByRole("link", { name: "Add to Google Calendar" })).toBeVisible();
   manageUrl = new URL(visitor.url()).pathname;
   await visitor.screenshot({ path: "test-results/v25-booked.png", fullPage: true });
@@ -99,10 +99,15 @@ test("exit check: a signed-out visitor books a slot and sees the confirmation", 
 });
 
 test("exit check: the booking is on the rep's calendar and their new person", async () => {
-  await rep.goto("/calendar");
+  await rep.goto("/calendar?view=list");
   const table = shown(rep.getByRole("table", { name: "Upcoming bookings" }));
   await expect(table).toContainText("Vera Visitor");
-  await expect(table).toContainText("What do you research?: Shopper habits");
+  await table
+    .getByRole("link", { name: /\d{4}, / })
+    .first()
+    .click();
+  await expect(rep.getByRole("dialog")).toContainText("Shopper habits");
+  await rep.keyboard.press("Escape");
   await table.getByRole("link", { name: "Vera Visitor" }).click();
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
   await expect(rep.locator("dl").getByText("Meeting scheduled", { exact: true })).toBeVisible();
@@ -119,7 +124,7 @@ test("exit check: the visitor cancels from their link", async ({ browser }) => {
   await visitor.getByRole("button", { name: "Yes, cancel it" }).click();
   await expect(visitor.getByText("This booking is cancelled.")).toBeVisible();
   await visitor.context().close();
-  await rep.goto("/calendar");
+  await rep.goto("/calendar?view=list");
   await expect(shown(rep.getByRole("table", { name: "Upcoming bookings" }))).toContainText(
     "Cancelled by them",
   );

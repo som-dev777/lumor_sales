@@ -151,3 +151,18 @@ export function availableSlots({
 export function isOffered(start: Date, args: Parameters<typeof availableSlots>[0]): boolean {
   return availableSlots(args).some((s) => s.getTime() === start.getTime());
 }
+
+/**
+ * The next range after `last`: half an hour after it ends, as long as it (at most an hour), e.g.
+ * 11:00–11:30 → 12:00–12:30. Null when the day has no room left.
+ */
+export function nextRange(last: TimeRange): TimeRange | null {
+  const s = minutesOf(last.start);
+  const e = minutesOf(last.end);
+  if (s === null || e === null) return { start: "10:00", end: "18:00" };
+  const length = Math.min(60, Math.max(15, e - s));
+  const start = e + 30;
+  if (start + 15 > 23 * 60 + 59) return null;
+  const end = Math.min(start + length, 23 * 60 + 59);
+  return { start: hhmm(start), end: hhmm(end) };
+}
