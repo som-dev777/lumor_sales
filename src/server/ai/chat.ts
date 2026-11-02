@@ -127,7 +127,7 @@ export async function sendChatMessage(
   }
 
   const today = todayIst(now);
-  const ctx = await leadContext(db, personId, "P02");
+  const ctx = await leadContext(db, personId, "P02", actor.id);
   const situation = await situationOf(db, personId, today);
   const replyTemplates = await db
     .select({ name: template.name, purpose: template.purpose, body: template.body })

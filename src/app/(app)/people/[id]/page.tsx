@@ -25,6 +25,8 @@ import { leadFormOptions } from "@/server/leads/options";
 import { canLogOutreach, getPerson } from "@/server/leads/people";
 import { situationOf, threadOf } from "@/server/conversation";
 import { listChats, loadChat } from "@/server/ai/chat";
+import { bookingLinksFor, bookingsOfPerson } from "@/server/calendar";
+import { CopyField } from "@/components/ui/CopyField";
 import { describeSituation } from "@/server/ai/assist";
 import { aiMode } from "@/server/ai/client";
 import { planState } from "@/server/plans/enrolment";
@@ -60,6 +62,10 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
     planState(db, id, today),
     usablePlans(db, viewer),
     listChats(db, viewer, id),
+  ]);
+  const [links, bookings] = await Promise.all([
+    canLogOutreach(viewer, p.ownerId) ? bookingLinksFor(db, viewer.id) : [],
+    bookingsOfPerson(db, id),
   ]);
   // The rep's latest AI chat on this person (F23); chats are private to their author.
   const chat = chats[0] ? await loadChat(db, viewer, chats[0].id) : null;
@@ -308,6 +314,28 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
           }
         />
         <div>
+          {(links.length > 0 || bookings.length > 0) && (
+            <section className={styles.panel} aria-label="Meetings">
+              <h2 className={styles.panelTitle}>Meetings</h2>
+              {bookings.length > 0 && (
+                <ul className={styles.bookingList}>
+                  {bookings.map((b) => (
+                    <li key={b.id}>
+                      {formatIst(b.startsAt, "EEE d MMM, h:mm aaa")} · {b.meetingTypeName} with{" "}
+                      {b.hostName}
+                      {b.status === "Cancelled" && " (cancelled)"}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {links.map((l) => (
+                <CopyField key={l.link} label={`${l.name} (${l.durationMin} min)`} value={l.link} />
+              ))}
+              {links.length > 0 && (
+                <p className={styles.muted}>Paste a booking link into your message.</p>
+              )}
+            </section>
+          )}
           {p.notes && (
             <section className={styles.panel}>
               <h2 className={styles.panelTitle}>Notes</h2>

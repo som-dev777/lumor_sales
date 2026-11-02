@@ -35,6 +35,7 @@ import type { ThreadChannel } from "@/lib/db/enums";
 import { getPlaybookSettings } from "../leads/quicklog";
 import { planState } from "../plans/enrolment";
 import { knowledgeFor } from "../knowledge";
+import { bookingLinksFor } from "../calendar";
 import { getCalendarLink } from "../settings";
 import type { AiPromptId } from "@/lib/db/enums";
 import { AiError, runPrompt } from "./client";
@@ -65,7 +66,13 @@ export function editLevel(suggestion: string, sent: string): "None" | "Light" | 
 
 // --- What the AI is told ---------------------------------------------------------------------
 
-export async function leadContext(db: DbOrTx, personId: string, prompt: AiPromptId) {
+export async function leadContext(
+  db: DbOrTx,
+  personId: string,
+  prompt: AiPromptId,
+  /** The rep asking: the AI offers their own booking link (F22). */
+  userId?: string,
+) {
   const [row] = await db
     .select({ p: person, companyName: company.name, persona })
     .from(person)
@@ -75,7 +82,7 @@ export async function leadContext(db: DbOrTx, personId: string, prompt: AiPrompt
   if (!row) throw new LeadError("That person doesn't exist.");
   const thread = await threadOf(db, personId);
   const plan = await planState(db, personId, todayIst());
-  const knowledge = await aiKnowledge(db, prompt);
+  const knowledge = await aiKnowledge(db, prompt, userId);
   return {
     row,
     PERSON: {
@@ -109,17 +116,19 @@ export async function leadContext(db: DbOrTx, personId: string, prompt: AiPrompt
  * The knowledge base for a prompt (F20), plus the calendar link. It goes first in the AI's
  * input so it can be cached. Refuses when no knowledge file applies.
  */
-export async function aiKnowledge(db: DbOrTx, prompt: AiPromptId) {
+export async function aiKnowledge(db: DbOrTx, prompt: AiPromptId, userId?: string) {
   const knowledge = await knowledgeFor(db, prompt);
   if (!knowledge) {
     throw new AiError(
       "The AI knowledge base has no files for this yet, so the AI has nothing true to say about Lumor. An Admin can add them under AI Resources.",
     );
   }
+  // The rep's own booking link (their first meeting type, F22), else the team's link.
+  const [own] = userId ? await bookingLinksFor(db, userId) : [];
   const { calendarLink } = await getCalendarLink(db);
   return {
     KNOWLEDGE_BASE: knowledge,
-    CALENDAR_LINK: calendarLink ?? "(not set: ask the rep for a link)",
+    CALENDAR_LINK: own?.link ?? calendarLink ?? "(not set: ask the rep for a link)",
   };
 }
 
@@ -215,7 +224,7 @@ export async function suggestNext(
 ): Promise<NextSuggestion> {
   await loadOwnLead(db, actor, personId);
   const today = todayIst(now);
-  const ctx = await leadContext(db, personId, "P02");
+  const ctx = await leadContext(db, personId, "P02", actor.id);
   const situation = await situationOf(db, personId, today);
   const replyTemplates = await db
     .select({ name: template.name, purpose: template.purpose, body: template.body })
@@ -473,7 +482,7 @@ export type SummaryResult = z.infer<typeof summaryResultSchema>;
 
 export async function summariseThread(db: Db, actor: Actor, personId: string, now = new Date()) {
   await loadOwnLead(db, actor, personId);
-  const ctx = await leadContext(db, personId, "P03");
+  const ctx = await leadContext(db, personId, "P03", actor.id);
   if (ctx.CONVERSATION.length === 0) {
     throw new LeadError("There's nothing in the conversation yet. Add the messages first.");
   }
@@ -516,7 +525,7 @@ export async function draftFromTemplate(
   await loadOwnLead(db, actor, personId);
   const [t] = await db.select().from(template).where(eq(template.id, templateId));
   if (!t || t.status !== "Active") throw new LeadError("Choose an active template.");
-  const ctx = await leadContext(db, personId, "P04");
+  const ctx = await leadContext(db, personId, "P04", actor.id);
   return runPrompt(
     "P04",
     draftResultSchema,

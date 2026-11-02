@@ -14,6 +14,8 @@ import { requireUser } from "@/lib/session";
 import { formatIstDate } from "@/lib/time";
 import { aiMode } from "@/server/ai/client";
 import { buildTeam, buildToday } from "@/server/today";
+import { meetingsToday } from "@/server/calendar";
+import { TodayMeetings } from "@/components/calendar/TodayMeetings";
 
 export const metadata: Metadata = { title: "Today" };
 
@@ -40,7 +42,10 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
     can(viewer, "today.team") &&
     (Array.isArray(params.tab) ? params.tab[0] : params.tab) === "team";
   const now = await appNow();
-  const plan = await buildToday(getDb(), viewer, now);
+  const [plan, meetings] = await Promise.all([
+    buildToday(getDb(), viewer, now),
+    meetingsToday(getDb(), viewer.id, now),
+  ]);
   return (
     <>
       <PageHeader
@@ -72,7 +77,10 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
       {teamView ? (
         <TeamTable rows={await buildTeam(getDb(), viewer, now)} />
       ) : (
-        <TodayList tasks={plan.tasks} outreach={plan.outreach} aiReady={aiMode() !== "off"} />
+        <>
+          <TodayMeetings meetings={meetings} />
+          <TodayList tasks={plan.tasks} outreach={plan.outreach} aiReady={aiMode() !== "off"} />
+        </>
       )}
     </>
   );

@@ -444,7 +444,7 @@ export function applyRanking(tasks: Task[], ranking: z.infer<typeof rankingSchem
 export async function rankToday(db: Db, viewer: Actor, now = new Date()) {
   const plan = await buildToday(db, viewer, now);
   if (plan.tasks.length === 0) return { tasks: [], summary: null as string | null };
-  const knowledge = await aiKnowledge(db, "P01");
+  const knowledge = await aiKnowledge(db, "P01", viewer.id);
   const ranking = await runPrompt(
     "P01",
     rankingSchema,

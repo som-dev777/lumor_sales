@@ -90,6 +90,14 @@ export function ChatTool({
 
   const messages = chat?.messages ?? [];
   const lastAi = [...messages].reverse().find((m) => m.role === "ai");
+  // The draft the rep chose: edited and marked as sent below the chat, not inside it.
+  const active = (() => {
+    for (const m of messages) {
+      const i = m.drafts.findIndex((_, j) => `${m.id}-${j}` === using);
+      if (i >= 0) return { message: m, draft: m.drafts[i] };
+    }
+    return null;
+  })();
 
   return (
     <div className={styles.stack}>
@@ -175,22 +183,21 @@ export function ChatTool({
               )}
               {m.drafts.map((d, i) => {
                 const key = `${m.id}-${i}`;
-                return using === key ? (
-                  <SuggestionCard
+                return (
+                  <div
                     key={key}
-                    personId={personId}
-                    suggestion={d}
-                    channel={channel}
-                    situation={situationKind}
-                    replyBy={m === lastAi ? m.replyBy : null}
-                  />
-                ) : (
-                  <div key={key} className={styles.draft}>
+                    className={styles.draft}
+                    aria-current={using === key ? "true" : undefined}
+                  >
                     {d.approach && <p className={styles.approach}>{d.approach}</p>}
                     <p className={styles.draftText}>{d.text}</p>
                     <div className={styles.row}>
-                      <Button variant="secondary" onClick={() => setUsing(key)}>
-                        Use this message
+                      <Button
+                        variant="secondary"
+                        disabled={using === key}
+                        onClick={() => setUsing(key)}
+                      >
+                        {using === key ? "Editing below" : "Use this message"}
                       </Button>
                       <Button
                         variant="ghost"
@@ -221,6 +228,16 @@ export function ChatTool({
         <div ref={end} />
       </div>
 
+      {active && (
+        <SuggestionCard
+          key={using}
+          personId={personId}
+          suggestion={active.draft}
+          channel={channel}
+          situation={situationKind}
+          replyBy={active.message === lastAi ? active.message.replyBy : null}
+        />
+      )}
       {error && <Alert tone="error">{error}</Alert>}
       {savedReply && (
         <ReplyTypePicker

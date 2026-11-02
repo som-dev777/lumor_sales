@@ -2,6 +2,7 @@ import {
   BookMarked,
   BookOpenText,
   Building2,
+  CalendarDays,
   ChartColumn,
   FileText,
   CircleCheckBig,
@@ -24,9 +25,11 @@ export type NavItem = {
   adminOnly?: boolean;
 };
 
-// The sidebar items from the PRD (Screens; v2 adds Plans, AI Resources (F20) and Reports (F19)), in order.
+// The sidebar items from the PRD (Screens; v2 adds Plans, AI Resources (F20), Reports (F19) and
+// Calendar (F22)), in order.
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Today", icon: LayoutList },
+  { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/companies", label: "Companies", icon: Building2 },
   { href: "/people", label: "People", icon: Users },
   { href: "/personas", label: "Personas", icon: UserRound },

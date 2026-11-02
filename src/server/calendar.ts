@@ -826,37 +826,53 @@ export async function bookingsOfPerson(db: DbOrTx, personId: string) {
     .orderBy(desc(booking.startsAt));
 }
 
-/** What the Add person form needs from an unlinked booking. */
-export async function bookingForPerson(db: DbOrTx, actor: Actor, id: string) {
-  const [b] = await db.select().from(booking).where(eq(booking.id, id));
-  if (!b) throw new LeadError("That booking doesn't exist.");
-  assertCan(actor, "calendar.manage", { ownerId: b.hostId });
-  return b;
-}
-
-/** Links an unlinked booking to a person the rep just added from it. */
-export async function linkBooking(db: Db, actor: Actor, bookingId: string, personId: string) {
+/**
+ * After a rep adds a person (for example with **Add as person** on a booking): their unlinked
+ * bookings with the same email, on this rep's calendar, are linked to them, and an upcoming one
+ * logs Meeting booked.
+ */
+export async function linkBookingsByEmail(
+  db: Db,
+  actor: Actor,
+  p: { id: string; email: string | null; ownerId: string },
+  now = new Date(),
+) {
+  if (!p.email) return 0;
   return db.transaction(async (tx) => {
-    const [b] = await tx.select().from(booking).where(eq(booking.id, bookingId));
-    if (!b) throw new LeadError("That booking doesn't exist.");
-    assertCan(actor, "calendar.manage", { ownerId: b.hostId });
-    const p = await loadPerson(tx, personId);
-    await tx.update(booking).set({ personId }).where(eq(booking.id, bookingId));
-    await writeAudit(tx, {
-      userId: actor.id,
-      entityType: "Booking",
-      recordId: bookingId,
-      recordName: `Booking with ${b.inviteeName}`,
-      action: "Updated",
-      before: { personId: b.personId },
-      after: { personId },
-    });
-    if (b.status === "Confirmed" && b.startsAt > new Date() && can(actor, "lead.edit", p)) {
-      await quickLogTx(tx, actor, personId, {
-        action: "meetingBooked",
-        meetingDate: toIstDate(b.startsAt),
+    const rows = await tx
+      .select()
+      .from(booking)
+      .where(
+        and(
+          eq(booking.hostId, actor.id),
+          eq(booking.inviteeEmail, p.email!.trim().toLowerCase()),
+          sql`${booking.personId} IS NULL`,
+        ),
+      );
+    let logged = false;
+    for (const b of rows) {
+      await tx.update(booking).set({ personId: p.id }).where(eq(booking.id, b.id));
+      await writeAudit(tx, {
+        userId: actor.id,
+        entityType: "Booking",
+        recordId: b.id,
+        recordName: `Booking with ${b.inviteeName}`,
+        action: "Updated",
+        before: { personId: null },
+        after: { personId: p.id },
       });
+      if (!logged && b.status === "Confirmed" && b.startsAt > now && can(actor, "lead.edit", p)) {
+        await quickLogTx(
+          tx,
+          actor,
+          p.id,
+          { action: "meetingBooked", meetingDate: toIstDate(b.startsAt) },
+          { now },
+        );
+        logged = true;
+      }
     }
+    return rows.length;
   });
 }
 

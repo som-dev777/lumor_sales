@@ -26,6 +26,7 @@ import {
   updateCompanyNotes,
 } from "../leads/companies";
 import { addNote, createPerson, deletePerson, reassignPeople, updatePerson } from "../leads/people";
+import { linkBookingsByEmail } from "../calendar";
 import { GuardrailWarning, logWithPlan } from "../plans/enrolment";
 import { PlanError } from "../plans/plans";
 
@@ -59,6 +60,8 @@ export async function savePerson(id: string | null, input: unknown): Promise<Act
     const row = id
       ? await updatePerson(getDb(), viewer, id, parsed.data)
       : await createPerson(getDb(), viewer, parsed.data);
+    // A person added from a booking is linked to it (F22).
+    if (!id) await linkBookingsByEmail(getDb(), viewer, row, await appNow());
     refresh();
     return {
       ok: true,
