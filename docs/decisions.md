@@ -592,3 +592,38 @@ replaces it.
     `gpt-5.5` in OpenAI for better answers.
   - **Version 2.4.0** (MINOR): this round adds features (merge, delete, industries), not only
     fixes. The F21 doc was written alongside the code rather than before it.
+
+## D-041: Calendar, AI chat and Fill with AI (owner, 2026-11-02)
+
+- **Date:** 2026-11-02 · **Status:** Accepted (owner approved the plan: "go ahead")
+- **Owner's requests:** a Calendly-like calendar with booking links (F22); a chat with the AI on
+  each person instead of one-shot suggestions (F23); a button that researches and fills the
+  company and person forms (F24); Companies above People in the sidebar; their logo.
+- **Owner's answers to my three questions (all my recommendations):** the calendar works on its
+  own first (slots only from the hours set; invites by email), Google Calendar sync later; every
+  rep has their own calendar and links; Fill with AI with web search for everyone.
+- **My choices:**
+  - **Public booking without a login.** `/book/…` and `/booking/…` are the only places data
+    changes without a signed-in user. Instead of requireUser() and assertCan(), each change is
+    checked against the meeting type's link (must be on, slot must be free) or the booking's
+    private code (a random 32-character code), and audited in the same transaction with the rep
+    as the actor and "via booking page". At most 3 bookings per email per day, plus a spam trap
+    field.
+  - **New people from bookings only with a LinkedIn profile**, because every person needs one
+    (it's how duplicates are stopped). Otherwise the booking offers **Add as person**.
+  - **Times:** hours are set in IST (the app's rule); the booking page shows the visitor's own
+    time zone. Slots every 15 minutes for meetings up to 20 minutes, otherwise every 30.
+  - **Double bookings** are blocked twice: the slot is re-checked inside the saving transaction,
+    and a unique index stops two confirmed bookings at the same start for one rep.
+  - **Invites** are standard calendar files (.ics) attached to Resend emails, and downloadable
+    from the confirmation page, so booking works even without email set up.
+  - **AI chat replaces Suggest next message on the person page**; Today keeps its one-click
+    suggestion (P02 unchanged). Chats are private to their author, Admins included; the audit
+    entry records the message count, not the text.
+  - **Fill with AI** fills only empty fields and never saves by itself. Low confidence fills
+    nothing. It uses OpenAI's web search tool (searching from Bangalore); if the project's model
+    can't search, it falls back to the model's own knowledge and says so. 60-second limit.
+  - **New prompts P07 (chat), P08 (fill company), P09 (fill person).** P07 carries the prospect
+    guardrails for drafts. P08 and P09 don't write to prospects, so they don't.
+  - **New permission `calendar.manage`** (every active user, own calendar; Admins anyone's).
+  - **Version 2.5.0** (MINOR): new features.

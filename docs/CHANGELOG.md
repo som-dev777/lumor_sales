@@ -12,6 +12,7 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - The owner's own logo replaces the placeholder (top-left and the browser tab).
 - Sidebar: Companies now comes before People.
+- Building (D-041): F22 Calendar and booking links, F23 AI chat on a person, F24 Fill with AI.
 
 ## [2.4.0] - 2026-10-30
 

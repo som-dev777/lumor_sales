@@ -18,7 +18,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | [ai-knowledge/](ai-knowledge/)               | The AI knowledge base (the starting AI Resources files).         |
 | [deploy.md](deploy.md)                       | Putting the app online (Turso + Netlify), step by step.          |
 | [qa-checklist.md](qa-checklist.md)           | The manual check of the whole app before the team uses it.       |
-| [features/](features/)                       | One file per feature (F01–F20): requirements, tests, change log. |
+| [features/](features/)                       | One file per feature (F01–F24): requirements, tests, change log. |
 | [../CLAUDE.md](../CLAUDE.md)                 | Standing rules every Claude Code session follows.                |
 
 ## Feature index
@@ -46,6 +46,9 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F19 | [Reports](features/F19-reports.md)                                   | P1       | R9      | Done (2.3.0)     |
 | F20 | [AI Resources](features/F20-ai-resources.md)                         | P0       | 2.1.0   | Done             |
 | F21 | [Industries](features/F21-industries.md)                             | P1       | 2.4.0   | Done (2.4.0)     |
+| F22 | [Calendar and booking links](features/F22-calendar.md)               | P1       | 2.5.0   | Building         |
+| F23 | [AI chat on a person](features/F23-ai-chat.md)                       | P1       | 2.5.0   | Building         |
+| F24 | [Fill with AI](features/F24-ai-autofill.md)                          | P1       | 2.5.0   | Building         |
 
 ## Releases
 

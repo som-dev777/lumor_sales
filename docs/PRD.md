@@ -510,6 +510,24 @@ Before R7, complete `docs/qa-checklist.md` for v1.5.0 and fix what it finds (v1.
 2. **R8 Conversations (v2.1.0):** F18 thread, AI reply guidance with confirmed deadlines, and the Team tab. Exit check: paste a reply, accept a suggestion and a 2-day deadline, then see the nudge task on Today after it expires.
 3. **R9 Reports (v2.2.0):** F19 on-demand and scheduled reports. Exit check: generate a team report and a personal report for a custom range, export both, and receive a scheduled test report by email with a working link.
 
+## Version 2.5 additions (owner, 2026-11-02)
+
+Three features the owner asked for after the first live QA round (D-041). Each has its own
+feature doc, which is the detailed requirement:
+
+- **F22 Calendar and booking links:** a Calendar under Today in the sidebar. Each rep creates
+  meeting types, sets weekly hours (IST) and days off, and shares a public booking link per
+  meeting type, like Calendly. A booking emails both sides a calendar invite, links to the person
+  (logging Meeting booked) and shows on Today. Standalone first; Google Calendar sync may follow.
+- **F23 AI chat on a person:** replaces the person page's Suggest next message with a chat. The
+  rep brainstorms with the AI, which knows the person and the whole conversation; **Use this
+  message** records the chosen message as sent. Prompt P07.
+- **F24 Fill with AI:** a button on the company and person forms that searches the web and fills
+  the empty fields (industry, size, persona, level, account filter…). Locations are the Indian
+  office, Bangalore first; a headquarters outside India goes in the notes. Prompts P08 and P09.
+
+Also: the sidebar lists Companies before People, and the owner's logo is the brand icon.
+
 ## Open questions
 
 - [x] Follow-up timing: now set per plan step, within the cadence guardrails (v2).
