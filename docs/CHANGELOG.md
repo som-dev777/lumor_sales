@@ -10,7 +10,8 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 ## [Unreleased]
 
-Next: the owner's QA of v2.4.0.
+- The owner's own logo replaces the placeholder (top-left and the browser tab).
+- Sidebar: Companies now comes before People.
 
 ## [2.4.0] - 2026-10-30
 

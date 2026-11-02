@@ -27,8 +27,8 @@ export type NavItem = {
 // The sidebar items from the PRD (Screens; v2 adds Plans, AI Resources (F20) and Reports (F19)), in order.
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Today", icon: LayoutList },
-  { href: "/people", label: "People", icon: Users },
   { href: "/companies", label: "Companies", icon: Building2 },
+  { href: "/people", label: "People", icon: Users },
   { href: "/personas", label: "Personas", icon: UserRound },
   { href: "/account-filters", label: "Account Filters", icon: Filter },
   { href: "/templates", label: "Templates", icon: BookOpenText },
