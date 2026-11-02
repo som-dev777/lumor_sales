@@ -528,6 +528,16 @@ feature doc, which is the detailed requirement:
 
 Also: the sidebar lists Companies before People, and the owner's logo is the brand icon.
 
+## Version 2.6 additions (owner, 2026-11-02)
+
+Calendar round 2 (D-042): question types (short, paragraph, dropdown, checkboxes; up to 10);
+custom meeting length; more hours per day with a live preview of the free times; the rep's
+notification email; public pages that never lead into the app; a stricter booking form (email
+domain check, phone with country, required stars, no default questions); IST by default with a
+time zone dropdown; in-app notifications with a count (F25); teammates on meetings, visible to
+every rep; a month/week/day calendar; rep reschedule; Google Calendar connection with automatic
+Google Meet links and busy times (F26); a friendlier, responsive booking page.
+
 ## Open questions
 
 - [x] Follow-up timing: now set per plan step, within the cadence guardrails (v2).

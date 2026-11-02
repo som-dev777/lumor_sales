@@ -627,3 +627,72 @@ replaces it.
     guardrails for drafts. P08 and P09 don't write to prospects, so they don't.
   - **New permission `calendar.manage`** (every active user, own calendar; Admins anyone's).
   - **Version 2.5.0** (MINOR): new features.
+
+## D-042: Calendar round 2: questions, notifications, teammates, calendar view, Google Meet (owner, 2026-11-02)
+
+- **Date:** 2026-11-02 · **Status:** Accepted (owner's list; "complete the entire task" without
+  questions, see the standing preference)
+- **Owner's requests:** question types and more questions; more hours per day, and availability
+  changes that clearly reach the booking page; a booking email to the rep at an address they
+  choose; booking pages that never lead into the app; a stricter booking form (email check,
+  phone with country flags, no default questions, required stars, footer "Lumor"); IST shown
+  with a time zone dropdown; automatic Google Meet links; a notification bubble; a friendly,
+  responsive booking page; a proper month/week/day calendar; teammates on a meeting; every rep
+  sees everyone's meetings; notifications and emails for cancels and reschedules.
+- **My choices:**
+  - **Question types:** Short answer, Paragraph, Dropdown (pick one), Checkboxes (pick any).
+    Dropdowns and checkboxes have 2–20 options. Up to **10 questions** per meeting type. Old
+    questions read as Short answer, so nothing needs migrating. Checkbox answers are stored as
+    one line ("A, B").
+  - **Length:** the presets plus **Custom** (5–240 minutes, in steps of 5).
+  - **Availability:** up to 12 ranges a day. The availability bug report: the slot rules were
+    right (a 30-minute meeting in 11:00–11:30, 12:00–12:30, 13:00–13:30 offers 11:00, 12:00 and
+    13:00), but a meeting longer than every range offers nothing, silently. Now Availability
+    shows **what people will see** (the next free times for each meeting type) and warns when a
+    meeting type fits in none of a day's ranges.
+  - **The rep's notification email:** set on Availability (defaults to their login email).
+  - **Booking pages never show the app:** a public "link not found" page with no app links, for
+    wrong rep names, meeting types and booking codes, and for extra parts added to the address.
+  - **Booking form:** the free-text note is gone (only the meeting type's own questions show);
+    required fields have a red star; email must have a domain with a dot (name@company.com,
+    .in, .tech…), not literally ".com", because Indian and tech companies use other endings;
+    phone is optional but, when given, needs a country (flag dropdown, India first) and must be
+    a valid number for it (checked with the libphonenumber-js library); stored as +91 98765 43210.
+  - **Time zones:** the booking page starts in **India Standard Time (IST)**, as asked, with a
+    dropdown of every time zone. A visitor whose browser is elsewhere gets a one-click "Use my
+    time zone (…)" so they don't misread IST times.
+  - **In-app notifications** (new F25): a bell with the unread count in the sidebar and a count
+    on Calendar. A notification for: a new booking, a cancellation, a reschedule, being added
+    to or removed from a meeting. Marking them read is audited like every other change (one
+    entry per "mark all read"). Each one also emails the rep's notification address.
+  - **Teammates on a meeting:** the host, anyone already on the meeting, or an Admin can add or
+    remove other active reps. A teammate's meetings block their own booking pages too. Adding
+    shows a warning if the teammate is busy then, but still allows it.
+  - **Transparency:** every signed-in rep sees everyone's meetings on the calendar (filter:
+    Everyone / Just me / one rep). Cancelling, rescheduling and adding people stay with the
+    host, the meeting's teammates (add/remove only) and Admins.
+  - **Rep reschedule:** the host or an Admin can move a meeting to another free time; the
+    person who booked gets a new email with the new manage link.
+  - **Google Meet (new F26):** each rep can **Connect Google Calendar** (Google's sign-in, their
+    own account). Then each booking creates an event in their Google Calendar with a fresh Meet
+    link, invites the person who booked and the teammates, and moves or cancels with the
+    booking. The rep's Google busy times block their booking slots too (this fixes the "no
+    Google sync" caveat of v2.5.0). When Google is connected the invite comes from Google, so
+    our email doesn't attach a second calendar file. Without a connection, everything works
+    as before (the meeting type's own "Where" link, and our calendar file).
+    - Google needs a one-time setup by the owner (a Google Cloud OAuth client; steps in
+      docs/deploy.md). New variables GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.
+    - The rep's Google refresh token is stored encrypted (AES-256-GCM, key derived from
+      BETTER_AUTH_SECRET), never shown, and revoked on Disconnect. Changing BETTER_AUTH_SECRET
+      means reps reconnect.
+    - Scopes: `calendar.events` (create/move/cancel events) and `calendar.freebusy` (busy
+      times only, not event details). If Google refuses the busy check, slots fall back to the
+      app's own bookings.
+    - If Google fails while booking, the booking still stands; the rep gets a notification to
+      add a link themselves.
+  - **Calendar view:** month, week and day views built in the app (no new calendar library),
+    in IST, with the old list kept as a "List" view.
+  - **Booking emails** gain a simple HTML layout, the Meet link and the manage link.
+  - **"Booking session"** in the owner's list is read as: every booking creates a calendar
+    event with its own meeting link (F26).
+  - **Version 2.6.0** (MINOR): new features.

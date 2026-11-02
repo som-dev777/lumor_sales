@@ -1,7 +1,7 @@
 # F22: Calendar and booking links
 
-- **Priority:** P1 · **Release:** v2.5.0 · **Status:** Done
-- **Decisions:** D-041 (the owner's requests of 2026-11-02)
+- **Priority:** P1 · **Release:** v2.5.0, round 2 in v2.6.0 · **Status:** In progress (2.6.0)
+- **Decisions:** D-041 (the owner's requests of 2026-11-02), D-042 (round 2)
 
 ## What it does
 
@@ -10,6 +10,40 @@ Each rep has a calendar in the app. They create **meeting types** (for example "
 usually in a message to a prospect. Anyone who opens the link, no account needed, sees the free
 slots in their own time zone and books one. It works like Calendly, inside the Sales Hub, and the
 booking updates the sales records.
+
+## Round 2 (v2.6.0, D-042)
+
+These rules replace the matching v2.5.0 rules below where they differ.
+
+- **Questions:** up to 10 per meeting type, each Short answer, Paragraph, Dropdown (pick one)
+  or Checkboxes (pick any), optional or required. Dropdowns and checkboxes have 2–20 options.
+  The booking form shows only these questions plus name, work email, company, phone (optional)
+  and LinkedIn (optional): the old free-text note is gone. Required fields show a red star.
+- **Length:** 15, 20, 30, 45, 60, 90 or 120 minutes, or Custom (5–240, steps of 5).
+- **Availability:** up to 12 time ranges a day. The Availability page shows **What people
+  see**: the next free times for each active meeting type, and warns when a meeting type is
+  longer than every range on a day. **Notification email:** where booking emails go (defaults
+  to the login email).
+- **Booking form checks:** email needs a real domain with a dot; phone, when given, needs a
+  country (flag dropdown, India first) and must be a valid number for it.
+- **Time zone:** the booking page starts in India Standard Time (IST), with a dropdown of every
+  time zone, and "Use my time zone" when the visitor's browser is elsewhere.
+- **Public pages:** a wrong or changed booking address shows a plain "This link doesn't work"
+  page with no way into the app. Footer: "Lumor".
+- **Booking page layout:** meeting details on the left, a month calendar of free days and the
+  day's times on the right; one column on phones; a clear confirmation with the meeting link.
+- **Calendar:** month, week and day views (and a List view) in IST, with back/next/today.
+  Everyone sees every rep's meetings (filter Everyone / Just me / one rep). Clicking a meeting
+  opens its details: who booked, answers, the meeting link, the people on it, and actions.
+- **Teammates:** the host, a teammate on the meeting or an Admin can add or remove other reps.
+  Teammates get a notification (F25) and an email with the invite; their meetings block their
+  own booking pages. A warning shows when the teammate is busy then.
+- **Rep reschedule:** the host or an Admin can move a meeting to another free time from its
+  details; the person who booked is emailed the new time and a new manage link.
+- **Notifications:** new bookings, cancellations, reschedules and teammate changes notify the
+  host and teammates (F25) and email their notification address.
+- **Google Meet:** with Google Calendar connected (F26), each booking gets its own Meet link.
+- **Today:** Meetings today includes meetings you've been added to.
 
 ## Rules
 
@@ -127,3 +161,4 @@ booking updates the sales records.
 | 2026-11-02 | 2.5.0   | Feature doc written (before code).                                                                                       |
 | 2026-11-02 | 2.5.0   | Built: tables (migration 0012), slot rules, invites, public booking pages, Calendar pages, Today and person page; tests. |
 | 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                                      |
+| 2026-11-02 | 2.6.0   | Round 2 rules written (before code), D-042.                                                                              |

@@ -7,7 +7,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.5.0.
+In progress: Calendar round 2 (D-042), v2.6.0.
+
+- Docs: F22 round 2 rules, new F25 Notifications and F26 Google Calendar and Meet links, decision D-042.
 
 ## [2.5.0] - 2026-11-02
 
