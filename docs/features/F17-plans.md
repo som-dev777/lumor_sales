@@ -148,6 +148,28 @@ missing seed plans and never changes existing ones.
   weekends skipped and dates shifted, a pasted reply pauses the plan, and the builder blocks a
   sixth touch.
 
+## Tasks, custom tasks and syncing (v2.7.0, D-043)
+
+- The builder says **Task** where it said Channel ("Task", "Otherwise, task 2", "Add a fallback
+  task"). The stored field is unchanged.
+- **Custom task:** the last option. Pick it and type a name (up to 60 characters). It works like
+  a Manual task (Done logs "Task done" with the name). Names already used in any plan appear in
+  the list for everyone.
+- **Custom template purpose:** the last option of Template purpose. Type a name; no template is
+  picked for it (the rep writes the message). Names used before appear in the list.
+- **Steps:** Add step, Remove step and Move up/down stay; Add step sits under the last step.
+- **Saving a changed plan** with people on it asks: "Also move the N people on the old version to
+  this one?" Yes moves each live enrolment to the new version, keeping its current step and due
+  date (someone past the last step finishes). No keeps them on their version, as before.
+- **No approvals:** any user can create Official or Personal plans. Official plans can be edited
+  by their creator or an Admin. The Propose button is gone.
+
+### Tests (v2.7.0)
+
+- A custom task and purpose save and show on Today; custom names are offered again; moving
+  enrolments to a new version; any user creates an Official plan; only its creator or an Admin
+  edits it.
+
 ## Change history
 
 | Date       | Version | Change                                                                                                                                                                                                                                                                          |
@@ -159,3 +181,4 @@ missing seed plans and never changes existing ones.
 | 2026-10-18 | 2.0.0   | R7 browser exit check added (e2e/r7-exit-check.spec.ts).                                                                                                                                                                                                                        |
 | 2026-10-18 | 2.0.0   | Released in v2.0.0 (R7 Plans).                                                                                                                                                                                                                                                  |
 | 2026-10-30 | 2.3.0   | Each plan step now keeps the date it was due (`activity.plan_due_date`), for plan adherence in Reports (F19).                                                                                                                                                                   |
+| 2026-11-03 | 2.7.0   | Task wording, Custom task and purpose, moving people to a new version, no approvals written (D-043), before code.                                                                                                                                                               |

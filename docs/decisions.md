@@ -696,3 +696,141 @@ replaces it.
   - **"Booking session"** in the owner's list is read as: every booking creates a calendar
     event with its own meeting link (F26).
   - **Version 2.6.0** (MINOR): new features.
+
+## D-043: Owner's list of 2026-11-03: events, reminders, booking sync, Calendly, backlogs, plans, reports
+
+- **Date:** 2026-11-03 · **Status:** Accepted (owner's list of 12 points; "complete everything"
+  without questions, see the standing preference)
+- **Owner's requests:**
+  1. "Meeting type" becomes "event" everywhere.
+  2. Reminders by email to the person who booked, so email is always collected and comes first.
+  3. The phone country shows "IN +91" once picked.
+  4. The standard fields (name, email, company, phone, LinkedIn) appear on every new or edited
+     event and can be made required or optional. No "* Required" line at the bottom.
+  5. The Lumor logo on the booking pages.
+  6. A required checkbox question said "Pick from the choices given" even when ticked.
+  7. A booking didn't reach the calendar, notifications or email. The owner's email copy, and
+     the Calendly integration instructions.
+  8. Calendar filter aligned, no "Everyone", the signed-in rep by default. Reps schedule a
+     meeting themselves, with To and CC recipients emailed.
+  9. Today shows backlogs, and Snooze asks for a date. A backlog indicator on People and
+     Companies. Team tab counters rechecked, with details behind each number.
+  10. Plans: add and delete steps; "channel" becomes "task", with a Custom task and a custom
+      template purpose; plans reach Today. No approvals: people create their own plans.
+  11. Reports: choose who they're emailed to; see reports others sent you; a consolidated
+      report (people and companies added, outreach, status, replies, conversions, no
+      response, per rep) as a PDF with charts.
+  12. Each event asks "online or in person" by default. After booking, the person only sees
+      the confirmation and can only cancel or reschedule.
+- **My choices:**
+  - **Words:** in the app the rep sees **Events** (Calendar → Events, **New event**); a booking
+    made from an event is still a **meeting**. The database keeps its names (`meeting_type`).
+    The old address /calendar/meeting-types forwards to /calendar/events.
+  - **Booking form fields (point 4):** every event has a **Booking form** section listing, in
+    order: Work email, Your name, Company, Phone, LinkedIn profile, How to meet (online or in
+    person), then the event's own questions. Email and name are always shown and required
+    (email for the confirmation and reminders, the name for the record), so their switches are
+    locked. The others each have **Show** and **Required**. Defaults for a new event: company
+    shown and required, phone and LinkedIn shown and optional, how to meet shown and required.
+    Existing events get the same defaults (so nothing they showed disappears). Up to 10 own
+    questions as before.
+  - **Online or in person (point 12):** online = Google Meet when the rep has Google connected,
+    otherwise the event's meeting link. In person = the event's new **In-person address**; when
+    it's empty, the confirmation says the rep will confirm the place. No Meet link is made for
+    in-person meetings. When **How to meet** is hidden, every meeting is online.
+  - **The checkbox bug (point 6):** choices are now matched ignoring spaces, case and accents
+    on both sides, and a choice that isn't on the list (for example, a page opened before the
+    event was edited) is dropped rather than refusing the booking. "Pick at least one" still
+    applies when nothing valid is left. A browser test books with a required checkbox question.
+  - **Why the owner's booking went nowhere (point 7):** the checkbox error stopped it from
+    being saved, so there was nothing to show, notify or email. Booking emails also need
+    RESEND_API_KEY and EMAIL_FROM on Netlify (checked on the QA list).
+  - **Emails (point 7):** the owner's copy is used word for word (docs/email-templates/). Two
+    new event fields fill it: **Name in emails** ("Lumor demo"; defaults to the event name)
+    and **Note in emails** (the "To get the most from…" paragraph). A new Availability field,
+    **Your title in emails** ("Co-founder, Lumor"), fills "With:". Reminders go **24 hours** and
+    **1 hour** before, by the scheduled job that already runs every 15 minutes (now also for
+    reminders); the 24-hour one only when booked more than a day ahead, the 1-hour one only when
+    booked more than 2 hours ahead. They carry a **Choose a new time** link, so each booking now
+    keeps its private manage code encrypted (AES-256-GCM, like Google tokens), not just its
+    hash. Bookings made before 2.7.0 get reminders without that link.
+  - **Booking sync (point 7, the owner's Calendly rules, applied to our own booking page too):**
+    - Find the person by email, then by name + company, then by LinkedIn.
+    - Found: log **Meeting booked** with the date, the meeting link and the answers; move them
+      to **Meeting scheduled**; **pause their plan**; the meeting shows on Today that day.
+    - Not found: create the person, owned by the event's rep (from Calendly: by the default
+      Admin, as instructed), with a **Check details** flag shown on their page until someone
+      clears it.
+    - Cancelled: log it with the reason, stage back to **Replied**, **resume the plan**.
+    - Rescheduled: one **Meeting moved** note, and Today's meeting date moves.
+    - The rep's email uses the owner's copy, with **Open in Sales Hub** to the person's page.
+  - **People without LinkedIn:** to create people from bookings, a person now needs **a
+    LinkedIn profile or an email** (previously LinkedIn was required). The duplicate check
+    still runs on LinkedIn when there is one, and on email otherwise.
+  - **Calendly (new F27):** a webhook at /api/calendly/webhook for `invitee.created` and
+    `invitee.canceled`, verified with CALENDLY_WEBHOOK_SIGNING_KEY (HMAC-SHA256, 5-minute
+    window), each event handled once. A reschedule (Calendly sends a cancel marked
+    "rescheduled", then a new booking) is one **Meeting moved**. The company comes from a
+    booking question mentioning "company"; otherwise the email's domain (not for free email
+    services, which read "Not given"). Setting up the webhook on Calendly's side needs a paid
+    Calendly plan; the steps are in docs/deploy.md.
+  - **Calendar page (point 8):** the person filter lines up with the view buttons; it lists
+    the reps only, starting on the signed-in rep (Admins and reps alike can pick anyone).
+  - **Schedule a meeting (point 8):** a button on the Calendar page. Title, date, start time,
+    length, how to meet (Google Meet, in person, phone, or another link), place or link, **To**
+    and **CC** email addresses (up to 20 each), and an optional message. It's saved as a
+    meeting on the rep's calendar (with Google Meet when connected) and emailed to To with CC
+    copied. Saved through a hidden per-rep "Scheduled meeting" event, so it works with
+    teammates, reschedule and cancel like any other meeting. Linked to a person when the first
+    To address matches one.
+  - **After booking (point 12):** the confirmation page shows the success message, the details
+    and the Join button, and only **Reschedule** and **Cancel**. The "add to calendar" buttons
+    are gone: the email brings the invite.
+  - **Logo (point 5):** the owner's logo (mark and wordmark) at the top of every public page and
+    in the footer, and in the booking emails' header.
+  - **Phone (point 6 of the form, point 3):** the closed country box shows "🇮🇳 IN +91"; the open
+    list keeps full names.
+  - **Today backlogs (point 9):** a new first section, **Backlog**: anything that was due on an
+    earlier day and isn't done (a reply not answered, a meeting not marked held, a recap not
+    sent, a nudge, a plan step, a withdraw), each with "due {date} · {n} days late". Today's
+    own work follows in the usual sections. The old "Overdue steps" section is part of Backlog.
+  - **Snooze (point 9):** Snooze asks for a date (Tomorrow, In 2 days, Next Monday, or pick
+    one; up to 60 days). On that date the task comes back as due that day, not as a backlog.
+    Plan steps snoozed to a date still respect the weekly touch limit.
+  - **Backlog on People and Companies (point 9):** a red **Backlog** badge on the person's row
+    and page, a "Backlog only" filter on People, and a Backlog count (people with a backlog) on
+    Companies.
+  - **Team tab (point 9):** the counters are the same rules as each person's My day: **Due
+    today**, **Backlog**, **Meetings today** (calendar), **Done today**, **On active plans**,
+    **Replies waiting over 1 day**. The zeros the owner saw were real: "Due today" left out
+    overdue work, which now shows under Backlog, and calendar meetings weren't counted. Each
+    number opens the list behind it.
+  - **Plans (point 10):** steps could already be added, removed and moved; that stays, with
+    clearer buttons. "Channel" reads **Task** in the builder. The task list gains **Custom**:
+    type a name (for example "Send a case study"); a custom task works like Manual task, and
+    names used before appear in the list for everyone. **Template purpose** gains **Custom** the
+    same way (no template is picked for a custom purpose; the rep writes the message).
+    **Saving a changed plan** asks whether to move the people already on it to the new version
+    (their current step and due date stay).
+  - **No approvals (point 10):** the Approvals page and the Propose buttons are gone. Anyone can
+    create **Official** (the team's) or **Personal** plans, personas, account filters and
+    templates; an Official item can be edited by its creator or an Admin. Proposals waiting at
+    the upgrade stay as Personal items; their creator can switch them to Official. The `proposal`
+    table and its history are kept (audit).
+  - **Reports (point 11):**
+    - **Email to:** the Make a report form takes teammates (ticked) and any other email
+      addresses; Generate saves the report and emails it, with the PDF attached, to all of them.
+      A saved report can be emailed again from its page.
+    - **Shared with me:** teammates a report is sent to get a notification and can open it.
+      Report history has **Made by me**, **Shared with me** and (Admins) **All**. Scheduled
+      reports share with the Admins or reps they're sent to.
+    - **Consolidated content:** a new first section, **Pipeline**, per rep and in total: people
+      added, companies added, new outreach (people contacted for the first time), replied,
+      converted, no response yet (contacted in the period, no reply so far), and where their
+      people stand now (by stage).
+    - **PDF with charts:** the PDF is now made by the app (jsPDF, a small library that runs on
+      the server; this replaces D-039's print-only PDF), with charts for outreach per rep, the
+      funnel and people by stage. **Download PDF** downloads it; the print view stays.
+  - **Pushing:** each push to GitHub costs a Netlify deploy (see the credits note on 2026-11-03),
+    so this work is committed after each step but pushed once, at the release.
+  - **Version 2.7.0** (MINOR): new features.

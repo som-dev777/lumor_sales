@@ -105,6 +105,38 @@ Each schedule has:
   sees it in Report history. (The browser tests run without an email key, so emailing is checked
   by the automated tests with a stand-in sender.)
 
+## Round 2 (v2.7.0, D-043)
+
+- **Email to:** Make a report has **Email to**: tick teammates and/or type other addresses (up
+  to 20). Generate saves the report and emails it to all of them, with the PDF attached and a
+  link. A saved report has **Email this report** to send it again. Each send is recorded.
+- **Shared with me:** teammates a report is sent to get a notification (F25) and can open it.
+  Report history has three tabs: **Made by me**, **Shared with me** and, for Admins, **All
+  reports**. Scheduled reports share with the Admins or reps they're sent to.
+- **Pipeline** (a new first section), per rep and in total, for the period:
+  - People added
+  - Companies added
+  - New outreach (people contacted for the first time)
+  - Replied (people who replied)
+  - Converted
+  - No response yet (contacted in the period, no reply so far)
+  - Where their people stand now, by stage
+- **PDF with charts:** the app makes the PDF itself (jsPDF), with the headline numbers, every
+  table and three charts: outreach and replies per rep, the funnel, and people by stage.
+  **Download PDF** downloads the file. The print view stays for printing.
+
+### Who sees what (round 2)
+
+- Open a saved report: Admins all; others the ones they made, the ones about them, and the ones
+  sent to them.
+- Anyone can email their own report to anyone.
+
+### Tests (round 2)
+
+- The Pipeline numbers against hand-built data; Email to sends to teammates and addresses and
+  shares with the teammates (notification); Shared with me lists them; others can't open it; the
+  PDF is a valid PDF with the report's title; scheduled reports share with their recipients.
+
 ## Change history
 
 | Date       | Version | Change                                                                                                                                                                                                       |
@@ -113,3 +145,4 @@ Each schedule has:
 | 2026-10-30 | 2.3.0   | Full doc written (R9) with the owner's choices, before code.                                                                                                                                                 |
 | 2026-10-30 | 2.3.0   | Built: Reports page, saved snapshots, print-to-PDF, CSV, AI summary (P06), scheduled reports with the cron route and Netlify function, 3 default schedules; plan steps keep their due date; R9 browser test. |
 | 2026-10-30 | 2.3.0   | Released in v2.3.0 (R9 Reports).                                                                                                                                                                             |
+| 2026-11-03 | 2.7.0   | Round 2 written (D-043), before code: Email to, Shared with me, Pipeline section, PDF with charts.                                                                                                           |

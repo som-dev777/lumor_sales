@@ -49,6 +49,18 @@ sees the outcome.
 - Browser (R2 exit check): a User proposes a persona, an Admin approves it, and it shows as
   Official and locked for the User.
 
+## Retired (v2.7.0, D-043)
+
+The owner doesn't want approvals. From v2.7.0:
+
+- The Approvals page and its sidebar link are gone (the old address goes to Plans).
+- The Propose buttons are gone.
+- Anyone can create Official or Personal personas, account filters, templates and plans. An
+  Official item can be edited or archived by its creator or an Admin. A Personal item's creator
+  can switch it to Official.
+- Proposals waiting at the upgrade stay as Personal items. The `proposal` table and its audit
+  history are kept.
+
 ## Change history
 
 | Date       | Version | Change                                                                                                                                                                   |
@@ -60,3 +72,4 @@ sees the outcome.
 | 2026-10-17 | 1.1.0   | Released in v1.1.0 (R2 Library).                                                                                                                                         |
 | 2026-10-18 | 2.0.0   | v2 (R7): plan proposals are listed in Approvals and decided on the plan page (F17).                                                                                      |
 | 2026-10-18 | 2.0.0   | Released in v2.0.0 (R7 Plans).                                                                                                                                           |
+| 2026-11-03 | 2.7.0   | Retired (D-043): no Approvals page or proposals; anyone creates Official items.                                                                                          |

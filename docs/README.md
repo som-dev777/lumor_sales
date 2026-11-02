@@ -16,9 +16,10 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | [ai-prompts.md](ai-prompts.md)               | The AI prompts, word for word, with versions.                    |
 | [decisions.md](decisions.md)                 | Significant choices and why they were made.                      |
 | [ai-knowledge/](ai-knowledge/)               | The AI knowledge base (the starting AI Resources files).         |
+| [email-templates/](email-templates/)         | The owner's email wording for bookings, word for word.           |
 | [deploy.md](deploy.md)                       | Putting the app online (Turso + Netlify), step by step.          |
 | [qa-checklist.md](qa-checklist.md)           | The manual check of the whole app before the team uses it.       |
-| [features/](features/)                       | One file per feature (F01–F26): requirements, tests, change log. |
+| [features/](features/)                       | One file per feature (F01–F27): requirements, tests, change log. |
 | [../CLAUDE.md](../CLAUDE.md)                 | Standing rules every Claude Code session follows.                |
 
 ## Feature index
@@ -31,7 +32,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F04 | [Personas](features/F04-personas.md)                                 | P0       | R2      | Done (1.1.0)     |
 | F05 | [Account filters](features/F05-account-filters.md)                   | P0       | R2      | Done (1.1.0)     |
 | F06 | [Templates](features/F06-templates.md)                               | P0       | R2      | Done (1.1.0)     |
-| F07 | [Approvals](features/F07-approvals.md)                               | P1       | R2      | Done (1.1.0)     |
+| F07 | [Approvals](features/F07-approvals.md) (retired)                     | P1       | R2      | Retired (2.7.0)  |
 | F02 | [People](features/F02-people.md)                                     | P0       | R3      | Done (1.2.0)     |
 | F03 | [Companies](features/F03-companies.md)                               | P0       | R3      | Done (1.2.0)     |
 | F15 | [Quick-log and sequence automation](features/F15-quick-log.md)       | P0       | R4      | Done (1.3.0)     |
@@ -51,6 +52,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F24 | [Fill with AI](features/F24-ai-autofill.md)                          | P1       | 2.5.0   | Done (2.5.0)     |
 | F25 | [Notifications](features/F25-notifications.md)                       | P1       | 2.6.0   | Done (2.6.0)     |
 | F26 | [Google Calendar and Meet links](features/F26-google-meet.md)        | P1       | 2.6.0   | Done (2.6.0)     |
+| F27 | [Calendly integration](features/F27-calendly.md)                     | P1       | 2.7.0   | Planned          |
 
 ## Releases
 

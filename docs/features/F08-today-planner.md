@@ -63,6 +63,38 @@ is clicked. If AI isn't set up, fails, or takes over 30 seconds, the list stays 
   ranking merges the AI order.
 - Browser: the R7 exit check runs through Today (see F17).
 
+## Backlogs, dated snooze and the Team tab (v2.7.0, D-043)
+
+- **Backlog** is the new first section: anything due on an earlier day and not done. That covers
+  a reply not answered, a meeting not marked held, a recap not sent, a nudge, a plan step and a
+  withdraw. Each says "due {date} · {n} days late". It replaces "Overdue steps".
+  - Due dates: a reply is due the day it came in; a meeting, the meeting date; a recap, the
+    day after the meeting; a nudge, the day after the reply-by date; a plan step, its due
+    date; a withdraw, 14 days after the request.
+  - A snoozed task is due on its snooze date.
+- **Snooze** asks for a date: Tomorrow, In 2 days, Next Monday, or pick one (up to 60 days
+  ahead). The task comes back that day as due today. A plan step's new date still respects the
+  weekly touch limit (it may move a day or two later; the toast says when).
+- **People and Companies:**
+  - A red **Backlog** badge on a person's row and page.
+  - **Backlog only** filter on People.
+  - A **Backlog** column on Companies (people with a backlog).
+- **Team tab:** per active user, using exactly the rules of their My day:
+  - Due today (every section except Backlog and Stale)
+  - Backlog
+  - Meetings today (calendar)
+  - Done today
+  - On active plans
+  - Replies waiting over 1 day
+
+  Each number is a link that opens the list behind it under the table.
+
+### Tests (v2.7.0)
+
+- Each backlog rule and its due date; a task snoozed to a date returns that day (not as a
+  backlog); a snoozed plan step respects the weekly limit; the People and Companies backlog
+  matches Today; the Team counters equal each person's My day; the Team details lists.
+
 ## Change history
 
 | Date       | Version | Change                                                                                                                                                           |
@@ -83,3 +115,4 @@ is clicked. If AI isn't set up, fails, or takes over 30 seconds, the list stays 
 | 2026-10-30 | 2.4.0   | New outreach today counts each person the rep added today or sent a connection request to today, once ("x of 20 new people today"; D-040).                       |
 | 2026-10-30 | 2.4.0   | Released in v2.4.0 (QA round 1).                                                                                                                                 |
 | 2026-11-02 | 2.5.0   | **Meetings today** from the calendar (F22) at the top of Today; released in v2.5.0.                                                                              |
+| 2026-11-03 | 2.7.0   | Backlog section, dated snooze, backlog badges on People and Companies, Team tab counters and details written (D-043), before code.                               |

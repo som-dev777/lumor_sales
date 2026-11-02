@@ -41,6 +41,13 @@ address (set on Calendar → Availability).
   your own and is audited.
 - Browser: after a visitor books, the rep's bell shows 1; opening it shows the booking.
 
+## New kinds (v2.7.0, D-043)
+
+- **Report shared:** someone emailed you a report (or a schedule sent you one); links to the
+  report.
+- **Booking sync:** a booking or cancellation from Calendly (F27) notifies the person's owner,
+  like a booking from the Lumor page.
+
 ## Change history
 
 | Date       | Version | Change                                                                          |
@@ -48,3 +55,4 @@ address (set on Calendar → Availability).
 | 2026-11-02 | 2.6.0   | Feature doc written (before code), D-042.                                       |
 | 2026-11-02 | 2.6.0   | Built: notification table, bell with count, mark read (audited), emails; tests. |
 | 2026-11-02 | 2.6.0   | Released in v2.6.0.                                                             |
+| 2026-11-03 | 2.7.0   | Report shared and Calendly notifications written (D-043), before code.          |

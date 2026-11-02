@@ -7,7 +7,9 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.6.0.
+Owner's list of 2026-11-03 (D-043), aiming for 2.7.0:
+
+- Docs first: D-043, PRD "Version 2.7 additions", F27 Calendly integration, round 3 of F22, backlogs in F08, tasks in F17, F07 retired, F19 round 2, F25, F02, F03, and the owner's email wording in docs/email-templates/.
 
 ## [2.6.0] - 2026-11-02
 

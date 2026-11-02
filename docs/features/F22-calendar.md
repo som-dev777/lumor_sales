@@ -154,6 +154,50 @@ These rules replace the matching v2.5.0 rules below where they differ.
   books a slot and sees the confirmation; the slot disappears; the booking appears in Calendar
   and on the linked person; the visitor cancels.
 
+## Round 3 (v2.7.0, D-043)
+
+- **Events:** "Meeting types" are now **Events** (Calendar → Events, **New event**). The old
+  address forwards.
+- **Booking form:** each event lists the standard fields first, in this order: **Work email**
+  and **Your name** (always shown, always required), **Company**, **Phone**, **LinkedIn
+  profile**, **How would you like to meet?** (Online / In person). Each of the last four has
+  Show and Required switches. Then the event's own questions (up to 10). No "* Required" line;
+  required fields keep their red star.
+- **Online or in person:** online = Google Meet (or the event's link); in person = the event's
+  **In-person address** (or "we'll confirm the place"). No Meet link for in-person meetings.
+- **Email fields:** **Name in emails** and **Note in emails** on the event; **Your title in
+  emails** on Availability. The emails use the owner's copy (docs/email-templates/).
+- **Reminders:** 24 hours and 1 hour before, to the person who booked, by the 15-minute
+  scheduled job; each with **Choose a new time**. Each is sent once; none for cancelled
+  meetings.
+- **Choices:** matched ignoring spaces, case and accents; an unknown choice is dropped instead
+  of refusing the booking (fixes the required-checkbox error).
+- **Phone:** the closed country box shows "🇮🇳 IN +91".
+- **Logo:** the owner's Lumor logo on every public page and in the emails.
+- **Confirmation page:** success message, details, Join button, and only **Reschedule** and
+  **Cancel**.
+- **Sync to the person:** found by email, then name + company, then LinkedIn. Found: Meeting
+  booked (date, link, answers), Meeting scheduled, plan paused, on Today. Not found: a new person
+  owned by the event's rep, flagged **Check details**. Cancelled: stage back to Replied, plan
+  resumed. Rescheduled: Meeting moved. The rep's email follows the owner's copy with **Open in
+  Sales Hub**.
+- **Calendar page:** the person filter lists reps only, starts on the signed-in rep, and lines up
+  with the view buttons.
+- **Schedule a meeting:** reps add a meeting themselves: title, date, time, length, how to meet
+  (Google Meet, in person, phone, another link), place or link, **To** and **CC** addresses and a
+  message. Emailed to To with CC copied; Google invites everyone when connected. It behaves like
+  any other meeting (teammates, reschedule, cancel).
+
+### Tests (round 3)
+
+- Automated: the standard fields' Show/Required rules; email always required; in-person
+  bookings have no Meet link; choice matching and dropped unknown choices; reminders due at 24 h
+  and 1 h, once each, skipped when booked late or cancelled; sync (found, not found, cancel,
+  reschedule); a scheduled meeting with To and CC; the calendar filter's default.
+- Browser: create an event with a required checkbox question and book it on a phone; "IN +91"
+  shows; the confirmation page offers only Reschedule and Cancel; schedule a meeting with To and
+  CC.
+
 ## Change history
 
 | Date       | Version | Change                                                                                                                                                                                            |
@@ -164,3 +208,4 @@ These rules replace the matching v2.5.0 rules below where they differ.
 | 2026-11-02 | 2.6.0   | Round 2 rules written (before code), D-042.                                                                                                                                                       |
 | 2026-11-02 | 2.6.0   | Built round 2: migration 0013, question types, custom length, 12 ranges, preview, notification email, stricter form, public not-found, month/week/day calendar, teammates, rep reschedule; tests. |
 | 2026-11-02 | 2.6.0   | Round 2 released in v2.6.0.                                                                                                                                                                       |
+| 2026-11-03 | 2.7.0   | Round 3 written (D-043), before code: events, booking form fields, online or in person, reminders, the owner's email copy, sync to the person, Schedule a meeting, calendar filter.               |

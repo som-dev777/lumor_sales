@@ -88,6 +88,15 @@ same LinkedIn profile twice, so two reps never message the same person.
 - Browser (R3 exit check): the same person through five URL variants and a Sales Navigator link
   gives exactly one record.
 
+## LinkedIn or email, and Check details (v2.7.0, D-043)
+
+- A person needs a **LinkedIn profile or an email** (before: LinkedIn always). The form says
+  so; the duplicate check uses LinkedIn when there is one, and email otherwise.
+- People created from a booking (F22) or Calendly (F27) carry a **Check details** flag: a
+  banner on their page ("From the booking page: check details") with **Done checking**, which
+  clears it (audited).
+- A red **Backlog** badge and a **Backlog only** filter (F08).
+
 ## Change history
 
 | Date       | Version | Change                                                                                                                                                                       |
@@ -103,3 +112,4 @@ same LinkedIn profile twice, so two reps never message the same person.
 | 2026-10-30 | 2.4.0   | Released in v2.4.0 (QA round 1).                                                                                                                                             |
 | 2026-11-02 | 2.5.0   | **Fill with AI** on the person form (F24).                                                                                                                                   |
 | 2026-11-02 | 2.5.0   | Person page **Meetings** panel with booking links (F22); released in v2.5.0.                                                                                                 |
+| 2026-11-03 | 2.7.0   | LinkedIn or email, Check details flag, Backlog badge and filter written (D-043), before code.                                                                                |

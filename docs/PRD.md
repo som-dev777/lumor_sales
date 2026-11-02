@@ -538,6 +538,32 @@ time zone dropdown; in-app notifications with a count (F25); teammates on meetin
 every rep; a month/week/day calendar; rep reschedule; Google Calendar connection with automatic
 Google Meet links and busy times (F26); a friendlier, responsive booking page.
 
+## Version 2.7 additions (owner, 2026-11-03)
+
+The owner's list of 12 points after the v2.6.0 QA (D-043). The feature docs hold the detail:
+
+- **F22 Calendar, round 3:** "meeting types" are now **events**; every event's booking form
+  lists the standard fields (email first, then name, company, phone, LinkedIn, online or in
+  person) with Show/Required switches; reminders by email 24 hours and 1 hour before; the
+  owner's email copy (docs/email-templates/); the Lumor logo on public pages; "IN +91" in the
+  phone box; the confirmation page offers only reschedule and cancel; reps **schedule a
+  meeting** themselves with To and CC recipients; the calendar filter lists reps, starting on
+  the signed-in rep. Bookings sync to the person: Meeting booked, Meeting scheduled, plan
+  paused; cancel = back to Replied, plan resumed; reschedule = Meeting moved.
+- **F27 Calendly integration (new):** the same sync for bookings made on Calendly, through a
+  verified webhook.
+- **F02 People:** a person needs a LinkedIn profile **or** an email; people created from
+  bookings carry a **Check details** flag.
+- **F08 Today:** a **Backlog** section for work from earlier days; Snooze asks for a date; a
+  backlog badge on People and Companies; the Team tab's counters match My day and open the list
+  behind each number.
+- **F17 Plans:** "channel" is now **task**, with a **Custom** task and custom template purpose;
+  saving a changed plan can move the people already on it to the new version.
+- **F07 Approvals: retired.** Anyone creates Official or Personal items; no proposals.
+- **F19 Reports, round 2:** email a report to teammates and any address; **Shared with me**; a
+  Pipeline section (people and companies added, outreach, replies, conversions, no response,
+  stages); a real PDF with charts.
+
 ## Open questions
 
 - [x] Follow-up timing: now set per plan step, within the cadence guardrails (v2).
