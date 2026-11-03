@@ -264,10 +264,6 @@ function meetLinkOf(body: Record<string, unknown>): string | null {
   return points?.find((p) => p.entryPointType === "video")?.uri ?? null;
 }
 
-const pending = (body: Record<string, unknown>) =>
-  (body.conferenceData as { createRequest?: { status?: { statusCode?: string } } })?.createRequest
-    ?.status?.statusCode === "pending";
-
 export type GoogleResult = { ok: true; eventId: string; meetLink: string | null } | { ok: false };
 
 /** Creates the event (Google emails the invite). Null result when not connected. */
@@ -300,9 +296,10 @@ export async function createGoogleEvent(
       return { ok: false };
     }
     let body = r.body;
-    if (e.meet && !meetLinkOf(body) && pending(body)) {
-      // Google makes the Meet link a moment later.
-      await new Promise((ok) => setTimeout(ok, 1500));
+    // Google sometimes makes the Meet link a moment later: wait for it (up to about 9 seconds),
+    // so every email carries this event's one link (D-050).
+    for (let i = 0; i < 6 && e.meet && !meetLinkOf(body); i++) {
+      await new Promise((ok) => setTimeout(ok, i === 0 ? 1000 : 1500));
       const again = await fetchJson(`${API}/calendars/primary/events/${body.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });

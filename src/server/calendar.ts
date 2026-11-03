@@ -758,10 +758,18 @@ export function whereFor(b: BookingRow, page: BookingPage): Where {
     return place ? { kind: "place", text: place } : { kind: "tbc" };
   }
   if (b.meetLink) return { kind: "meet", link: b.meetLink };
+  // A Google event that should have its own Meet: never hand out a different link (D-050).
+  if (b.googleEventId && usesGoogleMeet(b, page)) {
+    return { kind: "text", text: "Google Meet (the link is in your calendar invite)" };
+  }
   const loc = b.location ?? page.type.location;
   if (!loc) return null;
   return /^https?:\/\//.test(loc) ? { kind: "link", link: loc } : { kind: "text", text: loc };
 }
+
+/** True when the meeting gets its own Google Meet link (D-043, D-050). */
+export const usesGoogleMeet = (b: BookingRow, page: BookingPage) =>
+  b.mode === "online" && !b.location && (page.type.hidden || page.type.googleMeet);
 
 /** Where the meeting happens, as one line (calendar files, descriptions). */
 export function whereOf(b: BookingRow, page: BookingPage): string | null {
@@ -1619,10 +1627,15 @@ async function makeGoogleEvent(db: Db, b: BookingRow, page: BookingPage): Promis
       description: eventDescription(b, page),
       start: b.startsAt,
       end: b.endsAt,
-      location: b.mode === "in_person" || b.location ? whereOf(b, page) : page.type.location,
+      // With Google Meet, the event's own Meet link is the only link (D-050): no other location.
+      location: usesGoogleMeet(b, page)
+        ? null
+        : b.mode === "in_person" || b.location
+          ? whereOf(b, page)
+          : page.type.location,
       attendees: attendeesOf(b, team),
       // No Meet link for in-person meetings, or when the rep gave their own link (D-043).
-      meet: b.mode === "online" && !b.location && (page.type.hidden || page.type.googleMeet),
+      meet: usesGoogleMeet(b, page),
     },
     b.id,
   );
@@ -1832,7 +1845,7 @@ async function myMeetings(db: DbOrTx, userId: string, start: Date, end: Date) {
       meetingTypeName: sql<string>`coalesce(${booking.title}, ${meetingType.name})`,
       location: sql<
         string | null
-      >`coalesce(${booking.meetLink}, ${booking.location}, case when ${booking.mode} = 'in_person' then ${meetingType.inPersonAddress} else ${meetingType.location} end)`,
+      >`coalesce(${booking.meetLink}, ${booking.location}, case when ${booking.mode} = 'in_person' then ${meetingType.inPersonAddress} when ${booking.googleEventId} is not null then null else ${meetingType.location} end)`,
       hostName: user.name,
       hosting: sql<boolean>`${booking.hostId} = ${userId}`.mapWith(Boolean),
     })
@@ -1928,15 +1941,15 @@ const eventTitle = (b: BookingRow, page: BookingPage) =>
   b.title ?? `${page.type.name}: ${b.inviteeName} and ${page.host.name}`;
 
 function eventDescription(b: BookingRow, page: BookingPage) {
+  // With Google Meet, the event's Meet button is the only way in (D-050): no other link here.
+  const where = usesGoogleMeet(b, page) && !b.meetLink ? null : whereOf(b, page);
   if (page.type.hidden) {
-    return [b.message ?? "", whereOf(b, page) ? `Where: ${whereOf(b, page)}` : ""]
-      .filter(Boolean)
-      .join("\n");
+    return [b.message ?? "", where ? `Where: ${where}` : ""].filter(Boolean).join("\n");
   }
   return [
     `${page.type.name} (${page.type.durationMin} min), booked from the Lumor booking page.`,
     b.mode === "in_person" ? "In person." : "",
-    whereOf(b, page) ? `Where: ${whereOf(b, page)}` : "",
+    where ? `Where: ${where}` : "",
     `${b.inviteeName}, ${b.inviteeCompany} (${b.inviteeEmail})`,
     b.inviteePhone ? `Phone: ${b.inviteePhone}` : "",
     b.inviteeNote ? `Note: ${b.inviteeNote}` : "",

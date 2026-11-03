@@ -7,7 +7,13 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.7.6 and the Gmail setup.
+Next: the owner's QA of v2.7.7 and the Gmail setup.
+
+## [2.7.7] - 2026-11-03
+
+One meeting, one Meet link (D-050).
+
+- Fixed: the rep and the person who booked could get different meeting links. Now everyone (the person who booked, the rep, teammates and guests) gets the same Google Meet link, everywhere.
 
 ## [2.7.6] - 2026-11-03
 

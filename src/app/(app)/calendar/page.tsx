@@ -296,11 +296,13 @@ async function Detail({ id, viewer, now }: { id: string; viewer: Viewer; now: Da
     teammateChoices(db),
     leadFormOptions(db),
   ]);
+  // One link per meeting (D-050): a Google meeting shows only its own Meet link.
   const where =
     m.meetLink ??
     (m.mode === "in_person"
       ? `In person: ${m.location ?? m.typeAddress ?? "place to be confirmed"}`
-      : (m.location ?? m.typeLocation));
+      : (m.location ??
+        (m.googleEventId ? "Google Meet (the link is in the calendar invite)" : m.typeLocation)));
   const data: DetailData = {
     id: m.id,
     status: m.status,

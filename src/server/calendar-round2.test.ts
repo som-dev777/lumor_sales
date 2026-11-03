@@ -341,7 +341,12 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
   type Call = { url: string; method: string; body: unknown };
   let calls: Call[];
 
-  function fakeGoogle(opts: { failCreate?: boolean; busy?: { start: string; end: string }[] }) {
+  function fakeGoogle(opts: {
+    failCreate?: boolean;
+    busy?: { start: string; end: string }[];
+    /** Google makes the Meet link a moment later (D-050). */
+    lateMeet?: boolean;
+  }) {
     process.env.GOOGLE_CLIENT_ID = "client";
     process.env.GOOGLE_CLIENT_SECRET = "secret";
     calls = [];
@@ -363,9 +368,16 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
           return json({ calendars: { primary: { busy: opts.busy ?? [] } } });
         }
         if (url.includes("/events") && method === "POST") {
-          return opts.failCreate
-            ? json({ error: "nope" }, 500)
+          if (opts.failCreate) return json({ error: "nope" }, 500);
+          return opts.lateMeet
+            ? json({
+                id: "evt-1",
+                conferenceData: { createRequest: { status: { statusCode: "pending" } } },
+              })
             : json({ id: "evt-1", hangoutLink: "https://meet.google.com/abc-defg-hij" });
+        }
+        if (url.includes("/events/evt-1") && method === "GET") {
+          return json({ id: "evt-1", hangoutLink: "https://meet.google.com/abc-defg-hij" });
         }
         if (method === "PATCH") return json({ id: "evt-1" });
         if (method === "DELETE") return new Response(null, { status: 204 });
@@ -430,6 +442,26 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
     await book();
     const create = calls.find((c) => c.method === "POST" && c.url.includes("/events"))!;
     expect(create.url).toContain("sendUpdates=none");
+    vi.unstubAllEnvs();
+  });
+
+  it("one meeting, one link: the event's own link never appears next to the Meet link (D-050)", async () => {
+    fakeGoogle({ lateMeet: true });
+    vi.stubEnv("GMAIL_USER", "lumor.sales.hub@gmail.com");
+    vi.stubEnv("GMAIL_APP_PASSWORD", "abcdefghijklmnop");
+    // An event that also has a fixed online link saved.
+    await demo({ location: "https://meet.google.com/old-fixed-link" });
+    await connect();
+    const { booking: b } = await book();
+    // Google gave the Meet link late; the app waited for it.
+    expect(b.meetLink).toBe("https://meet.google.com/abc-defg-hij");
+    const create = calls.find((c) => c.method === "POST" && c.url.includes("/events"))!;
+    const body = create.body as { location?: string; description: string };
+    expect(body.location).toBeUndefined();
+    expect(body.description).not.toContain("old-fixed-link");
+    const page = (await findBookingPage(t.db, "asha", "demo"))!;
+    const { whereOf } = await import("./calendar");
+    expect(whereOf(b, page)).toBe("https://meet.google.com/abc-defg-hij");
     vi.unstubAllEnvs();
   });
 

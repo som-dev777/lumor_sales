@@ -984,3 +984,18 @@ replaces it.
   times now show greyed out on the booking page, Availability's "Why some times are missing"
   names the reason for each time, and Google busy times can be switched off on Availability.
 - **Version 2.7.6** (PATCH).
+
+## D-050: One meeting, one Meet link (owner, 2026-11-03)
+
+- **Date:** 2026-11-03 · **Status:** Accepted
+- **Problem:** the rep and the person who booked joined different Google Meet rooms. Google makes
+  the Meet link a moment after the event is created; while it was missing, the app fell back to
+  the event's own saved online link and put that in the Google event (location and description),
+  in the emails and on the calendar. So the Google invite had one link and other places another.
+- **Rule:** when a meeting uses Google Meet, the Meet link Google made is the only link anywhere:
+  the Google event (which every guest and teammate gets), Lumor's emails, the confirmation page,
+  Today and the calendar. The event's own "online link" is never used for it. The app now waits
+  up to about 10 seconds for Google's link; if it still isn't ready, places say "Google Meet (the
+  link is in your calendar invite)" instead of showing a different link. Teammates and guests
+  added later join the same Google event, so they get the same link.
+- **Version 2.7.7** (PATCH).

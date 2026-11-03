@@ -433,6 +433,9 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
 - [ ] 14.40 **Delete** an event: a confirmation, then it's gone and its link says it doesn't work.
 - [ ] 14.41 On your booking page: "N times available" under the day; taken times are grey and
       crossed out; unavailable dates are black.
+- [ ] 14.42 Book an online meeting (with Google connected). Open the email or invite the person
+      got and your own Google Calendar event: the Meet link is exactly the same. Add a teammate
+      or guest to the meeting: they get the same link too.
 
 **Calendly (only if you still use it)**
 
