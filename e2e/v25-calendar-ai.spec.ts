@@ -81,6 +81,13 @@ test("exit check: a signed-out visitor books a slot and sees the confirmation", 
   await visitor.getByRole("button", { name: "Choose a time" }).click();
   const firstTime = visitor.getByRole("group", { name: "Times" }).getByRole("button").first();
   const chosen = (await firstTime.innerText()).trim();
+  // The chosen day, e.g. "3" in the month grid (the pressed date).
+  const chosenDay = (
+    await visitor
+      .getByRole("group", { name: "Days" })
+      .getByRole("button", { pressed: true })
+      .innerText()
+  ).trim();
   await firstTime.click();
   await visitor.getByLabel("Your name").fill("Vera Visitor");
   await visitor.getByLabel("Work email").fill("vera@visitor.example");
@@ -103,8 +110,16 @@ test("exit check: a signed-out visitor books a slot and sees the confirmation", 
   await visitor.goto(new URL(link).pathname);
   await visitor.getByRole("button", { name: "Choose a time" }).click();
   const times = visitor.getByRole("group", { name: "Times" });
-  // Taken times stay in the list, greyed out and not bookable (D-048).
-  await expect(times.getByRole("button", { name: `${chosen}, taken` })).toBeDisabled();
+  const days = visitor.getByRole("group", { name: "Days" });
+  const sameDay = days.getByRole("button", { name: new RegExp(` ${chosenDay} [A-Z]`) });
+  if (await sameDay.first().isEnabled()) {
+    // The day still has free times: the taken one stays in the list, greyed out (D-048).
+    await sameDay.first().click();
+    await expect(times.getByRole("button", { name: `${chosen}, taken` })).toBeDisabled();
+  } else {
+    // It was the day's last free time: the whole day can't be picked any more.
+    await expect(sameDay.first()).toBeDisabled();
+  }
   await visitor.context().close();
 });
 

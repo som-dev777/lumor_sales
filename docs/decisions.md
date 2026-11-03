@@ -968,3 +968,19 @@ replaces it.
   - **Event cards** say **● Online** or **○ Offline**, and the button reads **Go online** / **Go
     offline**.
   - **Version 2.7.5** (PATCH).
+
+## D-049: The person who books always gets an email; why 11:00 was missing (owner, 2026-11-03)
+
+- **Date:** 2026-11-03 · **Status:** Accepted
+- **Email:** Netlify had no email settings (no GMAIL_USER/GMAIL_APP_PASSWORD, no Resend key), so
+  after D-047 switched Google's invites off, the person who booked got nothing. Now Google sends
+  its own invite whenever the app can't send email, and stays quiet only when Lumor's emails are
+  set up (they carry the invite then). Setting up Gmail (D-046) gives the branded emails and the
+  rep emails.
+- **11:00 missing every day:** with the owner's exact hours and bookings, the slot rules offer
+  11:00 on every day (tested). The only other thing that removes times is the rep's **Google
+  Calendar**: a busy event at or around 11:00 (for example a daily meeting), which with the old
+  10-minute gap also removed 11:00 when something started at 11:30. Gaps are gone (D-048), taken
+  times now show greyed out on the booking page, Availability's "Why some times are missing"
+  names the reason for each time, and Google busy times can be switched off on Availability.
+- **Version 2.7.6** (PATCH).

@@ -7,7 +7,13 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.7.5 and the Gmail setup.
+Next: the owner's QA of v2.7.6 and the Gmail setup.
+
+## [2.7.6] - 2026-11-03
+
+The person who books always gets an email (D-049).
+
+- Fixed: with email not set up, nobody was emailed after 2.7.4. Now Google sends its invite whenever the app can't send email; once Gmail is set up, Lumor's own branded emails go instead.
 
 ## [2.7.5] - 2026-11-03
 

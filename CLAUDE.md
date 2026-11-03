@@ -79,7 +79,7 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-11-03): v2.7.5 (no gaps, delete events, D-048), v2.7.4 (booking emails and page, D-047), v2.7.3 (Gmail email, D-046), v2.7.2 (D-045 plans/calendar fixes) and v2.7.1 (Today follow-ups, D-044) on top of v2.7.0, the owner's list of 3 November (D-043): events, reminders, booking sync,
+Done (2026-11-03): v2.7.6 (booker always emailed, D-049), v2.7.5 (no gaps, delete events, D-048), v2.7.4 (booking emails and page, D-047), v2.7.3 (Gmail email, D-046), v2.7.2 (D-045 plans/calendar fixes) and v2.7.1 (Today follow-ups, D-044) on top of v2.7.0, the owner's list of 3 November (D-043): events, reminders, booking sync,
 Calendly (F27), Schedule a meeting, Today backlogs, custom plan tasks, no approvals, reports you
 can send. The owner checks it on the live site (docs/qa-checklist.md section 14). Work through the
 owner's lists without asking questions; report once at the end with a checklist. Each push to

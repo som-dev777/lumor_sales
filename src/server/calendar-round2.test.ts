@@ -2,6 +2,11 @@
 // rep reschedule, Google Calendar (faked) and the busy times it adds.
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// No real Gmail in tests: the Gmail sender gets a stand-in that accepts everything.
+vi.mock("nodemailer", () => ({
+  createTransport: () => ({ sendMail: async () => ({}) }),
+}));
 import { auditLog, booking, googleConnection, notification } from "@/lib/db/schema";
 import { createTestDb, insertTestUser } from "@/lib/db/test-db";
 import { PermissionError, type Actor } from "@/lib/permissions";
@@ -399,8 +404,9 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
     });
     const create = calls.find((c) => c.method === "POST" && c.url.includes("/events"))!;
     expect(create.url).toContain("conferenceDataVersion=1");
-    // Google doesn't email guests; Lumor's own emails carry the invite (D-047).
-    expect(create.url).toContain("sendUpdates=none");
+    // Email isn't set up in this test, so Google sends its own invite (D-049); with email set
+    // up, Lumor's emails carry the invite and Google stays quiet (checked below).
+    expect(create.url).toContain("sendUpdates=all");
     expect(create.body).toMatchObject({
       conferenceData: { createRequest: { conferenceSolutionKey: { type: "hangoutsMeet" } } },
       attendees: [{ email: "priya@acme.example", displayName: "Priya Sharma" }],
@@ -413,6 +419,18 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
     expect(token).toBeTruthy();
     await cancelByToken(t.db, moved.token, null, NOW);
     expect(calls.some((c) => c.method === "DELETE" && c.url.includes("/events/evt-1"))).toBe(true);
+  });
+
+  it("with email set up, Google stays quiet and Lumor's email carries the invite (D-049)", async () => {
+    fakeGoogle({});
+    vi.stubEnv("GMAIL_USER", "lumor.sales.hub@gmail.com");
+    vi.stubEnv("GMAIL_APP_PASSWORD", "abcdefghijklmnop");
+    await demo();
+    await connect();
+    await book();
+    const create = calls.find((c) => c.method === "POST" && c.url.includes("/events"))!;
+    expect(create.url).toContain("sendUpdates=none");
+    vi.unstubAllEnvs();
   });
 
   it("adding a teammate updates the Google guests", async () => {

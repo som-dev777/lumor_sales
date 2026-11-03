@@ -2,6 +2,7 @@
 // (OAuth). The app then creates, moves and cancels one Google Calendar event per booking, with
 // a Meet link, and reads the rep's busy times. Google never blocks a booking: every call here
 // reports failure instead of throwing, except the connect/disconnect changes themselves.
+import { emailConfigured } from "../email";
 import { eq } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
@@ -270,8 +271,13 @@ const pending = (body: Record<string, unknown>) =>
 export type GoogleResult = { ok: true; eventId: string; meetLink: string | null } | { ok: false };
 
 /** Creates the event (Google emails the invite). Null result when not connected. */
-// Google never emails the guests itself (D-047): its invites came from the rep's own account as
-// "Invitation from an unknown sender" with no content. Lumor's own emails carry the invite.
+/**
+ * Who emails the guests (D-047, D-049): when the app can send email, Lumor's own emails carry the
+ * invite and Google stays quiet; when it can't, Google sends its invite, so the person who booked
+ * always hears something.
+ */
+const googleEmails = () => (emailConfigured() ? "none" : "all");
+
 export async function createGoogleEvent(
   db: Db,
   hostId: string,
@@ -282,7 +288,7 @@ export async function createGoogleEvent(
   if (!token) return (await connectionView(db, hostId)) ? { ok: false } : null;
   try {
     const r = await fetchJson(
-      `${API}/calendars/primary/events?conferenceDataVersion=1&sendUpdates=none`,
+      `${API}/calendars/primary/events?conferenceDataVersion=1&sendUpdates=${googleEmails()}`,
       {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -320,7 +326,7 @@ export async function updateGoogleEvent(
   if (!token) return false;
   try {
     const r = await fetchJson(
-      `${API}/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=none`,
+      `${API}/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=${googleEmails()}`,
       {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -347,7 +353,7 @@ export async function deleteGoogleEvent(db: Db, hostId: string, eventId: string)
   if (!token) return false;
   try {
     const res = await fetch(
-      `${API}/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=none`,
+      `${API}/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=${googleEmails()}`,
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
