@@ -75,12 +75,18 @@ async function Availability({
               <CheckCircle2 size={16} aria-hidden /> Connected as <strong>{connected.email}</strong>
             </p>
             {connected.lastError && <Alert tone="warning">{connected.lastError}</Alert>}
+            {!connected.opensMeet && (
+              <Alert tone="warning">
+                Reconnect Google once so people can join your Google Meet straight away, without
+                waiting for you to let them in.
+              </Alert>
+            )}
             <p className={styles.muted}>
-              Each booking gets its own Google Meet link and an event in your Google Calendar, and
-              your Google busy times block booking slots.
+              Each booking gets its own Google Meet link, which anyone with the link can join, and
+              an event in your Google Calendar.
             </p>
             <div className={styles.row}>
-              {connected.lastError && (
+              {(connected.lastError || !connected.opensMeet) && (
                 <a className={styles.buttonLink} href="/api/google/connect">
                   Reconnect Google
                 </a>

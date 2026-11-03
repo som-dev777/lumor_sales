@@ -441,6 +441,12 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
 - [ ] 14.44 Your booking page: today has times (any time later today). A time that's busy in
       your Google Calendar is still offered.
 - [ ] 14.45 Your booking page on a laptop: each date sits right under its day (Mon, Tue…).
+- [ ] 14.46 After the Google steps in docs/deploy.md (Meet REST API, the new permission) and
+      **Reconnect Google**: book a new online meeting. Join from your account and from the
+      booker's email on a phone signed in with a different (or no) Google account: both are in the
+      same call straight away, nobody waits.
+- [ ] 14.47 On an iPhone, book a meeting: the page doesn't zoom in when you tap a box, and "You're
+      booked" fits the screen with the Lumor logo fully visible.
 
 **Calendly (only if you still use it)**
 

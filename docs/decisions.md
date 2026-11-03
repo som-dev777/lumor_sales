@@ -1017,3 +1017,22 @@ replaces it.
   never get the same time.
 - **Booking page:** the dates now sit under their weekday letters.
 - **Version 2.7.8** (PATCH).
+
+## D-052: Nobody waits in the Meet lobby; iPhones don't zoom the booking pages (owner, 2026-11-03)
+
+- **Date:** 2026-11-03 · **Status:** Accepted
+- **What the owner saw:** the rep's Join button and the booker's Join button "opened different
+  meetings". The screenshots show the same meeting code both times: one person was inside and the
+  other was waiting in Google's lobby ("Please wait until a meeting host brings you into the
+  call"). Google lets someone in without asking only when they're signed in with the exact
+  address that was invited, so a booker on another account, or signed out, has to wait.
+- **Rule:** after a booking's Meet is made, the app sets the meeting to **open** through the
+  Google Meet REST API (`spaces.patch`, `config.accessType = OPEN`): anyone with the link joins
+  straight away. This needs a new Google permission (`meetings.space.settings`) and the Meet REST
+  API switched on in Google Cloud; reps connected earlier see a yellow note on Availability to
+  reconnect. Without it, meetings work as before (the host lets people in). Only new bookings are
+  opened.
+- **iPhone zoom:** iPhones zoom in when a form box's text is under 16px, and stay zoomed on the next
+  page, so the "You're booked" page looked cut off. Form boxes now use 16px text on phones,
+  across the app.
+- **Version 2.7.9** (PATCH).

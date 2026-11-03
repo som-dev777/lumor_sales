@@ -196,7 +196,8 @@ works as before.
 
 1. Go to <https://console.cloud.google.com>, sign in with the company Google account, and create a
    project (top bar → project picker → **New project**, name "Lumor Sales Hub").
-2. **APIs & Services → Library**: search **Google Calendar API** → **Enable**.
+2. **APIs & Services → Library**: search **Google Calendar API** → **Enable**. Then search
+   **Google Meet REST API** → **Enable** (so people join the Meet without waiting, D-052).
 3. **APIs & Services → OAuth consent screen** (also called **Google Auth Platform**):
    - User type: **Internal** if everyone uses a company Google Workspace address (for example
      @lumor.tech): no Google review needed, and connections don't expire. Otherwise **External**,
@@ -204,8 +205,8 @@ works as before.
      reconnect every 7 days, until you submit the app for Google's verification).
    - App name "Lumor Sales Hub", your support email, then save.
    - **Data access / Scopes → Add or remove scopes**: add `.../auth/calendar.events` and
-     `.../auth/calendar.freebusy` (paste them in the "Manually add scopes" box), plus `openid`
-     and `email`. Save.
+     `.../auth/calendar.freebusy` and `https://www.googleapis.com/auth/meetings.space.settings`
+     (paste them in the "Manually add scopes" box), plus `openid` and `email`. Save.
 4. **APIs & Services → Credentials → Create credentials → OAuth client ID**:
    - Application type: **Web application**, name "Lumor Sales Hub".
    - **Authorised redirect URIs → Add URI**: `https://YOUR-LIVE-SITE/api/google/callback` (the
@@ -217,6 +218,10 @@ works as before.
    too, put the same two lines in `.env.local` and restart `npm run dev`.
 6. Each rep: Calendar → Availability → **Connect Google Calendar** → choose their account →
    **Allow**. They come back to "Connected as …".
+
+**Already connected before v2.7.9?** Do steps 2 and 3 for the Meet permission only, then each rep
+clicks **Reconnect Google** on Calendar → Availability (a yellow note asks them to) and allows
+the new permission. From then on, anyone with the meeting's link joins straight away.
 
 The token Google returns is stored encrypted with `BETTER_AUTH_SECRET`; if you ever change that
 secret, reps simply click Connect again.

@@ -91,6 +91,13 @@ test("exit check: a client books on a phone with a required checkbox question", 
   await expect(inputs.first()).toHaveAttribute("type", "email");
   await expect(phone.getByText(/IN \+91/)).toBeVisible();
   await expect(phone.getByText("Required", { exact: true })).toHaveCount(0);
+  // Form boxes use 16px text on phones, so iPhones don't zoom in (D-052).
+  for (const box of [
+    phone.getByLabel("Work email"),
+    phone.getByRole("textbox", { name: "Phone" }),
+  ]) {
+    await expect(box).toHaveCSS("font-size", "16px");
+  }
 
   await phone.getByRole("button", { name: "Confirm booking" }).click();
   await expect(phone.getByText("Enter your phone number.")).toBeVisible();
@@ -270,6 +277,8 @@ test("v2.7.5: events show Online or Offline, go offline and online, and can be d
 });
 
 test("v2.7.8: meetings keep opening, after closing quickly and after a cancel (D-051)", async () => {
+  // Page updates are slowed down on purpose below, so this test gets more time.
+  test.setTimeout(120_000);
   await fay.goto("/calendar?view=list");
   const open = (who: string) =>
     shown(fay.getByRole("table", { name: "Upcoming bookings" }))
@@ -293,6 +302,8 @@ test("v2.7.8: meetings keep opening, after closing quickly and after a cancel (D
   }
   await expect(fay.getByRole("dialog")).toHaveCount(0);
   await fay.unrouteAll();
+  // Let the slowed page updates finish before the next step.
+  await expect(fay).not.toHaveURL(/booking=/, { timeout: 20_000 });
   // Cancel one; the others still open afterwards.
   await open("Gita Gamma");
   await fay

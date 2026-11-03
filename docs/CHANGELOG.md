@@ -7,7 +7,14 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.7.8 and the Gmail setup.
+Next: the owner's QA of v2.7.9, the Google Meet permission and the Gmail setup.
+
+## [2.7.9] - 2026-11-03
+
+Nobody waits in the Meet lobby; iPhones don't zoom the booking pages (D-052).
+
+- Each new booking's Google Meet is open: anyone with the link joins straight away, instead of waiting for the host to let them in. Needs the Google Meet REST API switched on and each rep to click **Reconnect Google** once (docs/deploy.md).
+- Fixed: on iPhones the "You're booked" page appeared zoomed in and cut off. Form boxes now use 16px text on phones.
 
 ## [2.7.8] - 2026-11-03
 

@@ -50,3 +50,12 @@ textarea {
   outline: none;
   box-shadow: var(--focus-ring);
 }
+
+// iPhones zoom in when a form box's text is under 16px, and stay zoomed on the next page (the
+// booking confirmation looked cut off, D-052). On phones, form boxes use 16px text. The :is()
+// list is as specific as a class plus attributes, so it wins over the components' own sizes.
+@media (max-width: 767px) {
+  :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    font-size: 16px;
+  }
+}

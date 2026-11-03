@@ -385,6 +385,12 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
         if (url.includes("/events/evt-1") && method === "GET") {
           return json({ id: "evt-1", hangoutLink: "https://meet.google.com/abc-defg-hij" });
         }
+        if (url === "https://meet.googleapis.com/v2/spaces/abc-defg-hij") {
+          return json({ name: "spaces/space-1", meetingCode: "abc-defg-hij" });
+        }
+        if (url.startsWith("https://meet.googleapis.com/v2/spaces/space-1?")) {
+          return json({ name: "spaces/space-1", config: { accessType: "OPEN" } });
+        }
         if (method === "PATCH") return json({ id: "evt-1" });
         if (method === "DELETE") return new Response(null, { status: 204 });
         return json({}, 404);
@@ -469,6 +475,33 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
     const { whereOf } = await import("./calendar");
     expect(whereOf(b, page)).toBe("https://meet.google.com/abc-defg-hij");
     vi.unstubAllEnvs();
+  });
+
+  it("the Meet is opened so the person who booked joins without waiting (D-052)", async () => {
+    const { connectionView } = await import("./google/google");
+    fakeGoogle({});
+    await demo();
+    // A connection made before D-052 lacks the Meet permission: nothing is changed, and
+    // Availability asks the rep to reconnect.
+    await connect();
+    expect((await connectionView(t.db, rep.id))?.opensMeet).toBe(false);
+    await book();
+    expect(calls.some((c) => c.url.startsWith("https://meet.googleapis.com"))).toBe(false);
+    // Reconnected with it: the booking's Meet is set to open.
+    await saveConnection(t.db, rep, {
+      email: "asha@lumor.tech",
+      refreshToken: "refresh-secret",
+      scope:
+        "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/meetings.space.settings",
+    });
+    expect((await connectionView(t.db, rep.id))?.opensMeet).toBe(true);
+    calls = [];
+    await book({ email: "second@acme.example", startsAt: at("2026-11-03T12:00") });
+    const patch = calls.find((c) => c.url.includes("meet.googleapis.com") && c.method === "PATCH")!;
+    expect(patch.url).toBe(
+      "https://meet.googleapis.com/v2/spaces/space-1?updateMask=config.accessType",
+    );
+    expect(patch.body).toEqual({ config: { accessType: "OPEN" } });
   });
 
   it("adding a teammate updates the Google guests", async () => {

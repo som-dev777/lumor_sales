@@ -16,7 +16,13 @@ export const GOOGLE_SCOPES = [
   "email",
   "https://www.googleapis.com/auth/calendar.events",
   "https://www.googleapis.com/auth/calendar.freebusy",
+  // To make each Meet open, so people join without waiting to be let in (D-052).
+  "https://www.googleapis.com/auth/meetings.space.settings",
 ];
+
+/** True when the rep's connection allows opening the Meet (connected after D-052). */
+export const canOpenMeet = (scope: string | null | undefined) =>
+  Boolean(scope?.includes("meetings.space.settings"));
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const API = "https://www.googleapis.com/calendar/v3";
@@ -92,17 +98,28 @@ export async function exchangeCode(code: string) {
   return { refreshToken, scope, email };
 }
 
-export type GoogleConnectionView = { email: string; lastError: string | null };
+export type GoogleConnectionView = {
+  email: string;
+  lastError: string | null;
+  /** False for a connection made before D-052: reconnect so the Meet opens for everyone. */
+  opensMeet: boolean;
+};
 
 export async function connectionView(
   db: DbOrTx,
   userId: string,
 ): Promise<GoogleConnectionView | null> {
   const [row] = await db
-    .select({ email: googleConnection.googleEmail, lastError: googleConnection.lastError })
+    .select({
+      email: googleConnection.googleEmail,
+      lastError: googleConnection.lastError,
+      scope: googleConnection.scope,
+    })
     .from(googleConnection)
     .where(eq(googleConnection.userId, userId));
-  return row ?? null;
+  return row
+    ? { email: row.email, lastError: row.lastError, opensMeet: canOpenMeet(row.scope) }
+    : null;
 }
 
 /** Saves (or replaces) the rep's connection. Audited without the token. */
@@ -305,10 +322,50 @@ export async function createGoogleEvent(
       });
       if (again.ok) body = again.body;
     }
-    return { ok: true, eventId: String(body.id), meetLink: meetLinkOf(body) };
+    const meetLink = meetLinkOf(body);
+    if (meetLink) await openMeet(db, hostId, token, meetLink);
+    return { ok: true, eventId: String(body.id), meetLink };
   } catch (err) {
     console.error("Google event create failed:", err instanceof Error ? err.message : err);
     return { ok: false };
+  }
+}
+
+const MEET_API = "https://meet.googleapis.com/v2";
+
+/**
+ * Makes the meeting open (D-052): anyone with the link joins straight away, instead of waiting
+ * for the host to let them in. Google only lets people in without asking when they're signed in
+ * with the exact invited address, so the person who booked often sat in the lobby (and thought
+ * it was a different meeting). Needs the Meet permission from a connection made after D-052 and
+ * the Google Meet REST API switched on; if either is missing, the meeting still works as before.
+ */
+async function openMeet(db: Db, hostId: string, token: string, link: string): Promise<boolean> {
+  const [row] = await db
+    .select({ scope: googleConnection.scope })
+    .from(googleConnection)
+    .where(eq(googleConnection.userId, hostId));
+  if (!canOpenMeet(row?.scope)) return false;
+  const code = link.match(/meet\.google\.com\/([a-z]+-[a-z]+-[a-z]+)/)?.[1];
+  if (!code) return false;
+  try {
+    const space = await fetchJson(`${MEET_API}/spaces/${code}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!space.ok || typeof space.body.name !== "string") {
+      console.error(`Google Meet space lookup failed: ${space.status}`);
+      return false;
+    }
+    const r = await fetchJson(`${MEET_API}/${space.body.name}?updateMask=config.accessType`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ config: { accessType: "OPEN" } }),
+    });
+    if (!r.ok) console.error(`Opening the Google Meet failed: ${r.status}`);
+    return r.ok;
+  } catch (err) {
+    console.error("Opening the Google Meet failed:", err instanceof Error ? err.message : err);
+    return false;
   }
 }
 
