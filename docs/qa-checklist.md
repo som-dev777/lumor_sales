@@ -426,6 +426,14 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
 - [ ] 14.37 Try to book the same time again in another window: it's gone, or refused.
 - [ ] 14.38 Availability → **Why some times are missing**: every missing time has a reason.
 
+**v2.7.5**
+
+- [ ] 14.39 Events: each card says **● Online** or **○ Offline**; **Go offline** / **Go online**
+      switch it; there's no "Gap after" field.
+- [ ] 14.40 **Delete** an event: a confirmation, then it's gone and its link says it doesn't work.
+- [ ] 14.41 On your booking page: "N times available" under the day; taken times are grey and
+      crossed out; unavailable dates are black.
+
 **Calendly (only if you still use it)**
 
 - [ ] 14.25 Follow docs/deploy.md → "Calendly". Book on Calendly: the person gets Meeting booked

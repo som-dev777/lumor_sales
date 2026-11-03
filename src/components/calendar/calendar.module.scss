@@ -627,12 +627,11 @@
     @include focus-ring;
   }
 
-  // Days that can't be booked (past days, days without hours, full days): a subtle red (D-045).
+  // Days that can't be booked (past days, days without hours, full days): plain black (D-048).
   &:disabled {
-    background: var(--color-danger-soft);
-    color: var(--color-danger-text);
+    background: transparent;
+    color: var(--color-text);
     font-weight: var(--weight-regular);
-    opacity: 0.75;
     cursor: not-allowed;
   }
 
@@ -1173,4 +1172,20 @@
   font-family: var(--font-brand);
   font-size: var(--text-md);
   font-weight: var(--weight-semibold);
+}
+
+// Free times count and taken times (D-048).
+.slotCount {
+  margin: calc(var(--space-2) * -1) 0 var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.timeTaken,
+.timeTaken:hover {
+  background: var(--color-page);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  cursor: not-allowed;
 }

@@ -8,7 +8,7 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { fieldRules } from "@/lib/booking-fields";
 import { appNow } from "@/lib/clock";
 import { getDb } from "@/lib/db/client";
-import { findBookingPage, freeSlots } from "@/server/calendar";
+import { bookingSlots, findBookingPage } from "@/server/calendar";
 import { connectionView, googleConfigured } from "@/server/google/google";
 
 export const metadata: Metadata = { title: { absolute: "Book a meeting · Lumor" } };
@@ -30,7 +30,7 @@ async function Book({ params }: Pick<PageProps<"/book/[rep]/[type]">, "params">)
   if (!page) notFound();
   const now = await appNow();
   const [slots, google] = await Promise.all([
-    page.type.active ? freeSlots(db, page, now) : Promise.resolve([]),
+    bookingSlots(db, page, now),
     page.type.googleMeet && googleConfigured() ? connectionView(db, page.host.id) : null,
   ]);
   const location = page.type.location;
@@ -60,7 +60,8 @@ async function Book({ params }: Pick<PageProps<"/book/[rep]/[type]">, "params">)
     <BookingWidget
       profileSlug={page.profile.slug}
       typeSlug={page.type.slug}
-      slots={slots.map((s) => s.toISOString())}
+      slots={slots.free.map((s) => s.toISOString())}
+      taken={slots.taken.map((s) => s.toISOString())}
       questions={page.type.questions}
       durationMin={page.type.durationMin}
       fields={rules}

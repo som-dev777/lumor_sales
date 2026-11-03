@@ -950,3 +950,21 @@ replaces it.
      how long, how to meet, the description) with **Choose a time**; 2) the day and time, with
      the **time zone at the top** (India Standard Time unless changed); 3) the details form.
   - **Version 2.7.4** (PATCH).
+
+## D-048: No gaps; free times counted and taken times greyed; delete events; Online/Offline (owner, 2026-11-03)
+
+- **Date:** 2026-11-03 · **Status:** Accepted
+- **Owner's requests and my choices:**
+  - **No gap between meetings at all:** the "Gap after" field is gone; every event's gap is set
+    to 0 (migration 0017) and the slot rules ignore any saved gap.
+  - **The booking page** shows, for the chosen day, how many times are available, and keeps
+    **taken** times in the list, greyed out and crossed through (booked, a meeting, busy in
+    Google, or the day's limit). Times inside the minimum notice aren't shown.
+  - **Unavailable dates** are plain black instead of red.
+  - **Delete an event** for good, after a confirmation that says it can't be undone (and how many
+    upcoming meetings it has: they stay on the calendar). An event never booked is removed; one
+    with meetings disappears from every list and its link stops working
+    (`meeting_type.deleted_at`, migration 0017).
+  - **Event cards** say **● Online** or **○ Offline**, and the button reads **Go online** / **Go
+    offline**.
+  - **Version 2.7.5** (PATCH).

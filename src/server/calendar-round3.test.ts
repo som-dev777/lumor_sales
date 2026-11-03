@@ -50,6 +50,8 @@ import {
   sendDueReminders,
   whereOf,
   findBookingPage,
+  bookingSlots,
+  deleteMeetingType,
   freeSlots,
 } from "./calendar";
 import { calendlySchema, handleCalendly, verifyCalendlySignature } from "./calendly";
@@ -694,6 +696,8 @@ describe("taken times and why times are missing (D-047)", () => {
     expect(after).not.toContain(WED_11);
     expect(after).not.toContain(at("2026-11-04T15:00"));
     expect(after).not.toContain(at("2026-11-04T15:40"));
+    // Right after the scheduled meeting ends is free again (no gaps, D-048).
+    expect(after).toContain(at("2026-11-04T16:00"));
     // Someone else trying the same time is refused.
     await expect(book({ email: "other@beta.example" })).rejects.toThrow("just taken");
     await expect(
@@ -728,15 +732,38 @@ describe("taken times and why times are missing (D-047)", () => {
     expect(slots.filter((s) => istDay(s) === "2026-11-02")).toHaveLength(17);
     expect(slots.filter((s) => istDay(s) === "2026-11-04")).toHaveLength(15);
     expect(slots.filter((s) => istDay(s) === "2026-11-07")).toHaveLength(0);
-    // A booking at 12:00 with a 10-minute gap also takes out 11:30 and 12:30, and says so.
+    // No gaps (D-048): a booking at 12:00 takes out 12:00 only, even with an old 10-minute gap
+    // saved; the booking page shows it greyed out as taken.
     await book({ startsAt: at("2026-11-04T12:00") });
     const r = (await slotReport(t.db, rep.id, NOW, 3))!;
     const wed = r.days.find((d) => d.date === "2026-11-04")!.offered[0];
-    expect(wed).toMatchObject({ possible: 15, count: 12 });
-    expect(wed.missing).toEqual([
-      { time: "11:30", reason: "too close to a meeting (the gap)" },
-      { time: "12:00", reason: "a meeting" },
-      { time: "12:30", reason: "too close to a meeting (the gap)" },
-    ]);
+    expect(wed).toMatchObject({ possible: 15, count: 14 });
+    expect(wed.missing).toEqual([{ time: "12:00", reason: "a meeting" }]);
+    const view = await bookingSlots(t.db, page, NOW);
+    expect(view.taken.map((d) => d.toISOString())).toEqual([at("2026-11-04T12:00")]);
+    expect(view.free.map((d) => d.toISOString())).toContain(at("2026-11-04T11:30"));
+    expect(view.free.map((d) => d.toISOString())).toContain(at("2026-11-04T12:30"));
+  });
+});
+
+describe("deleting an event (D-048)", () => {
+  it("an unbooked event is removed; a booked one disappears but its meetings stay", async () => {
+    const unused = await demo({ slug: "spare", name: "Spare event" });
+    const outsider = {
+      id: (await insertTestUser(t.db, { name: "Someone" })).id,
+      role: "User" as const,
+      active: true,
+    };
+    await expect(deleteMeetingType(t.db, outsider, unused.id, NOW)).rejects.toThrow();
+    expect(await deleteMeetingType(t.db, rep, unused.id, NOW)).toEqual({ removed: true });
+    expect(await findBookingPage(t.db, "asha", "spare")).toBeNull();
+
+    const used = await demo();
+    const { booking: b } = await book();
+    expect(await deleteMeetingType(t.db, rep, used.id, NOW)).toEqual({ removed: false });
+    expect(await findBookingPage(t.db, "asha", "demo")).toBeNull();
+    const [still] = await t.db.select().from(booking).where(eq(booking.id, b.id));
+    expect(still.status).toBe("Confirmed");
+    await expect(deleteMeetingType(t.db, rep, used.id, NOW)).rejects.toThrow("doesn't exist");
   });
 });

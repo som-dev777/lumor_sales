@@ -103,7 +103,8 @@ test("exit check: a signed-out visitor books a slot and sees the confirmation", 
   await visitor.goto(new URL(link).pathname);
   await visitor.getByRole("button", { name: "Choose a time" }).click();
   const times = visitor.getByRole("group", { name: "Times" });
-  await expect(times.getByRole("button").first()).not.toHaveText(chosen);
+  // Taken times stay in the list, greyed out and not bookable (D-048).
+  await expect(times.getByRole("button", { name: `${chosen}, taken` })).toBeDisabled();
   await visitor.context().close();
 });
 

@@ -83,6 +83,9 @@ export const meetingType = sqliteTable(
     emailNote: text("email_note"),
     inPersonAddress: text("in_person_address"),
     hidden: flag("hidden").notNull().default(false),
+    // Deleted by the rep (D-048): gone from every list and its link stops working. Kept only
+    // because past meetings point at it.
+    deletedAt: timestamp("deleted_at"),
   },
   (t) => [
     uniqueIndex("meeting_type_owner_slug_unique").on(t.ownerId, t.slug),

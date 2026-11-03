@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { CalendarTabs } from "@/components/calendar/CalendarTabs";
 import { MeetingTypeDialog } from "@/components/calendar/MeetingTypeDialog";
+import { DeleteEventButton } from "@/components/calendar/DeleteEventButton";
 import { MeetingTypeSwitch } from "@/components/calendar/MeetingTypeSwitch";
 import styles from "@/components/calendar/calendar.module.scss";
 import { PageHeader } from "@/components/shell/PageHeader";
@@ -13,7 +14,8 @@ import { fieldRules } from "@/lib/booking-fields";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { getDb } from "@/lib/db/client";
 import { requireUser } from "@/lib/session";
-import { bookingLink, listMeetingTypes, profileView } from "@/server/calendar";
+import { appNow } from "@/lib/clock";
+import { bookingLink, listMeetingTypes, profileView, upcomingCountOf } from "@/server/calendar";
 import { connectionView, googleConfigured } from "@/server/google/google";
 
 export const metadata: Metadata = { title: "Events" };
@@ -57,6 +59,12 @@ async function MeetingTypes() {
     profileView(db, viewer),
     googleReadyFor(viewer.id),
   ]);
+  const now = await appNow();
+  const upcoming = new Map(
+    await Promise.all(
+      types.map(async (t) => [t.id, await upcomingCountOf(db, t.id, now)] as const),
+    ),
+  );
   if (types.length === 0) {
     return (
       <StatusMessage title="No events yet">
@@ -73,7 +81,12 @@ async function MeetingTypes() {
             <div className={styles.cardHead}>
               <div>
                 <h2 className={styles.cardTitle}>
-                  {t.name} {!t.active && <Badge tone="neutral">Off</Badge>}
+                  {t.name}{" "}
+                  {t.active ? (
+                    <Badge tone="success">● Online</Badge>
+                  ) : (
+                    <Badge tone="neutral">○ Offline</Badge>
+                  )}
                 </h2>
                 <p className={styles.facts}>
                   <span>
@@ -102,7 +115,6 @@ async function MeetingTypes() {
                   )}
                   <span>
                     {t.minNoticeHours} h notice · up to {t.maxDaysAhead} days ahead
-                    {t.bufferMin ? ` · ${t.bufferMin} min gap` : ""}
                     {t.maxPerDay ? ` · max ${t.maxPerDay} a day` : ""}
                   </span>
                 </p>
@@ -112,6 +124,7 @@ async function MeetingTypes() {
                   Open <ExternalLink size={14} aria-hidden />
                 </a>
                 <MeetingTypeSwitch id={t.id} name={t.name} active={t.active} />
+                <DeleteEventButton id={t.id} name={t.name} upcoming={upcoming.get(t.id) ?? 0} />
                 <MeetingTypeDialog
                   meetingTypeId={t.id}
                   name={t.name}
@@ -143,7 +156,8 @@ async function MeetingTypes() {
             <CopyField label={`Booking link for ${t.name}`} value={link} />
             {!t.active && (
               <p className={styles.muted}>
-                Switched off: the link still opens, but says it isn&rsquo;t taking bookings.
+                Offline: the link still opens, but says it isn&rsquo;t taking bookings. Go online to
+                take bookings again.
               </p>
             )}
           </section>

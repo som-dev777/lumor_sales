@@ -150,11 +150,14 @@ export function TimeZonePicker({ tz }: { tz: TimeZoneState }) {
  */
 export function SlotPicker({
   slots,
+  taken = [],
   value,
   onChange,
   tz,
 }: {
   slots: string[];
+  /** Times someone has already taken: shown greyed out, not bookable (D-048). */
+  taken?: string[];
   value: string | null;
   onChange: (iso: string) => void;
   tz: TimeZoneState;
@@ -169,6 +172,15 @@ export function SlotPicker({
     }
     return map;
   }, [slots, zone]);
+  const takenByDay = useMemo(() => {
+    const map = new Map<string, Date[]>();
+    for (const iso of taken) {
+      const d = new Date(iso);
+      const key = dayKey(d, zone);
+      map.set(key, [...(map.get(key) ?? []), d]);
+    }
+    return map;
+  }, [taken, zone]);
   const days = [...byDay.keys()].sort();
   const months = [...new Set(days.map((d) => d.slice(0, 7)))];
   const [picked, setPicked] = useState<string | null>(null);
@@ -177,6 +189,13 @@ export function SlotPicker({
   const month =
     shownMonth && months.includes(shownMonth) ? shownMonth : (day?.slice(0, 7) ?? months[0]);
   const times = day ? byDay.get(day)! : [];
+  // Free and taken times of the day, in order (D-048).
+  const allTimes = day
+    ? [
+        ...times.map((d) => ({ d, taken: false })),
+        ...(takenByDay.get(day) ?? []).map((d) => ({ d, taken: true })),
+      ].sort((a, b) => a.d.getTime() - b.d.getTime())
+    : [];
 
   if (slots.length === 0) {
     return (
@@ -247,18 +266,35 @@ export function SlotPicker({
         </div>
         <div className={styles.timesBox}>
           <h2 className={styles.sectionTitle}>{day ? longDate(day) : "Times"}</h2>
+          {day && (
+            <p className={styles.slotCount}>
+              {times.length} {times.length === 1 ? "time" : "times"} available
+            </p>
+          )}
           <div className={styles.times} role="group" aria-label="Times">
-            {times.map((t) => (
-              <button
-                key={t.toISOString()}
-                type="button"
-                className={styles.time}
-                aria-pressed={value === t.toISOString()}
-                onClick={() => onChange(t.toISOString())}
-              >
-                {formatTime(t, zone)}
-              </button>
-            ))}
+            {allTimes.map(({ d: t, taken: isTaken }) =>
+              isTaken ? (
+                <button
+                  key={t.toISOString()}
+                  type="button"
+                  className={`${styles.time} ${styles.timeTaken}`}
+                  disabled
+                  aria-label={`${formatTime(t, zone)}, taken`}
+                >
+                  {formatTime(t, zone)}
+                </button>
+              ) : (
+                <button
+                  key={t.toISOString()}
+                  type="button"
+                  className={styles.time}
+                  aria-pressed={value === t.toISOString()}
+                  onClick={() => onChange(t.toISOString())}
+                >
+                  {formatTime(t, zone)}
+                </button>
+              ),
+            )}
           </div>
         </div>
       </div>

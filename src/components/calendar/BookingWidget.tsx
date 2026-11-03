@@ -81,6 +81,7 @@ export function BookingWidget({
   profileSlug,
   typeSlug,
   slots,
+  taken = [],
   questions,
   durationMin,
   fields,
@@ -93,6 +94,8 @@ export function BookingWidget({
   profileSlug: string;
   typeSlug: string;
   slots: string[];
+  /** Times already taken: shown greyed out (D-048). */
+  taken?: string[];
   questions: BookingQuestion[];
   durationMin: number;
   /** Which standard fields show and which are required (D-043). */
@@ -150,6 +153,7 @@ export function BookingWidget({
         <h2 className={styles.stepTitle}>Pick a day and time</h2>
         <SlotPicker
           slots={slots}
+          taken={taken}
           value={slot}
           tz={tz}
           onChange={(iso) => {

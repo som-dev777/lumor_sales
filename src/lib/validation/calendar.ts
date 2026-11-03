@@ -135,7 +135,11 @@ export const meetingTypeSchema = z.object({
     .refine((n) => n % 5 === 0, "Use steps of 5 minutes."),
   description: optionalText(1000),
   location: optionalText(500),
-  bufferMin: int(0, 60, "Use 0 to 60 minutes."),
+  // Gaps between meetings are gone (D-048): always 0.
+  bufferMin: z
+    .unknown()
+    .optional()
+    .transform(() => 0),
   minNoticeHours: int(0, 72, "Use 0 to 72 hours."),
   maxDaysAhead: int(1, 90, "Use 1 to 90 days."),
   maxPerDay: z

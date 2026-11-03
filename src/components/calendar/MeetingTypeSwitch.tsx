@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { switchMeetingType } from "@/server/actions/calendar";
 
-/** Turns a meeting type's booking page on or off; the link stays the same (F22). */
+/** Takes an event online or offline; the link stays the same (F22; wording D-048). */
 export function MeetingTypeSwitch({
   id,
   name,
@@ -21,7 +21,7 @@ export function MeetingTypeSwitch({
     <Button
       variant="secondary"
       loading={busy}
-      aria-label={`${active ? "Switch off" : "Switch on"} ${name}`}
+      aria-label={`${active ? "Go offline" : "Go online"}: ${name}`}
       onClick={() =>
         start(async () => {
           const r = await switchMeetingType(id, !active);
@@ -29,7 +29,7 @@ export function MeetingTypeSwitch({
         })
       }
     >
-      {active ? "Switch off" : "Switch on"}
+      {active ? "Go offline" : "Go online"}
     </Button>
   );
 }

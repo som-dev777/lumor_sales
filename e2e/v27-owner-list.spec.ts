@@ -247,3 +247,19 @@ test("v2.7.2: a plan can be deleted; no Archive and no Draft labels", async () =
   await expect(fay.getByRole("link", { name: "Pilot follow-through" })).toHaveCount(0);
   await expect(fay.getByText(/\(draft\)/)).toHaveCount(0);
 });
+
+test("v2.7.5: events show Online or Offline, go offline and online, and can be deleted", async () => {
+  await fay.goto("/calendar/events");
+  const card = shown(fay.getByRole("region", { name: "Lumor demo" }));
+  await expect(card).toContainText("Online");
+  await card.getByRole("button", { name: "Go offline: Lumor demo" }).click();
+  await expect(shown(fay.getByRole("region", { name: "Lumor demo" }))).toContainText("Offline");
+  await shown(fay.getByRole("button", { name: "Go online: Lumor demo" })).click();
+  await expect(shown(fay.getByRole("region", { name: "Lumor demo" }))).toContainText("Online");
+  await expect(fay.getByLabel("Gap after (minutes)")).toHaveCount(0);
+  await shown(fay.getByRole("button", { name: "Delete Lumor demo" })).click();
+  const confirm = fay.getByRole("dialog");
+  await expect(confirm).toContainText("can't be undone");
+  await confirm.getByRole("button", { name: "Delete event" }).click();
+  await expect(fay.getByRole("region", { name: "Lumor demo" })).toHaveCount(0);
+});

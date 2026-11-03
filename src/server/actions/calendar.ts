@@ -25,6 +25,7 @@ import {
   cancelByHost,
   cancelByToken,
   createBooking,
+  deleteMeetingType,
   removeGuest,
   removeTeammate,
   rescheduleByHost,
@@ -83,13 +84,27 @@ export async function saveMeetingTypeAction(
   });
 }
 
+/** Delete an event for good (D-048). */
+export async function deleteMeetingTypeAction(meetingTypeId: string): Promise<ActionResult> {
+  const viewer = await requireUser();
+  if (!id.safeParse(meetingTypeId).success) return { ok: false, error: "Unknown event." };
+  return run(async () => {
+    await deleteMeetingType(getDb(), viewer, meetingTypeId, await appNow());
+    refresh();
+    return { ok: true, message: "Event deleted. Its link no longer works." };
+  });
+}
+
 export async function switchMeetingType(meetingTypeId: string, active: boolean) {
   const viewer = await requireUser();
   if (!id.safeParse(meetingTypeId).success) return { ok: false as const, error: "Unknown." };
   return run(async () => {
     const row = await setMeetingTypeActive(getDb(), viewer, meetingTypeId, active === true);
     refresh();
-    return { ok: true, message: `${row.name} is ${row.active ? "on" : "off"}.` };
+    return {
+      ok: true,
+      message: `${row.name} is ${row.active ? "online: people can book it" : "offline: its link says it isn't taking bookings"}.`,
+    };
   });
 }
 

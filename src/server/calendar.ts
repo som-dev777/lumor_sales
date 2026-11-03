@@ -2,7 +2,7 @@
 // with calendar.manage and audited). Visitors book from the public pages without signing in:
 // each of those changes is checked against the booking link or the booking's private code
 // instead, and audited with the rep as the actor (D-041).
-import { and, asc, desc, eq, gt, gte, inArray, lt, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
 import {
@@ -25,7 +25,15 @@ import {
   type Busy,
   type WeeklyHours,
 } from "@/lib/slots";
-import { addDaysIst, formatIst, istDayRange, istMidnight, toIstDate, todayIst } from "@/lib/time";
+import {
+  addDaysIst,
+  formatIst,
+  fromIstLocal,
+  istDayRange,
+  istMidnight,
+  toIstDate,
+  todayIst,
+} from "@/lib/time";
 import { appUrl, generateToken, hashToken } from "@/lib/tokens";
 import type {
   AvailabilityData,
@@ -234,7 +242,13 @@ export async function listMeetingTypes(db: DbOrTx, ownerId: string) {
   return db
     .select()
     .from(meetingType)
-    .where(and(eq(meetingType.ownerId, ownerId), eq(meetingType.hidden, false)))
+    .where(
+      and(
+        eq(meetingType.ownerId, ownerId),
+        eq(meetingType.hidden, false),
+        isNull(meetingType.deletedAt),
+      ),
+    )
     .orderBy(desc(meetingType.active), asc(meetingType.name));
 }
 
@@ -261,6 +275,7 @@ export async function bookingLinksFor(db: DbOrTx, ownerId: string) {
         eq(meetingType.ownerId, ownerId),
         eq(meetingType.active, true),
         eq(meetingType.hidden, false),
+        isNull(meetingType.deletedAt),
       ),
     )
     .orderBy(asc(meetingType.createdAt));
@@ -329,6 +344,57 @@ const meetingTypeAudit = (m: MeetingTypeRow) => ({
   googleMeet: m.googleMeet,
 });
 
+/**
+ * Deletes an event for good (D-048). One that was never booked is removed; one with meetings is
+ * taken out of every list and its link stops, while its meetings stay on the calendar. Audited.
+ */
+export async function deleteMeetingType(db: Db, actor: Actor, id: string, now = new Date()) {
+  return db.transaction(async (tx) => {
+    const [before] = await tx.select().from(meetingType).where(eq(meetingType.id, id));
+    if (!before || before.deletedAt || before.hidden) {
+      throw new LeadError("That event doesn't exist.");
+    }
+    assertCan(actor, "calendar.manage", { ownerId: before.ownerId });
+    const [{ n: used }] = await tx
+      .select({ n: sql<number>`count(*)` })
+      .from(booking)
+      .where(eq(booking.meetingTypeId, id));
+    if (used === 0) {
+      await tx.delete(meetingType).where(eq(meetingType.id, id));
+    } else {
+      await tx
+        .update(meetingType)
+        .set({ deletedAt: now, active: false })
+        .where(eq(meetingType.id, id));
+    }
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Meeting type",
+      recordId: id,
+      recordName: before.name,
+      action: "Deleted",
+      before: meetingTypeAudit(before),
+      after: used === 0 ? undefined : { keptForMeetings: used },
+    });
+    return { removed: used === 0 };
+  });
+}
+
+/** How many upcoming meetings an event has (for the delete confirmation, D-048). */
+export async function upcomingCountOf(db: DbOrTx, id: string, now = new Date()) {
+  const [{ n }] = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(booking)
+    .where(
+      and(
+        eq(booking.meetingTypeId, id),
+        eq(booking.status, "Confirmed"),
+        gt(booking.startsAt, now),
+      ),
+    );
+  return n;
+}
+
 /** Switches a meeting type's booking page on or off (the link stays the same). */
 export async function setMeetingTypeActive(db: Db, actor: Actor, id: string, active: boolean) {
   return db.transaction(async (tx) => {
@@ -376,6 +442,7 @@ export async function findBookingPage(
         eq(calendarProfile.slug, profileSlug),
         eq(meetingType.slug, typeSlug),
         eq(meetingType.hidden, false),
+        isNull(meetingType.deletedAt),
       ),
     );
   if (!row) return null;
@@ -415,7 +482,8 @@ async function busyFor(
     .select({
       start: booking.startsAt,
       end: booking.endsAt,
-      bufferMin: meetingType.bufferMin,
+      // No gaps between meetings (D-048).
+      bufferMin: sql<number>`0`,
       meetingTypeId: booking.meetingTypeId,
     })
     .from(booking)
@@ -451,7 +519,8 @@ async function busyFor(
 const slotArgs = (page: BookingPage, busy: Busy[], now: Date) => ({
   hours: page.profile.weeklyHours,
   daysOff: page.profile.daysOff,
-  rules: page.type,
+  // No gaps between meetings (D-048), whatever an older event has saved.
+  rules: { ...page.type, bufferMin: 0 },
   busy,
   meetingTypeId: page.type.id,
   now,
@@ -470,7 +539,21 @@ const googleWindow = async (db: Db, page: BookingPage, now: Date) =>
 
 /** The free start times on a booking page. */
 export async function freeSlots(db: Db, page: BookingPage, now = new Date(), exceptId?: string) {
-  if (!page.type.active) return [];
+  return (await bookingSlots(db, page, now, exceptId)).free;
+}
+
+/**
+ * The booking page's times (D-048): the free ones, and the taken ones (booked, a meeting, busy in
+ * Google, or the day's limit reached), which the page shows greyed out. Times inside the
+ * minimum notice or on days off aren't shown at all.
+ */
+export async function bookingSlots(
+  db: Db,
+  page: BookingPage,
+  now = new Date(),
+  exceptId?: string,
+): Promise<{ free: Date[]; taken: Date[] }> {
+  if (!page.type.active) return { free: [], taken: [] };
   const [except, google] = await Promise.all([
     exceptId
       ? db
@@ -481,9 +564,18 @@ export async function freeSlots(db: Db, page: BookingPage, now = new Date(), exc
       : null,
     googleWindow(db, page, now),
   ]);
-  return availableSlots(
-    slotArgs(page, await busyFor(db, page.host.id, now, except ?? null, google), now),
-  );
+  const args = slotArgs(page, await busyFor(db, page.host.id, now, except ?? null, google), now);
+  const free = availableSlots(args);
+  const taken: Date[] = [];
+  const today = todayIst(now);
+  for (let d = 0; d <= page.type.maxDaysAhead; d++) {
+    const date = addDaysIst(today, d);
+    for (const c of explainDay(date, args)) {
+      if (!c.reason || c.reason === "day off" || c.reason.startsWith("inside the")) continue;
+      taken.push(fromIstLocal(`${date}T${c.time}`)!);
+    }
+  }
+  return { free, taken };
 }
 
 export type SlotReportDay = {
@@ -2141,7 +2233,13 @@ async function hiddenTypeTx(tx: DbOrTx, actor: Actor, owner: Host) {
   const [found] = await tx
     .select()
     .from(meetingType)
-    .where(and(eq(meetingType.ownerId, owner.id), eq(meetingType.hidden, true)))
+    .where(
+      and(
+        eq(meetingType.ownerId, owner.id),
+        eq(meetingType.hidden, true),
+        isNull(meetingType.deletedAt),
+      ),
+    )
     .limit(1);
   if (found) return found;
   await ensureProfileTx(tx, actor, owner);

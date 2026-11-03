@@ -7,7 +7,15 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.7.4 and the Gmail setup.
+Next: the owner's QA of v2.7.5 and the Gmail setup.
+
+## [2.7.5] - 2026-11-03
+
+No gaps between meetings; clearer booking times; delete events (D-048).
+
+- The gap between meetings is gone everywhere.
+- The booking page says how many times are available that day and shows taken times greyed out; unavailable dates are black.
+- Events can be deleted for good, after a confirmation. Event cards say Online or Offline, with **Go online** / **Go offline** buttons.
 
 ## [2.7.4] - 2026-11-03
 
