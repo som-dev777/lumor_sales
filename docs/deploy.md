@@ -141,6 +141,20 @@ and their title for the emails ("Co-founder, Lumor").
 variables, `RESEND_API_KEY` and `EMAIL_FROM` must both be set (and the sending domain verified in
 Resend), then **Trigger deploy**. For reminders, `CRON_SECRET` must be set too.
 
+## Email through a Gmail account (no domain needed, D-046)
+
+Use this instead of Resend when you don't want to use your company domain.
+
+1. Create a Gmail account for the Sales Hub (recommended), e.g. lumor.sales.hub@gmail.com.
+2. Turn on **2-Step Verification**: myaccount.google.com → **Security** → **2-Step
+   Verification** → follow the steps (a phone number is enough).
+3. Make an **App Password**: go to **myaccount.google.com/apppasswords**, name it
+   "Lumor Sales Hub", click **Create**, and copy the 16 letters (shown once).
+4. Netlify → Environment variables: add `GMAIL_USER` = the Gmail address and
+   `GMAIL_APP_PASSWORD` = the 16 letters. Optional: `EMAIL_FROM` = `Somnath at Lumor
+<the Gmail address>` to choose the name people see.
+5. **Deploys → Trigger deploy**. Book a test meeting with your own address to check.
+
 ## Calendly (F27, optional)
 
 Only needed if some bookings still happen on Calendly. Calendly's webhooks need a paid Calendly

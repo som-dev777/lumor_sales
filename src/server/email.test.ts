@@ -34,3 +34,67 @@ describe("email through Resend (D-023)", () => {
     quiet.mockRestore();
   });
 });
+
+describe("email through a Gmail account (D-046)", () => {
+  const gmailOn = () => {
+    vi.stubEnv("GMAIL_USER", "lumor.sales.hub@gmail.com");
+    vi.stubEnv("GMAIL_APP_PASSWORD", "abcd efgh ijkl mnop");
+    vi.stubEnv("RESEND_API_KEY", "");
+    vi.stubEnv("EMAIL_FROM", "");
+  };
+
+  it("is used when both Gmail settings are set, instead of Resend", async () => {
+    gmailOn();
+    expect(emailConfigured()).toBe(true);
+    const sent: Record<string, unknown>[] = [];
+    const transport = { sendMail: async (m: Record<string, unknown>) => sent.push(m) };
+    const fetcher = vi.fn();
+    const ok = await sendEmail(
+      {
+        to: ["a@acme.example", "b@acme.example"],
+        cc: ["boss@lumor.tech"],
+        replyTo: "somnath@lumor.tech",
+        subject: "Hello",
+        text: "Hi",
+        html: "<p>Hi</p>",
+        attachments: [
+          { filename: "invite.ics", content: "BEGIN:VCALENDAR", contentType: "text/calendar" },
+        ],
+      },
+      fetcher,
+      transport,
+    );
+    expect(ok).toBe(true);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(sent[0]).toMatchObject({
+      from: "Lumor <lumor.sales.hub@gmail.com>",
+      to: ["a@acme.example", "b@acme.example"],
+      cc: ["boss@lumor.tech"],
+      replyTo: "somnath@lumor.tech",
+      subject: "Hello",
+    });
+  });
+
+  it("keeps EMAIL_FROM only when it's the Gmail address; reports a failure instead of throwing", async () => {
+    gmailOn();
+    vi.stubEnv("EMAIL_FROM", "Somnath at Lumor <lumor.sales.hub@gmail.com>");
+    const sent: Record<string, unknown>[] = [];
+    await sendEmail({ to: "x@y.example", subject: "s", text: "t" }, fetch, {
+      sendMail: async (m) => sent.push(m),
+    });
+    expect(sent[0].from).toBe("Somnath at Lumor <lumor.sales.hub@gmail.com>");
+    vi.stubEnv("EMAIL_FROM", "Hub <hub@lumor.tech>");
+    await sendEmail({ to: "x@y.example", subject: "s", text: "t" }, fetch, {
+      sendMail: async (m) => sent.push(m),
+    });
+    expect(sent[1].from).toBe("Lumor <lumor.sales.hub@gmail.com>");
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const failed = await sendEmail({ to: "x@y.example", subject: "s", text: "t" }, fetch, {
+      sendMail: async () => {
+        throw new Error("Invalid login");
+      },
+    });
+    expect(failed).toBe(false);
+    quiet.mockRestore();
+  });
+});

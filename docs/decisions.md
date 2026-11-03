@@ -890,3 +890,25 @@ replaces it.
      been on leaves every list and their live plans stop ("Plan deleted"), so timelines keep
      their history.
   - **Version 2.7.2** (PATCH).
+
+## D-046: Email through a Gmail account, without buying a domain (owner, 2026-11-03)
+
+- **Date:** 2026-11-03 · **Status:** Accepted
+- **Owner's request:** send the app's emails without using lumor.tech and without buying a
+  domain; a Gmail account is fine.
+- **Why a change was needed:** Resend (D-023) only sends from a domain you own, and gmail.com
+  can't be verified there.
+- **My choices:**
+  - **New option: Gmail.** The app sends through Gmail's mail server (smtp.gmail.com) with a
+    Gmail **App Password**, using the nodemailer library (10.1.7, pinned). This is a stack
+    change, recorded here.
+  - New variables `GMAIL_USER` (the address) and `GMAIL_APP_PASSWORD` (the 16-letter app
+    password, not the normal password). When both are set, Gmail is used. Otherwise Resend, as
+    before, when `RESEND_API_KEY` is set. Without either, no emails (as before).
+  - **From:** Gmail only sends as the account itself, so the sender is `EMAIL_FROM` when it uses
+    that address, otherwise "Lumor <the Gmail address>". **Replies** still go to the rep
+    (Reply-To), as with Resend.
+  - Advice to the owner: use a separate Gmail account for the Sales Hub, not a personal one
+    (prospects see the address). Gmail's limit (about 500 emails a day) is far above our use.
+  - Everything else (calendar files, PDFs, CC) works the same.
+  - **Version 2.7.3** (PATCH).

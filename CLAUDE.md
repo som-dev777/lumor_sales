@@ -17,7 +17,7 @@ Next.js (App Router) + TypeScript · SQLite via Drizzle ORM + libSQL client
 CSS variables (no Tailwind, no inline styles) · Radix UI · Lucide icons ·
 React Hook Form + Zod · TanStack Table · Recharts · date-fns + date-fns-tz
 (Asia/Kolkata) · Vitest + Playwright · ESLint + Prettier · OpenAI API
-(server-side only; D-036) · Resend (planned) · Node.js 22+. Hosting: Netlify.
+(server-side only; D-036) · Resend or Gmail via nodemailer (D-046) · Node.js 22+. Hosting: Netlify.
 All dates are stored in UTC and shown in IST. Weeks run Monday to Sunday.
 
 ## Data changes
@@ -79,7 +79,7 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-11-03): v2.7.2 (D-045 plans/calendar fixes) and v2.7.1 (Today follow-ups, D-044) on top of v2.7.0, the owner's list of 3 November (D-043): events, reminders, booking sync,
+Done (2026-11-03): v2.7.3 (Gmail email, D-046), v2.7.2 (D-045 plans/calendar fixes) and v2.7.1 (Today follow-ups, D-044) on top of v2.7.0, the owner's list of 3 November (D-043): events, reminders, booking sync,
 Calendly (F27), Schedule a meeting, Today backlogs, custom plan tasks, no approvals, reports you
 can send. The owner checks it on the live site (docs/qa-checklist.md section 14). Work through the
 owner's lists without asking questions; report once at the end with a checklist. Each push to

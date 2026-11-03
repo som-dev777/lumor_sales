@@ -136,7 +136,8 @@ async function Reports({ searchParams }: Pick<PageProps<"/reports">, "searchPara
           {!emailConfigured() && (
             <p className={styles.muted}>
               Email isn&rsquo;t set up here, so scheduled reports are saved in Report history but
-              not emailed. Add RESEND_API_KEY and EMAIL_FROM (see docs/deploy.md).
+              not emailed. Add GMAIL_USER and GMAIL_APP_PASSWORD (or the Resend keys); see
+              docs/deploy.md.
             </p>
           )}
           {schedules.length === 0 ? (

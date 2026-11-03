@@ -7,7 +7,13 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.7.2.
+Next: the owner's QA of v2.7.2 and the Gmail setup.
+
+## [2.7.3] - 2026-11-03
+
+Emails can go out through a Gmail account, so no domain is needed (D-046).
+
+- New: set GMAIL_USER and GMAIL_APP_PASSWORD (a Gmail App Password) and every email (booking confirmations, reminders, rep emails, invitations, reports) is sent from that Gmail account. Replies still go to the rep. Resend still works if you set it up later instead.
 
 ## [2.7.2] - 2026-11-03
 
