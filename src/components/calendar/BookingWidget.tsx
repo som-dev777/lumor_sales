@@ -19,13 +19,7 @@ import {
 } from "@/lib/validation/calendar";
 import { bookSlot } from "@/server/actions/calendar";
 import { PhoneField } from "./PhoneField";
-import {
-  formatDay,
-  formatTime,
-  SlotPicker,
-  useTimeZone,
-  zoneName,
-} from "./SlotPicker";
+import { formatDay, formatTime, SlotPicker, useTimeZone, zoneName } from "./SlotPicker";
 import styles from "./calendar.module.scss";
 
 type Answer = string | string[];
