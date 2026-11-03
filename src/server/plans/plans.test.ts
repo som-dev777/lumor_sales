@@ -3,8 +3,12 @@ import { auditLog } from "@/lib/db/schema";
 import { createTestDb, insertTestUser } from "@/lib/db/test-db";
 import { PermissionError, type Actor } from "@/lib/permissions";
 import { planSchema } from "@/lib/validation/plans";
+import { personSchema } from "@/lib/validation/leads";
+import { createPerson } from "../leads/people";
+import { enrolPeople, liveEnrolment } from "./enrolment";
 import {
   createPlan,
+  deletePlan,
   duplicatePlan,
   getPlan,
   listPlans,
@@ -84,7 +88,8 @@ describe("plans (F17)", () => {
     );
     expect(await getPlan(t.db, other, plan.id)).toBe("forbidden");
     expect((await getPlan(t.db, admin, plan.id)) !== "forbidden").toBe(true);
-    expect((await listPlans(t.db, rep, "mine")).map((p) => p.name)).toEqual(["Mine"]);
+    // "Made by me" lists every plan they made, Official or Personal (D-045).
+    expect((await listPlans(t.db, rep, "mine")).map((p) => p.name)).toEqual(["Mine", "Team"]);
   });
 
   it("changing the steps saves a new version; renaming alone doesn't", async () => {
@@ -156,5 +161,33 @@ describe("plans (F17)", () => {
       customPurpose: "Case study follow-up",
       templatePurpose: null,
     });
+  });
+});
+
+describe("deleting a plan (D-045)", () => {
+  it("an unused plan is removed; a used one leaves the lists and its people's plans stop", async () => {
+    const { plan: unused } = await createPlan(t.db, rep, outreach({ name: "Unused" }));
+    await expect(deletePlan(t.db, other, unused.id)).rejects.toThrow(PermissionError);
+    expect(await deletePlan(t.db, rep, unused.id)).toEqual({ removed: true });
+    expect(await getPlan(t.db, rep, unused.id)).toBeNull();
+
+    const { plan: used } = await createPlan(t.db, rep, outreach({ name: "Used" }));
+    const p = await createPerson(
+      t.db,
+      rep,
+      personSchema.parse({
+        fullName: "On A Plan",
+        linkedinUrl: "linkedin.com/in/on-a-plan",
+        companyName: "Acme",
+        stage: "Prospect",
+      }),
+    );
+    await enrolPeople(t.db, rep, [p.id], used.id);
+    expect(await deletePlan(t.db, rep, used.id)).toEqual({ removed: false });
+    expect(await getPlan(t.db, rep, used.id)).toBeNull();
+    expect((await listPlans(t.db, rep, "all")).map((x) => x.name)).not.toContain("Used");
+    expect(await liveEnrolment(t.db, p.id)).toBeNull();
+    const audit = (await t.db.select().from(auditLog)).filter((a) => a.action === "Deleted");
+    expect(audit.map((a) => a.recordName)).toEqual(["Unused", "Used"]);
   });
 });

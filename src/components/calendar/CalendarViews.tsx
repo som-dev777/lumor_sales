@@ -150,11 +150,15 @@ export function TimeGridView({
                     styles[`r${p.row}`],
                     styles[`s${Math.min(p.span, GRID_ROWS)}`],
                     styles[`lane${p.lane}of${p.lanes}`],
+                    // 30 minutes or less: time and title on one line, so the title shows (D-045).
+                    p.span <= 2 ? styles.eventShort : "",
                   ].join(" ")}
                   title={`${label(p.item)} (${people(p.item)})`}
                 >
                   <span className={styles.eventTime}>
-                    {formatIst(p.item.startsAt, "h:mm")}–{formatIst(p.item.endsAt, "h:mm aaa")}
+                    {p.span <= 2
+                      ? formatIst(p.item.startsAt, "h:mm aaa")
+                      : `${formatIst(p.item.startsAt, "h:mm")}–${formatIst(p.item.endsAt, "h:mm aaa")}`}
                   </span>
                   <span className={styles.eventTitle}>{label(p.item)}</span>
                   {p.span >= 3 && <span className={styles.eventPeople}>{people(p.item)}</span>}

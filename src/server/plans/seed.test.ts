@@ -44,17 +44,12 @@ describe("seed plans (F17, D-033)", () => {
     expect(steps[0].script).toBeNull(); // no note on the connection request
   });
 
-  it("the three drafts wait in Approvals; running it again changes nothing", async () => {
+  it("all four plans are ready to use, without (draft); running it again changes nothing", async () => {
     const first = await seedPlans(t.db, ownerId);
-    expect(first.added).toHaveLength(4);
-    const drafts = await t.db.select().from(plan).where(eq(plan.proposalStatus, "Proposed"));
-    expect(drafts.map((d) => d.planType).sort()).toEqual([
-      "Meeting follow-up",
-      "Onboarding",
-      "Trial",
-    ]);
-    expect(drafts.every((d) => d.type === "Personal")).toBe(true);
-    expect(await t.db.select().from(proposal)).toHaveLength(3);
+    expect(first.added).toEqual(["Official Outreach", "Meeting follow-up", "Trial", "Onboarding"]);
+    const rows = await t.db.select().from(plan);
+    expect(rows.every((d) => d.type === "Official" && d.proposalStatus === "None")).toBe(true);
+    expect(await t.db.select().from(proposal)).toHaveLength(0);
     const again = await seedPlans(t.db, ownerId);
     expect(again).toEqual({ added: [], skipped: first.added });
   });

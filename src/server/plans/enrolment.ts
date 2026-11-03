@@ -312,8 +312,7 @@ export async function enrolPeople(
   const result: EnrolResult = { enrolled: [], skipped: [] };
   const pl = await loadPlan(db, planId);
   assertCan(actor, "plan.use", pl);
-  if (pl.status !== "Active") throw new PlanError("That plan is archived.");
-  if (pl.proposalStatus === "Proposed") throw new PlanError("That plan is waiting for approval.");
+  if (pl.status !== "Active") throw new PlanError("That plan was deleted.");
   const steps = await stepsOf(db, planId, pl.currentVersion);
   if (steps.length === 0) throw new PlanError("That plan has no steps.");
   const today = todayIst(now);

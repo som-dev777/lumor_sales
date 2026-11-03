@@ -1,7 +1,7 @@
 // Seed plans (F17). The Official Outreach plan is exactly the PRD's, as decided in D-033: five
 // steps, waits 2 → 4 → 7 → 10, with step 4 trying Call, then Email, then LinkedIn. The Meeting
-// follow-up, Trial and Onboarding plans are drafts: seeded as Proposed so an Admin approves
-// them (Approvals) before use. Safe to run again: existing plans (same name) are left alone.
+// follow-up, Trial and Onboarding plans are ready to use too (no approvals, D-045). Safe to run
+// again: existing plans (same name) are left alone.
 import { eq } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit";
 import type { Db } from "@/lib/db/client";
@@ -39,9 +39,9 @@ export const SEED_PLANS: SeedPlan[] = [
     ],
   },
   {
-    name: "Meeting follow-up (draft)",
+    name: "Meeting follow-up",
     planType: "Meeting follow-up",
-    draft: true,
+    draft: false,
     steps: [
       { channels: only("LinkedIn message"), templatePurpose: "Post-demo recap", waitDays: 0 },
       {
@@ -65,9 +65,9 @@ export const SEED_PLANS: SeedPlan[] = [
     ],
   },
   {
-    name: "Trial (draft)",
+    name: "Trial",
     planType: "Trial",
-    draft: true,
+    draft: false,
     steps: [
       {
         channels: only("Manual task"),
@@ -104,9 +104,9 @@ export const SEED_PLANS: SeedPlan[] = [
     ],
   },
   {
-    name: "Onboarding (draft)",
+    name: "Onboarding",
     planType: "Onboarding",
-    draft: true,
+    draft: false,
     steps: [
       {
         channels: only("WhatsApp"),

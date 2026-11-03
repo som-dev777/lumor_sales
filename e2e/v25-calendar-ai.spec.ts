@@ -55,8 +55,9 @@ test("exit check: a rep sets hours, creates a meeting type and copies its link",
   await shown(rep.getByRole("button", { name: "New event" })).click();
   const dialog = rep.getByRole("dialog");
   await dialog.getByLabel("Name", { exact: true }).fill("Lumor demo");
-  await expect(dialog.getByLabel("Link name")).toHaveValue("lumor-demo");
-  await dialog.getByLabel("Link name").fill("demo");
+  // A new event gets a random link code, not one from its name (D-045).
+  await expect(dialog.getByLabel("Link code")).toHaveValue(/^[a-z0-9]{8}$/);
+  await dialog.getByLabel("Link code").fill("demo");
   await dialog.getByLabel("Minimum notice (hours)").fill("1");
   await dialog
     .getByLabel("Online: meeting link or phone (optional)")

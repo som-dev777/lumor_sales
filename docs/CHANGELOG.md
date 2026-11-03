@@ -7,7 +7,18 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.7.1.
+Next: the owner's QA of v2.7.2.
+
+## [2.7.2] - 2026-11-03
+
+Plans, calendar and Today fixes from the owner's second list of 3 November (D-045).
+
+- Plans: Delete replaces Archive; the seeded plans lose "(draft)" and are ready to use; tabs All plans, Official, Made by me. The Enrol button lines up with the plan dropdown.
+- Events get a random link code that doesn't change when you rename them, so shared links keep working.
+- Availability: **Why some times are missing** shows, for the next 7 days, your hours, what took time out (Google Calendar busy times, meetings, gaps) and how many times each event offers, and warns when Google couldn't be read. Days that can't be booked show in subtle red on the booking page.
+- Meeting pop-up: Add without an icon; **Custom: any email address…** adds a client or colleague as a guest (invited through Google, or by our email); it closes at once. Fixed: after a success message, the first Escape only closed the message; now Escape closes the pop-up straight away.
+- Today: **Your meetings** lists today's and the next 7 days' meetings with Join and Details. The Calendar number in the sidebar now counts today's meetings; notifications stay on the bell.
+- Short meetings show their title on one line in the week and day views.
 
 ## [2.7.1] - 2026-11-03
 

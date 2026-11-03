@@ -112,7 +112,7 @@ function SidebarView({
                     {(counts[item.href] ?? 0) > 0 && (
                       <span
                         className={styles.count}
-                        aria-label={`${counts[item.href]} ${item.href === "/calendar" ? "new" : "waiting"}`}
+                        aria-label={`${counts[item.href]} ${item.href === "/calendar" ? "today" : "waiting"}`}
                       >
                         {counts[item.href]}
                       </span>

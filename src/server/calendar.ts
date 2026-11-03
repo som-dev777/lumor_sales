@@ -16,8 +16,15 @@ import {
 } from "@/lib/db/schema";
 import { buildIcs, googleCalendarLink, type CalendarEvent } from "@/lib/ics";
 import { assertCan, can, PermissionError, type Actor } from "@/lib/permissions";
-import { availableSlots, DEFAULT_HOURS, isOffered, type Busy, type WeeklyHours } from "@/lib/slots";
-import { formatIst, istDayRange, istMidnight, toIstDate, todayIst } from "@/lib/time";
+import {
+  availableSlots,
+  DEFAULT_HOURS,
+  isOffered,
+  isoWeekday,
+  type Busy,
+  type WeeklyHours,
+} from "@/lib/slots";
+import { addDaysIst, formatIst, istDayRange, istMidnight, toIstDate, todayIst } from "@/lib/time";
 import { appUrl, generateToken, hashToken } from "@/lib/tokens";
 import type {
   AvailabilityData,
@@ -50,6 +57,7 @@ import {
   createGoogleEvent,
   deleteGoogleEvent,
   googleBusy,
+  googleBusyCheck,
   updateGoogleEvent,
 } from "./google/google";
 import { LeadError } from "./leads/companies";
@@ -461,6 +469,86 @@ export async function freeSlots(db: Db, page: BookingPage, now = new Date(), exc
   return availableSlots(
     slotArgs(page, await busyFor(db, page.host.id, now, except ?? null, google), now),
   );
+}
+
+export type SlotReportDay = {
+  date: string;
+  /** "10:00–18:00, 19:00–20:00", or empty when no hours are set that day. */
+  hours: string;
+  dayOff: boolean;
+  /** What takes time out of the hours: Google busy times and meetings (with gaps). */
+  blocked: { from: string; to: string; reason: string }[];
+  /** Free times offered that day, per event. */
+  offered: { name: string; count: number }[];
+};
+
+/**
+ * Why some times are missing (D-045): for the next days, the rep's hours, what blocks them
+ * (Google Calendar busy times, meetings) and how many times each event offers. Also whether
+ * Google answered: if it didn't, the booking page ignores Google, so slots can come and go.
+ */
+export async function slotReport(db: Db, ownerId: string, now = new Date(), days = 7) {
+  const [profile] = await db
+    .select()
+    .from(calendarProfile)
+    .where(eq(calendarProfile.userId, ownerId));
+  if (!profile) return null;
+  const host = await loadHost(db, ownerId);
+  const types = (await listMeetingTypes(db, ownerId)).filter((t) => t.active);
+  const until = new Date(now.getTime() + (days + 1) * 24 * 3600_000);
+  const google = await googleBusyCheck(db, ownerId, now, until);
+  const meetings = await busyFor(db, ownerId, now, null, []);
+  const today = todayIst(now);
+  const time = (d: Date) => formatIst(d, "h:mm aaa");
+  const perType = types.map((type) => ({
+    name: type.name,
+    slots: availableSlots(
+      slotArgs(
+        { host, profile, type },
+        [...meetings, ...google.busy.map((g) => ({ ...g, bufferMin: 0, meetingTypeId: "google" }))],
+        now,
+      ),
+    ),
+  }));
+  const out: SlotReportDay[] = [];
+  for (let i = 0; i < days; i++) {
+    const date = addDaysIst(today, i);
+    const { start, end } = istDayRange(date);
+    const ranges = profile.weeklyHours[String(isoWeekday(date))] ?? [];
+    const inDay = (b: { start: Date; end: Date }) => b.start < end && b.end > start;
+    out.push({
+      date,
+      hours: ranges.map((r) => `${r.start}–${r.end}`).join(", "),
+      dayOff: profile.daysOff.includes(date),
+      blocked: [
+        ...google.busy.filter(inDay).map((b) => ({
+          from: time(b.start),
+          to: time(b.end),
+          reason: "Busy in your Google Calendar",
+        })),
+        ...meetings.filter(inDay).map((b) => ({
+          from: time(b.start),
+          to: time(new Date(b.end.getTime() + b.bufferMin * 60_000)),
+          reason: b.bufferMin ? "A meeting (and its gap)" : "A meeting",
+        })),
+      ],
+      offered: perType.map((t) => ({
+        name: t.name,
+        count: t.slots.filter((s) => toIstDate(s) === date).length,
+      })),
+    });
+  }
+  return {
+    google: google.ok,
+    days: out,
+    rules: types.map((t) => ({
+      name: t.name,
+      durationMin: t.durationMin,
+      minNoticeHours: t.minNoticeHours,
+      maxPerDay: t.maxPerDay,
+      bufferMin: t.bufferMin,
+    })),
+  };
 }
 
 /** The next free times of each of the rep's active meeting types (Availability preview). */
@@ -1190,6 +1278,97 @@ export async function addTeammate(
   return { busy, name: mate.name };
 }
 
+/**
+ * Adds a guest by email (D-045): a client, a colleague outside the Sales Hub, anyone. They're
+ * invited to the Google event (Google emails them) or, without Google, get our invitation with a
+ * calendar file. Kept with the meeting's CC list, so they stay when it moves.
+ */
+export async function addGuest(
+  db: Db,
+  actor: Actor,
+  bookingId: string,
+  email: string,
+  now = new Date(),
+) {
+  const b = await loadOpenBooking(db, bookingId, now);
+  if (!(await canChangeTeam(db, actor, b))) {
+    throw new PermissionError("Only the host, people on the meeting or an Admin can do that.");
+  }
+  const address = email.trim().toLowerCase();
+  const taken = [b.inviteeEmail, ...b.toEmails, ...b.ccEmails];
+  if (taken.includes(address)) throw new LeadError(`${address} is already on this meeting.`);
+  if (b.ccEmails.length >= 20) throw new LeadError("At most 20 guests.");
+  const page = await pageOf(db, b);
+  const after = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(booking)
+      .set({ ccEmails: [...b.ccEmails, address] })
+      .where(eq(booking.id, b.id))
+      .returning();
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Booking",
+      recordId: b.id,
+      recordName: `${nameOf(b, page)} with ${b.inviteeName}`,
+      action: "Updated",
+      before: { guests: b.ccEmails },
+      after: { guests: row.ccEmails },
+    });
+    return row;
+  });
+  const team = await teamOf(db, after);
+  await syncAttendees(db, after, page, team);
+  if (!after.googleEventId && emailConfigured()) {
+    try {
+      await send(
+        address,
+        page.host.email,
+        invitationMail({ ...inviteeMailOf(after, page, null), manageUrl: null }),
+        buildIcs(eventOf(after, page, "REQUEST", team)),
+      );
+    } catch (e) {
+      console.error("Guest email failed:", e instanceof Error ? e.message : e);
+    }
+  }
+  return after;
+}
+
+/** Removes a guest added by email (D-045). */
+export async function removeGuest(
+  db: Db,
+  actor: Actor,
+  bookingId: string,
+  email: string,
+  now = new Date(),
+) {
+  const b = await loadOpenBooking(db, bookingId, now);
+  if (!(await canChangeTeam(db, actor, b))) {
+    throw new PermissionError("Only the host, people on the meeting or an Admin can do that.");
+  }
+  const address = email.trim().toLowerCase();
+  if (!b.ccEmails.includes(address)) throw new LeadError("That guest isn't on this meeting.");
+  const page = await pageOf(db, b);
+  const after = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(booking)
+      .set({ ccEmails: b.ccEmails.filter((e) => e !== address) })
+      .where(eq(booking.id, b.id))
+      .returning();
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Booking",
+      recordId: b.id,
+      recordName: `${nameOf(b, page)} with ${b.inviteeName}`,
+      action: "Updated",
+      before: { guests: b.ccEmails },
+      after: { guests: row.ccEmails },
+    });
+    return row;
+  });
+  await syncAttendees(db, after, page, await teamOf(db, after));
+  return after;
+}
+
 /** Removes a teammate (anyone who may change the team; a teammate may remove themselves). */
 export async function removeTeammate(
   db: Db,
@@ -1272,10 +1451,14 @@ async function googleProblem(db: Db, b: BookingRow, page: BookingPage, what: str
 }
 
 const attendeesOf = (b: BookingRow, team: TeamMember[]) => {
-  // A meeting the rep scheduled invites its To and CC lists (D-043).
-  const guests = b.toEmails.length
-    ? [...b.toEmails, ...b.ccEmails].map((email) => ({ email, name: email }))
-    : [{ email: b.inviteeEmail, name: b.inviteeName }];
+  // The person who booked (or a scheduled meeting's To list), then the CC list and any guests
+  // added by email (D-043, D-045).
+  const guests = [
+    ...(b.toEmails.length
+      ? b.toEmails.map((email) => ({ email, name: email }))
+      : [{ email: b.inviteeEmail, name: b.inviteeName }]),
+    ...b.ccEmails.map((email) => ({ email, name: email })),
+  ];
   return [...guests, ...team.filter((m) => !m.host).map((m) => ({ email: m.email, name: m.name }))];
 };
 
@@ -1477,6 +1660,21 @@ export async function meetingDetail(db: DbOrTx, id: string): Promise<MeetingDeta
 /** The rep's confirmed meetings today (IST), hosting or as a teammate, for Today. */
 export async function meetingsToday(db: DbOrTx, userId: string, now = new Date()) {
   const { start, end } = istDayRange(todayIst(now));
+  return myMeetings(db, userId, start, end);
+}
+
+/** The rep's confirmed meetings from tomorrow for `days` days (D-045: on Today too). */
+export async function upcomingMeetings(db: DbOrTx, userId: string, now = new Date(), days = 7) {
+  const tomorrow = addDaysIst(todayIst(now), 1);
+  return myMeetings(
+    db,
+    userId,
+    istDayRange(tomorrow).start,
+    istDayRange(addDaysIst(tomorrow, days - 1)).end,
+  );
+}
+
+async function myMeetings(db: DbOrTx, userId: string, start: Date, end: Date) {
   return db
     .select({
       id: booking.id,

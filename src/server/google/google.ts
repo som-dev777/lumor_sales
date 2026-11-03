@@ -366,8 +366,21 @@ export async function googleBusy(
   from: Date,
   to: Date,
 ): Promise<{ start: Date; end: Date }[]> {
+  return (await googleBusyCheck(db, userId, from, to)).busy;
+}
+
+/**
+ * The rep's Google busy times, and whether Google answered (D-045): null = not connected,
+ * false = Google couldn't be read (the slots then ignore Google), true = read.
+ */
+export async function googleBusyCheck(
+  db: Db,
+  userId: string,
+  from: Date,
+  to: Date,
+): Promise<{ ok: boolean | null; busy: { start: Date; end: Date }[] }> {
   const token = await accessToken(db, userId);
-  if (!token) return [];
+  if (!token) return { ok: (await connectionView(db, userId)) ? false : null, busy: [] };
   try {
     const r = await fetchJson(`${API}/freeBusy`, {
       method: "POST",
@@ -380,12 +393,15 @@ export async function googleBusy(
     });
     const busy = (r.body.calendars as { primary?: { busy?: { start: string; end: string }[] } })
       ?.primary?.busy;
-    if (!r.ok || !Array.isArray(busy)) return [];
-    return busy
-      .map((b) => ({ start: new Date(b.start), end: new Date(b.end) }))
-      .filter((b) => !Number.isNaN(b.start.getTime()) && b.end > b.start);
+    if (!r.ok || !Array.isArray(busy)) return { ok: false, busy: [] };
+    return {
+      ok: true,
+      busy: busy
+        .map((b) => ({ start: new Date(b.start), end: new Date(b.end) }))
+        .filter((b) => !Number.isNaN(b.start.getTime()) && b.end > b.start),
+    };
   } catch (err) {
     console.error("Google busy check failed:", err instanceof Error ? err.message : err);
-    return [];
+    return { ok: false, busy: [] };
   }
 }

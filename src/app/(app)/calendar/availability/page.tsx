@@ -12,9 +12,9 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { appNow } from "@/lib/clock";
 import { getDb } from "@/lib/db/client";
 import { requireUser } from "@/lib/session";
-import { formatIst, todayIst } from "@/lib/time";
+import { formatIst, formatIstDate, todayIst } from "@/lib/time";
 import { appUrl } from "@/lib/tokens";
-import { listMeetingTypes, previewSlots, profileView } from "@/server/calendar";
+import { listMeetingTypes, previewSlots, profileView, slotReport } from "@/server/calendar";
 import { connectionView, googleConfigured } from "@/server/google/google";
 
 export const metadata: Metadata = { title: "Availability" };
@@ -52,11 +52,12 @@ async function Availability({
   const { google } = await searchParams;
   const db = getDb();
   const now = await appNow();
-  const [profile, types, connected, preview] = await Promise.all([
+  const [profile, types, connected, preview, report] = await Promise.all([
     profileView(db, viewer),
     listMeetingTypes(db, viewer.id),
     connectionView(db, viewer.id),
     previewSlots(db, viewer.id, now),
+    slotReport(db, viewer.id, now),
   ]);
   const result = typeof google === "string" ? GOOGLE_RESULT[google] : undefined;
   return (
@@ -151,6 +152,69 @@ async function Availability({
           </ul>
         )}
       </section>
+
+      {report && <WhyMissing report={report} />}
     </div>
+  );
+}
+
+/** Why some times are missing (D-045): each day's hours and what takes time out of them. */
+function WhyMissing({ report }: { report: NonNullable<Awaited<ReturnType<typeof slotReport>>> }) {
+  return (
+    <section className={styles.card} aria-label="Why some times are missing">
+      <h2 className={styles.cardTitle}>Why some times are missing</h2>
+      <p className={styles.muted}>
+        The next 7 days. A time is offered only inside your hours, after the event&rsquo;s minimum
+        notice, and when nothing else is booked then.{" "}
+        {report.rules
+          .map(
+            (r) =>
+              `${r.name}: ${r.durationMin} min, ${r.minNoticeHours} h notice${r.bufferMin ? `, ${r.bufferMin} min gap` : ""}${r.maxPerDay ? `, at most ${r.maxPerDay} a day` : ""}.`,
+          )
+          .join(" ")}
+      </p>
+      {report.google === false && (
+        <Alert tone="warning">
+          Google Calendar couldn&rsquo;t be read just now, so your Google busy times are ignored and
+          more times show than you may expect. Disconnect and connect Google again above.
+        </Alert>
+      )}
+      {report.google === true && (
+        <p className={styles.muted}>
+          Your Google Calendar is checked: anything marked busy there (including all-day events set
+          to Busy) removes those times.
+        </p>
+      )}
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th>Your hours</th>
+              <th>Taken out</th>
+              <th>Times offered</th>
+            </tr>
+          </thead>
+          <tbody>
+            {report.days.map((d) => (
+              <tr key={d.date}>
+                <td>{formatIstDate(d.date, "EEE d MMM")}</td>
+                <td>{d.dayOff ? "Day off" : d.hours || "No hours"}</td>
+                <td>
+                  {d.blocked.length === 0
+                    ? "—"
+                    : d.blocked.map((b, i) => (
+                        <div key={i}>
+                          {b.from}–{b.to}: {b.reason}
+                        </div>
+                      ))}
+                </td>
+                <td>{d.offered.map((o) => `${o.name}: ${o.count}`).join(" · ") || "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }

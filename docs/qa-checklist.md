@@ -398,6 +398,22 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
 - [ ] 14.24 Sign in as the teammate: the bell shows the report; **Reports → Shared with me** lists
       it and it opens.
 
+**v2.7.2**
+
+- [ ] 14.26 A person's page → **Plan**: the **Enrol** button sits level with the plan dropdown.
+- [ ] 14.27 The sidebar's **Calendar** number = your meetings today; new bookings show on the bell.
+- [ ] 14.28 **Events → New event**: the **Link code** is random (e.g. k7m2q9xa). Rename the event
+      later: the link stays the same.
+- [ ] 14.29 **Availability → Why some times are missing**: each day's hours, what's taken out
+      (Google busy times, meetings) and times offered. On your booking page, unbookable days are
+      in subtle red.
+- [ ] 14.30 Open a meeting → **Add someone to the meeting → Custom: any email address…** → type an
+      email → **Add**. They appear as Guest and get the invite (in Google Meet too when
+      connected). Close the pop-up: it closes at once.
+- [ ] 14.31 **Today → Your meetings**: today's and the next 7 days' meetings, with **Join** and
+      **Details**.
+- [ ] 14.32 **Plans**: no "(draft)" names, no Archive; open one of your plans → **Delete**.
+
 **Calendly (only if you still use it)**
 
 - [ ] 14.25 Follow docs/deploy.md → "Calendly". Book on Calendly: the person gets Meeting booked

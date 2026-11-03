@@ -858,3 +858,35 @@ replaces it.
     sections, plus Snooze and Open. Logging what you did stays on the person's page.
   - The Team tab and the Backlog badges use the same rules, so they count these too.
   - **Version 2.7.1** (PATCH): a fix to Today.
+
+## D-045: Owner's list of 3 November, round 2: plans, calendar, guests, Today meetings (owner, 2026-11-03)
+
+- **Date:** 2026-11-03 · **Status:** Accepted
+- **Owner's requests and my choices:**
+  1. **Plan panel:** the Enrol/Switch button lines up with the plan dropdown.
+  2. **Calendar badge:** the sidebar's Calendar number now means **meetings you have today**;
+     notifications (including new bookings) live only on the bell. Meetings of 30 minutes or
+     less show time and title on one line in the week and day views, so the title isn't cut.
+  3. **Event links:** a new event gets a random 8-character **link code** (e.g.
+     /book/somnath/k7m2q9xa) that never follows the name, so renaming an event keeps links that
+     were shared. It can still be edited. Existing events keep their links.
+  4. **Missing slots:** the slot rules match the weekly hours; times disappear because of
+     Google Calendar busy times (any event marked Busy, including all-day ones), meetings and
+     their gaps, and minimum notice. When Google can't be read, its busy times are ignored, so
+     slots can come and go. Availability now has **Why some times are missing**: each of the next
+     7 days with your hours, what took time out (and why), and the times offered per event, plus
+     a warning when Google couldn't be read. On the booking page, days that can't be booked
+     (past days, days without hours, full days) have a subtle red background and red text.
+  5. **Meeting pop-up:** the Add button is just "Add". The dropdown ends with **Custom: any email
+     address…** to add anyone (client, colleague) as a guest. Guests join the Google event
+     (Google emails them) or, without Google, get our invitation with a calendar file; they're
+     kept with the meeting's CC list, can be removed, and stay when it moves. The pop-up closes
+     at once instead of waiting for the page.
+  6. **Today:** **Your meetings** lists today's meetings and the next 7 days, each with **Join**
+     (when there's a link) and **Details** (opens it on the calendar).
+  7. **Plans:** no Archive and no approval leftovers. The seeded plans lose "(draft)" and become
+     ordinary Official plans (migration 0015). Tabs: **All plans** (default), Official, **Made by
+     me**. **Delete** replaces Archive: an unused plan is removed for good; a plan people have
+     been on leaves every list and their live plans stop ("Plan deleted"), so timelines keep
+     their history.
+  - **Version 2.7.2** (PATCH).

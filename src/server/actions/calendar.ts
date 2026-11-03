@@ -16,13 +16,16 @@ import {
   bookingFormSchema,
   meetingTypeSchema,
   scheduleMeetingSchema,
+  workEmail,
 } from "@/lib/validation/calendar";
 import {
+  addGuest,
   addTeammate,
   BookingFieldsError,
   cancelByHost,
   cancelByToken,
   createBooking,
+  removeGuest,
   removeTeammate,
   rescheduleByHost,
   rescheduleByToken,
@@ -184,6 +187,33 @@ export async function addTeammateAction(bookingId: string, userId: string) {
         ? `${r.name} added. Heads-up: they already have something at that time.`
         : `${r.name} added and notified.`,
     };
+  });
+}
+
+/** Add a guest to a meeting by email (D-045). */
+export async function addGuestAction(bookingId: string, email: string) {
+  const viewer = await requireUser();
+  if (!id.safeParse(bookingId).success) return { ok: false as const, error: "Unknown booking." };
+  const parsed = workEmail.safeParse(email ?? "");
+  if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0].message };
+  const now = await appNow();
+  return run(async () => {
+    await addGuest(getDb(), viewer, bookingId, parsed.data, now);
+    refresh();
+    return { ok: true, message: `${parsed.data} added and invited.` };
+  });
+}
+
+export async function removeGuestAction(bookingId: string, email: string) {
+  const viewer = await requireUser();
+  if (!id.safeParse(bookingId).success || typeof email !== "string" || email.length > 200) {
+    return { ok: false as const, error: "Unknown." };
+  }
+  const now = await appNow();
+  return run(async () => {
+    await removeGuest(getDb(), viewer, bookingId, email, now);
+    refresh();
+    return { ok: true, message: "Guest removed." };
   });
 }
 

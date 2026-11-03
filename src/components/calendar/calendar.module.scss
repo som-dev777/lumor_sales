@@ -618,7 +618,7 @@
   font-weight: var(--weight-semibold);
   cursor: pointer;
 
-  &:hover {
+  &:hover:not(:disabled) {
     background: var(--color-primary);
     color: var(--color-text-on-primary);
   }
@@ -627,11 +627,13 @@
     @include focus-ring;
   }
 
+  // Days that can't be booked (past days, days without hours, full days): a subtle red (D-045).
   &:disabled {
-    background: transparent;
-    color: var(--color-text-muted);
+    background: var(--color-danger-soft);
+    color: var(--color-danger-text);
     font-weight: var(--weight-regular);
-    cursor: default;
+    opacity: 0.75;
+    cursor: not-allowed;
   }
 
   &[aria-pressed="true"] {
@@ -995,11 +997,17 @@
 
 .addMate {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--space-2);
 
-  > :first-child {
+  > :not(button) {
     flex: 1;
+    min-width: 180px;
+  }
+
+  > button {
+    min-height: 40px;
   }
 }
 
@@ -1055,4 +1063,72 @@
 
 .dim {
   opacity: 0.35;
+}
+
+// Your meetings on Today (D-045).
+.meetingRows {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.meetingRow {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  @include mobile {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+}
+
+.meetingWhen,
+.meetingWhat {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.meetingButtons {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.joinSmall {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+  font-weight: var(--weight-semibold);
+
+  &:hover {
+    text-decoration: none;
+    opacity: 0.9;
+  }
+}
+
+.detailsLink {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+
+  &:hover {
+    text-decoration: none;
+    border-color: var(--color-primary);
+  }
 }

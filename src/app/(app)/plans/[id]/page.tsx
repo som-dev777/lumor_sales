@@ -43,8 +43,6 @@ async function Plan({ params }: Pick<PageProps<"/plans/[id]">, "params">) {
             <div className={styles.badges}>
               <Badge tone={p.type === "Official" ? "primary" : "neutral"}>{p.type}</Badge>
               <Badge tone="neutral">{p.planType}</Badge>
-              {p.status === "Archived" && <Badge tone="warning">Archived</Badge>}
-              {p.proposalStatus === "Proposed" && <Badge tone="warning">Proposed</Badge>}
             </div>
             <h1 className={styles.planTitle}>{p.name}</h1>
             <p className={styles.muted}>
@@ -55,11 +53,9 @@ async function Plan({ params }: Pick<PageProps<"/plans/[id]">, "params">) {
           </div>
           <PlanActions
             planId={p.id}
-            archived={p.status === "Archived"}
+            name={p.name}
             canEdit={can(viewer, "plan.edit", p)}
-            // No approvals (D-043): anyone can make a plan Official by editing it.
-            canPropose={false}
-            canDecide={false}
+            enrolled={p.enrolled}
           />
         </div>
       </section>

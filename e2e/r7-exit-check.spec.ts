@@ -77,7 +77,7 @@ test("exit check: the builder blocks a sixth touch (and steps that break the gap
   await expect(
     shown(admin.getByRole("heading", { name: "Official Outreach (copy)" })),
   ).toBeVisible();
-  await admin.getByRole("link", { name: "Edit steps" }).click();
+  await admin.getByRole("link", { name: "Edit", exact: true }).click();
   await expect(admin).toHaveURL(/\/edit$/);
   // One more step: the plan would run past 30 days (guardrail 7).
   await admin.getByRole("button", { name: "Add step" }).click();

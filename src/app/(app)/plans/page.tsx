@@ -30,12 +30,13 @@ async function Plans({ searchParams }: Pick<PageProps<"/plans">, "searchParams">
   const viewer = await requireUser();
   const params = await searchParams;
   const raw = Array.isArray(params.tab) ? params.tab[0] : params.tab;
+  // Every plan you can use first; then the team's and your own (D-045).
   const tabs: { key: PlanTab; label: string }[] = [
+    { key: "all", label: "All plans" },
     { key: "official", label: "Official" },
-    { key: "mine", label: "My plans" },
-    ...(viewer.role === "Admin" ? [{ key: "all" as const, label: "All plans" }] : []),
+    { key: "mine", label: "Made by me" },
   ];
-  const tab = tabs.find((t) => t.key === raw)?.key ?? "official";
+  const tab = tabs.find((t) => t.key === raw)?.key ?? "all";
   const plans = await listPlans(getDb(), viewer, tab);
 
   return (
@@ -59,7 +60,7 @@ async function Plans({ searchParams }: Pick<PageProps<"/plans">, "searchParams">
       </div>
       {plans.length === 0 ? (
         <StatusMessage title={tab === "mine" ? "No plans of your own yet" : "No plans here yet"}>
-          <p>Create one with New plan, or duplicate an Official plan to make it your own.</p>
+          <p>Create one with New plan, or duplicate one to make it your own.</p>
         </StatusMessage>
       ) : (
         <div className={styles.grid}>
@@ -73,8 +74,6 @@ async function Plans({ searchParams }: Pick<PageProps<"/plans">, "searchParams">
               <div className={styles.badges}>
                 <Badge tone={p.type === "Official" ? "primary" : "neutral"}>{p.type}</Badge>
                 <Badge tone="neutral">{p.planType}</Badge>
-                {p.status === "Archived" && <Badge tone="warning">Archived</Badge>}
-                {p.proposalStatus === "Proposed" && <Badge tone="warning">Proposed</Badge>}
               </div>
               <h2 className={styles.planTitle}>{p.name}</h2>
               <p className={styles.muted}>

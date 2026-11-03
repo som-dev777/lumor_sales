@@ -141,12 +141,11 @@ describe("enrolling (F17)", () => {
     ]);
   });
 
-  it("Proposed (draft) plans can't be used until approved", async () => {
+  it("the seeded Trial plan is ready to use straight away (no approvals, D-045)", async () => {
     const { plan } = await import("@/lib/db/schema");
-    const [draft] = await t.db.select().from(plan).where(eq(plan.name, "Trial (draft)"));
-    await expect(enrolPeople(t.db, admin, [(await lead()).id], draft.id)).rejects.toThrow(
-      /waiting for approval/,
-    );
+    const [trial] = await t.db.select().from(plan).where(eq(plan.name, "Trial"));
+    const r = await enrolPeople(t.db, rep, [(await lead()).id], trial.id);
+    expect(r.enrolled).toHaveLength(1);
   });
 });
 

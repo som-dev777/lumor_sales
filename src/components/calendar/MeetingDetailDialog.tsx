@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Mail, Phone, UserMinus, UserPlus, Video } from "lucide-react";
+import { CalendarClock, Mail, Phone, UserMinus, Video } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -14,7 +14,9 @@ import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import {
+  addGuestAction,
   addTeammateAction,
+  removeGuestAction,
   removeTeammateAction,
   rescheduleBookingAction,
   rescheduleSlotsAction,
@@ -47,6 +49,8 @@ export type DetailData = {
   rescheduled: boolean;
   person: { id: string; name: string } | null;
   team: { id: string; name: string; host: boolean }[];
+  /** Guests added by email (D-045). */
+  guests: string[];
   /** A meeting the rep scheduled themselves (D-043): its recipients and message. */
   scheduled: { to: string[]; cc: string[]; message: string | null } | null;
 };
@@ -72,7 +76,10 @@ export function MeetingDetailDialog({
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
+  // Close at once; the address updates behind it (D-045: closing used to wait for the page).
+  const [shown, setShown] = useState(true);
   const close = () => {
+    setShown(false);
     const next = new URLSearchParams(params.toString());
     next.delete("booking");
     router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false });
@@ -82,7 +89,7 @@ export function MeetingDetailDialog({
 
   return (
     <Dialog
-      open
+      open={shown}
       onOpenChange={(o) => !o && close()}
       size="lg"
       title={`${data.meetingTypeName} with ${data.invitee.name}`}
@@ -128,6 +135,9 @@ export function MeetingDetailDialog({
                 member={m}
                 canRemove={open && canChangeTeam && !m.host}
               />
+            ))}
+            {data.guests.map((g) => (
+              <GuestRow key={g} bookingId={data.id} email={g} canRemove={open && canChangeTeam} />
             ))}
           </ul>
           {open && canChangeTeam && (
@@ -270,6 +280,9 @@ function TeamRow({
   );
 }
 
+const CUSTOM = "__email";
+
+/** Add a teammate, or anyone by email ("Custom…", D-045). */
 function AddTeammate({
   bookingId,
   choices,
@@ -279,34 +292,87 @@ function AddTeammate({
 }) {
   const notify = useToast();
   const [who, setWho] = useState("");
+  const [email, setEmail] = useState("");
   const [busy, start] = useTransition();
-  if (choices.length === 0) return null;
+  const custom = who === CUSTOM;
   return (
     <div className={styles.addMate}>
       <SelectField
-        label="Add a teammate"
+        label="Add someone to the meeting"
         value={who}
         options={[
           { value: "", label: "Choose a rep…" },
           ...choices.map((c) => ({ value: c.id, label: c.name })),
+          { value: CUSTOM, label: "Custom: any email address…" },
         ]}
         onChange={(e) => setWho(e.target.value)}
       />
+      {custom && (
+        <TextField
+          label="Their email"
+          type="email"
+          inputMode="email"
+          placeholder="name@company.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      )}
       <Button
         variant="secondary"
-        disabled={!who}
+        disabled={!who || (custom && !email.trim())}
         loading={busy}
         onClick={() =>
           start(async () => {
-            const r = await addTeammateAction(bookingId, who);
+            const r = custom
+              ? await addGuestAction(bookingId, email)
+              : await addTeammateAction(bookingId, who);
             notify(r.ok ? "success" : "error", r.ok ? (r.message ?? "Added.") : r.error);
-            if (r.ok) setWho("");
+            if (r.ok) {
+              setWho("");
+              setEmail("");
+            }
           })
         }
       >
-        <UserPlus size={16} aria-hidden /> Add
+        Add
       </Button>
     </div>
+  );
+}
+
+/** A guest added by email (D-045). */
+function GuestRow({
+  bookingId,
+  email,
+  canRemove,
+}: {
+  bookingId: string;
+  email: string;
+  canRemove: boolean;
+}) {
+  const notify = useToast();
+  const [busy, start] = useTransition();
+  return (
+    <li className={styles.teamRow}>
+      <span>
+        {email} <Badge tone="neutral">Guest</Badge>
+      </span>
+      {canRemove && (
+        <Button
+          variant="ghost"
+          loading={busy}
+          aria-label={`Remove ${email} from the meeting`}
+          onClick={() =>
+            start(async () => {
+              const r = await removeGuestAction(bookingId, email);
+              notify(r.ok ? "success" : "error", r.ok ? (r.message ?? "Removed.") : r.error);
+            })
+          }
+        >
+          <UserMinus size={16} aria-hidden />
+        </Button>
+      )}
+    </li>
   );
 }
 

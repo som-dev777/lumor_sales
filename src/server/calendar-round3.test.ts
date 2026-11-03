@@ -34,6 +34,9 @@ import {
 } from "./booking-emails";
 import { companyFrom } from "./booking-sync";
 import {
+  addGuest,
+  removeGuest,
+  slotReport,
   BookingFieldsError,
   cancelByToken,
   createBooking,
@@ -617,5 +620,44 @@ describe("people without LinkedIn (D-043)", () => {
     });
     await createPerson(t.db, rep, data);
     await expect(createPerson(t.db, rep, data)).rejects.toThrow("Already added by Asha Rao.");
+  });
+});
+
+describe("guests by email and the slot report (D-045)", () => {
+  it("anyone on the meeting adds a guest by email; duplicates are refused; it can be removed", async () => {
+    emailOn();
+    await demo();
+    const { booking: b } = await book();
+    const outsider = {
+      id: (await insertTestUser(t.db, { name: "Outsider" })).id,
+      role: "User" as const,
+      active: true,
+    };
+    await expect(addGuest(t.db, outsider, b.id, "cfo@acme.example", NOW)).rejects.toThrow(
+      "Only the host",
+    );
+    const after = await addGuest(t.db, rep, b.id, "CFO@acme.example", NOW);
+    expect(after.ccEmails).toEqual(["cfo@acme.example"]);
+    // Without Google, the guest gets our invitation with a calendar file.
+    expect(
+      mails.some((m) => m.to.includes("cfo@acme.example") && m.subject.startsWith("Invitation:")),
+    ).toBe(true);
+    await expect(addGuest(t.db, rep, b.id, "priya@acme.example", NOW)).rejects.toThrow(
+      "already on this meeting",
+    );
+    const removed = await removeGuest(t.db, rep, b.id, "cfo@acme.example", NOW);
+    expect(removed.ccEmails).toEqual([]);
+  });
+
+  it("the report shows each day's hours, what blocks them and the times offered", async () => {
+    await demo();
+    await book();
+    const r = (await slotReport(t.db, rep.id, NOW, 3))!;
+    expect(r.google).toBeNull(); // Google isn't connected here
+    const wed = r.days.find((d) => d.date === "2026-11-04")!;
+    expect(wed.hours).toBe("10:00–18:00");
+    expect(wed.blocked[0]).toMatchObject({ from: "11:00 am", reason: "A meeting" });
+    expect(wed.offered[0].count).toBeGreaterThan(0);
+    expect(r.rules[0]).toMatchObject({ durationMin: 20, minNoticeHours: 4 });
   });
 });

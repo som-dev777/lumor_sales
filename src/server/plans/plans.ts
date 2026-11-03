@@ -380,21 +380,79 @@ export async function decidePlanProposal(
   });
 }
 
+/**
+ * Delete a plan (D-045; replaces Archive). A plan nobody was ever on is removed for good. One
+ * with history is taken out of every list and its live enrolments stop ("Plan deleted"), so
+ * people's timelines keep what happened. Audited either way.
+ */
+export async function deletePlan(db: Db, actor: Actor, id: string, now = new Date()) {
+  return db.transaction(async (tx) => {
+    const before = await loadPlan(tx, id);
+    assertCan(actor, "plan.edit", before);
+    const [{ n: used }] = await tx
+      .select({ n: count() })
+      .from(planEnrolment)
+      .where(eq(planEnrolment.planId, id));
+    if (used === 0) {
+      await tx.delete(planStep).where(eq(planStep.planId, id));
+      await tx.delete(plan).where(eq(plan.id, id));
+    } else {
+      const live = await tx
+        .select({ e: planEnrolment, name: person.fullName })
+        .from(planEnrolment)
+        .innerJoin(person, eq(person.id, planEnrolment.personId))
+        .where(
+          and(eq(planEnrolment.planId, id), inArray(planEnrolment.status, ["Active", "Paused"])),
+        );
+      for (const { e, name } of live) {
+        await tx
+          .update(planEnrolment)
+          .set({ status: "Stopped", endedAt: now, endReason: "Plan deleted", nextDueDate: null })
+          .where(eq(planEnrolment.id, e.id));
+        await writeAudit(tx, {
+          userId: actor.id,
+          entityType: "PlanEnrolment",
+          recordId: e.id,
+          recordName: name,
+          action: "Updated",
+          before: { status: e.status },
+          after: { status: "Stopped", endReason: "Plan deleted" },
+        });
+      }
+      await tx.update(plan).set({ status: "Archived" }).where(eq(plan.id, id));
+    }
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Plan",
+      recordId: id,
+      recordName: before.name,
+      action: "Deleted",
+      before: { name: before.name, type: before.type, planType: before.planType },
+      after: used === 0 ? undefined : { keptForHistory: true, enrolments: used },
+    });
+    return { removed: used === 0 };
+  });
+}
+
 // --- Reading -----------------------------------------------------------------------------------
 
 const owner = alias(user, "plan_owner");
 
 export type PlanTab = "official" | "mine" | "all";
 
+/** Plans to list (D-045): "all" = every plan you can use; "mine" = the ones you made. */
 export async function listPlans(db: DbOrTx, viewer: Actor, tab: PlanTab, q?: string) {
-  const visible =
+  const visible = and(
+    // Deleted plans with history are kept out of every list.
+    eq(plan.status, "Active"),
     tab === "official"
       ? eq(plan.type, "Official")
       : tab === "mine"
-        ? and(eq(plan.type, "Personal"), eq(plan.ownerId, viewer.id))
+        ? eq(plan.ownerId, viewer.id)
         : viewer.role === "Admin"
           ? undefined
-          : or(eq(plan.type, "Official"), eq(plan.ownerId, viewer.id));
+          : or(eq(plan.type, "Official"), eq(plan.ownerId, viewer.id)),
+  );
   const rows = await db
     .select({
       plan,
@@ -443,7 +501,8 @@ export async function getPlan(db: DbOrTx, viewer: Actor, id: string) {
     .leftJoin(owner, eq(owner.id, plan.ownerId))
     .leftJoin(persona, eq(persona.id, plan.personaId))
     .where(eq(plan.id, id));
-  if (!row) return null;
+  // A deleted plan with history (D-045) no longer opens.
+  if (!row || row.plan.status === "Archived") return null;
   if (!can(viewer, "plan.use", row.plan)) return "forbidden" as const;
   const steps = await stepsOf(db, id, row.plan.currentVersion);
   const [{ n: enrolled }] = await db
@@ -488,7 +547,7 @@ export async function usablePlans(db: DbOrTx, viewer: Actor) {
     .where(eq(plan.status, "Active"))
     .orderBy(desc(plan.type), asc(plan.name));
   return rows
-    .filter((p) => can(viewer, "plan.use", p) && p.proposalStatus !== "Proposed")
+    .filter((p) => can(viewer, "plan.use", p))
     .map((p) => ({
       id: p.id,
       label: `${p.name}${p.type === "Personal" ? " (Personal)" : ""}`,

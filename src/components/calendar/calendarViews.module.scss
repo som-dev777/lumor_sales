@@ -228,6 +228,17 @@ $row-height: 14px;
   white-space: nowrap;
 }
 
+.eventShort {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-1);
+
+  .eventTitle {
+    min-width: 0;
+    flex: 1;
+  }
+}
+
 .eventTitle,
 .eventPeople {
   overflow: hidden;

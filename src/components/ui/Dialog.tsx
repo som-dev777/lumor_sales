@@ -2,7 +2,7 @@
 
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import styles from "./Dialog.module.scss";
 
 type Props = {
@@ -17,11 +17,30 @@ type Props = {
 
 /** A centred pop-up window with a title and a close button (Radix: keyboard and screen-reader friendly). */
 export function Dialog({ open, onOpenChange, title, description, size = "md", children }: Props) {
+  const content = useRef<HTMLDivElement>(null);
+  // A success message (toast) sits above the dialog, so Radix would give Escape to the message
+  // first. Escape closes the topmost dialog straight away instead (D-045).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || !content.current) return;
+      const dialogs = document.querySelectorAll('[role="dialog"], [role="alertdialog"]');
+      if (dialogs[dialogs.length - 1] !== content.current) return;
+      e.preventDefault();
+      e.stopPropagation();
+      onOpenChange(false);
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, [open, onOpenChange]);
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>
         <RadixDialog.Overlay className={styles.overlay} />
-        <RadixDialog.Content className={`${styles.content} ${size === "lg" ? styles.lg : ""}`}>
+        <RadixDialog.Content
+          ref={content}
+          className={`${styles.content} ${size === "lg" ? styles.lg : ""}`}
+        >
           <div className={styles.header}>
             <RadixDialog.Title className={styles.title}>{title}</RadixDialog.Title>
             <RadixDialog.Close className={styles.close} aria-label="Close">

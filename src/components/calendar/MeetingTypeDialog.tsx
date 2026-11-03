@@ -113,10 +113,11 @@ function MeetingTypeForm({
     setValue,
     getValues,
     setError,
-    formState: { errors, isSubmitting, dirtyFields },
+    formState: { errors, isSubmitting },
   } = useForm<MeetingTypeInput, unknown, MeetingTypeData>({
     resolver: zodResolver(meetingTypeSchema),
-    defaultValues: defaults,
+    // A new event gets a random link code, so renaming it never changes the link (D-045).
+    defaultValues: meetingTypeId || defaults.slug ? defaults : { ...defaults, slug: randomSlug() },
   });
   const questions = useFieldArray({ control, name: "questions" });
   const duration = Number(useWatch({ control, name: "durationMin" }));
@@ -143,18 +144,11 @@ function MeetingTypeForm({
           placeholder="e.g. Lumor demo"
           autoFocus
           error={errors.name?.message}
-          {...register("name", {
-            onChange: (e) => {
-              // A new event's link name follows its name until it's edited.
-              if (!meetingTypeId && !dirtyFields.slug) {
-                setValue("slug", toSlug(e.target.value, ""), { shouldValidate: false });
-              }
-            },
-          })}
+          {...register("name")}
         />
         <TextField
-          label="Link name"
-          hint="The end of the booking link, e.g. demo"
+          label="Link code"
+          hint="The end of the booking link. It doesn't change when you rename the event, so links you've shared keep working."
           error={errors.slug?.message}
           {...register("slug", { onBlur: () => setValue("slug", toSlug(getValues("slug"), "")) })}
         />
@@ -441,4 +435,11 @@ function FieldRow({
       </td>
     </tr>
   );
+}
+
+/** "k7m2q9xa": 8 random lower-case letters and digits for a new event's link (D-045). */
+function randomSlug(): string {
+  const chars = "abcdefghijkmnpqrstuvwxyz23456789";
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
 }

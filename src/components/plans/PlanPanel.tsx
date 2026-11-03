@@ -87,7 +87,7 @@ export function PlanPanel(props: Props) {
     : [];
 
   const picker = (label: string, onPick: (id: string) => void, list = usablePlans) => (
-    <div className={styles.row}>
+    <div className={styles.pickRow}>
       <SelectField
         label={label}
         value={choice}

@@ -34,7 +34,7 @@ import {
   duplicatePlan,
   PlanError,
   proposePlan,
-  setPlanArchived,
+  deletePlan,
   updatePlan,
 } from "../plans/plans";
 
@@ -114,13 +114,14 @@ export async function propose(id: string): Promise<PlanResult> {
   });
 }
 
-export async function archive(id: string, archived: boolean): Promise<PlanResult> {
+/** Delete a plan (D-045; replaces Archive). */
+export async function removePlan(id: string): Promise<PlanResult> {
   const viewer = await requireUser();
   if (!idSchema.safeParse(id).success) return { ok: false, error: "Unknown plan." };
   return run(async () => {
-    await setPlanArchived(getDb(), viewer, id, archived);
+    await deletePlan(getDb(), viewer, id, await appNow());
     refresh();
-    return { ok: true, message: archived ? "Plan archived." : "Plan restored." };
+    return { ok: true, message: "Plan deleted.", link: "/plans" };
   });
 }
 

@@ -324,6 +324,8 @@ async function Detail({ id, viewer, now }: { id: string; viewer: Viewer; now: Da
     rescheduled: Boolean(m.rescheduledFromId),
     person: m.personId && m.personName ? { id: m.personId, name: m.personName } : null,
     team: m.team.map((t) => ({ id: t.id, name: t.name, host: t.host })),
+    // A scheduled meeting shows its CC list under Invited; other meetings list guests (D-045).
+    guests: m.anyTime ? [] : m.ccEmails,
     scheduled: m.anyTime ? { to: m.toEmails, cc: m.ccEmails, message: m.message } : null,
   };
   return (

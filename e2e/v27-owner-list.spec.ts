@@ -46,7 +46,7 @@ test("exit check: Calendar says Events; a new event lists the standard fields to
   await shown(fay.getByRole("button", { name: "New event" })).click();
   const dialog = fay.getByRole("dialog");
   await dialog.getByLabel("Name", { exact: true }).fill("Lumor demo");
-  await dialog.getByLabel("Link name").fill("demo");
+  await dialog.getByLabel("Link code").fill("demo");
   await dialog.getByLabel("Minimum notice (hours)").fill("1");
   await dialog.getByLabel("Name in emails (optional)").fill("Lumor demo");
   await dialog.getByLabel("In person: address (optional)").fill("Lumor, Indiranagar, Bengaluru");
@@ -211,4 +211,36 @@ test("exit check: the Team tab opens the list behind a number", async () => {
   await expect(
     shown(admin.getByRole("region", { name: /Meetings today: Fay Field/ })),
   ).toBeVisible();
+});
+
+test("v2.7.2: Today lists the coming meetings; a guest is added by email from the meeting", async () => {
+  await fay.goto("/");
+  const meetings = shown(fay.getByRole("region", { name: "Your meetings" }));
+  await expect(meetings).toContainText("Lumor walkthrough with Delta");
+  await meetings
+    .getByRole("link", { name: /Details of the meeting with/ })
+    .first()
+    .click();
+  await expect(fay).toHaveURL(/booking=/);
+  const dialog = fay.getByRole("dialog");
+  await dialog
+    .getByLabel("Add someone to the meeting")
+    .selectOption({ label: "Custom: any email address…" });
+  await dialog.getByLabel("Their email").fill("cfo@client.example");
+  await dialog.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(shown(fay.getByText("cfo@client.example added and invited."))).toBeVisible();
+  await expect(dialog).toContainText("cfo@client.example");
+  await fay.keyboard.press("Escape");
+  await expect(fay.getByRole("dialog")).toHaveCount(0);
+});
+
+test("v2.7.2: a plan can be deleted; no Archive and no Draft labels", async () => {
+  await fay.goto("/plans?tab=mine");
+  await shown(fay.getByRole("link", { name: "Pilot follow-through" })).click();
+  await expect(fay.getByRole("button", { name: "Archive" })).toHaveCount(0);
+  await shown(fay.getByRole("button", { name: "Delete" })).click();
+  await fay.getByRole("dialog").getByRole("button", { name: "Delete plan" }).click();
+  await expect(fay).toHaveURL(/\/plans$/);
+  await expect(fay.getByRole("link", { name: "Pilot follow-through" })).toHaveCount(0);
+  await expect(fay.getByText(/\(draft\)/)).toHaveCount(0);
 });

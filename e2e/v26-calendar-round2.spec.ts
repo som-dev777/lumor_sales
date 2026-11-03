@@ -39,7 +39,7 @@ test("exit check: a meeting type with a dropdown, checkboxes and a paragraph que
   await shown(dana.getByRole("button", { name: "New event" })).click();
   const dialog = dana.getByRole("dialog");
   await dialog.getByLabel("Name", { exact: true }).fill("Discovery call");
-  await dialog.getByLabel("Link name").fill("discovery");
+  await dialog.getByLabel("Link code").fill("discovery");
   await dialog.getByLabel("Length").selectOption("custom");
   await dialog.getByLabel("Custom length (minutes)").fill("25");
   await dialog.getByLabel("Minimum notice (hours)").fill("1");
@@ -196,7 +196,7 @@ test("exit check: the rep's bell shows the booking; the calendar shows it by wee
 
 test("exit check: a teammate is added and notified; everyone sees the meeting", async () => {
   const dialog = dana.getByRole("dialog");
-  await dialog.getByLabel("Add a teammate").selectOption({ label: ELI.name });
+  await dialog.getByLabel("Add someone to the meeting").selectOption({ label: ELI.name });
   await dialog.getByRole("button", { name: "Add", exact: true }).click();
   await expect(shown(dana.getByText("Eli Expert added and notified."))).toBeVisible();
   await expect(dialog.getByRole("list").first()).toContainText("Eli Expert");
