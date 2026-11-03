@@ -49,7 +49,7 @@ export const calendarProfile = sqliteTable(
     // "Co-founder, Lumor": after the rep's name in booking emails (D-043).
     emailTitle: text("email_title"),
     // Times busy in the rep's Google Calendar are taken out of their booking slots (D-047).
-    useGoogleBusy: flag("use_google_busy").notNull().default(true),
+    useGoogleBusy: flag("use_google_busy").notNull().default(false),
   },
   (t) => [check("calendar_profile_slug_check", sql`${t.slug} GLOB '[a-z0-9]*'`)],
 );
@@ -69,7 +69,7 @@ export const meetingType = sqliteTable(
     // A meeting link, phone number or address.
     location: text("location"),
     bufferMin: integer("buffer_min").notNull().default(0),
-    minNoticeHours: integer("min_notice_hours").notNull().default(4),
+    minNoticeHours: integer("min_notice_hours").notNull().default(0),
     maxDaysAhead: integer("max_days_ahead").notNull().default(30),
     maxPerDay: integer("max_per_day"),
     questions: jsonList<BookingQuestion>("questions"),

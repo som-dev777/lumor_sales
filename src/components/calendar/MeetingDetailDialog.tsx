@@ -77,9 +77,18 @@ export function MeetingDetailDialog({
   const pathname = usePathname();
   const params = useSearchParams();
   // Close at once; the address updates behind it (D-045: closing used to wait for the page).
-  const [shown, setShown] = useState(true);
+  // The window can stay on the page between meetings, so "closed" is remembered only until a
+  // meeting is opened again; otherwise every later click did nothing (D-051).
+  const opened = params.get("booking");
+  const [closed, setClosed] = useState(false);
+  const [seen, setSeen] = useState(opened);
+  if (seen !== opened) {
+    setSeen(opened);
+    setClosed(false);
+  }
+  const shown = !closed && opened === data.id;
   const close = () => {
-    setShown(false);
+    setClosed(true);
     const next = new URLSearchParams(params.toString());
     next.delete("booking");
     router.replace(`${pathname}${next.size ? `?${next}` : ""}`, { scroll: false });

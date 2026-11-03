@@ -51,7 +51,7 @@ These rules replace the matching v2.5.0 rules below where they differ.
 
 - **Fields:** name; link name (the end of the booking link, for example `demo`); length (15,
   20, 30, 45, 60 or 90 minutes); description; where (a Google Meet, Zoom or other meeting link,
-  or a phone or address); gap after each meeting (0–60 minutes); minimum notice (0–72 hours);
+  or a phone or address); gap after each meeting (0–60 minutes); minimum notice (0–72 hours; 0 by default, so people can book the same day, D-051);
   how far ahead people can book (1–90 days); an optional limit per day; extra questions (up to 5,
   each optional or required). Name, work email and company are always asked; phone and LinkedIn
   profile are optional fields on every booking form.
@@ -216,3 +216,4 @@ These rules replace the matching v2.5.0 rules below where they differ.
 | 2026-11-03 | 2.7.5   | No gaps; free-times count and greyed taken times; black unavailable dates; delete events; Online/Offline labels and Go online/offline (D-048).                                                                                                                                                                            |
 | 2026-11-03 | 2.7.6   | Google sends its invite when the app can't email, so the booker always hears; 11:00 traced to Google busy times (D-049).                                                                                                                                                                                                  |
 | 2026-11-03 | 2.7.7   | One meeting, one Meet link: the event's own link is never used for a Google Meet meeting; the app waits for Google's link (D-050).                                                                                                                                                                                        |
+| 2026-11-03 | 2.7.8   | Meetings always open after closing or cancelling one; same-day booking (no notice by default); Google busy times no longer hide slots; dates line up under weekdays (D-051).                                                                                                                                              |

@@ -38,7 +38,7 @@ time that's taken in Google.
 ## Tests
 
 - Automated (Google faked): booking creates an event with a Meet request and saves the link;
-  reschedule moves the same event; cancel deletes it; Google busy times remove slots; a Google
+  reschedule moves the same event; cancel deletes it; Google busy times remove slots only when the rep switches that on (off by default since D-051); a Google
   failure keeps the booking and notifies the rep; tokens are encrypted and decrypt back.
 - Browser: Availability shows Connect Google Calendar (not set up message without variables).
 
@@ -49,3 +49,4 @@ time that's taken in Google.
 | 2026-11-02 | 2.6.0   | Feature doc written (before code), D-042.                                                                                     |
 | 2026-11-02 | 2.6.0   | Built: Connect/Disconnect, encrypted token, events with Meet links, move/cancel, guests, busy times; tests with Google faked. |
 | 2026-11-02 | 2.6.0   | Released in v2.6.0.                                                                                                           |
+| 2026-11-03 | 2.7.8   | Google busy times no longer hide booking times unless the rep switches that on (D-051).                                       |

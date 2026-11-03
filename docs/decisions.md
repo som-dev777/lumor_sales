@@ -999,3 +999,21 @@ replaces it.
   link is in your calendar invite)" instead of showing a different link. Teammates and guests
   added later join the same Google event, so they get the same link.
 - **Version 2.7.7** (PATCH).
+
+## D-051: Meetings always open; same-day booking; Google busy times don't hide slots (owner, 2026-11-03)
+
+- **Date:** 2026-11-03 · **Status:** Accepted
+- **Meeting window:** on the live site, closing a meeting waits for the page to update. Clicking
+  the next meeting before that finished left the window "closed", so nothing opened (often
+  noticed right after cancelling one, which makes the page slower). The window now opens for
+  whichever meeting the address names. A browser test slows the page down to prove it. Also, if a
+  pop-up disappears while open, the page can no longer stay frozen.
+- **Same day:** new events have no minimum notice (0 hours), and every existing event was set to
+  0 (migration 0018). Any time later today can be booked. Reps can still set a notice per event.
+- **Google busy times:** the owner wants reps to see every time their hours allow, even when
+  their Google Calendar has something then, and decide afterwards which meeting to keep. Google
+  busy times no longer hide booking times: the switch on Availability is off for everyone and
+  off by default. Meetings already booked in Lumor still can't be double-booked, so two clients
+  never get the same time.
+- **Booking page:** the dates now sit under their weekday letters.
+- **Version 2.7.8** (PATCH).

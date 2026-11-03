@@ -605,6 +605,9 @@
 }
 
 .dateCell {
+  justify-self: center;
+  width: 100%;
+  max-width: 48px;
   aspect-ratio: 1;
   max-height: 48px;
   min-height: 38px;

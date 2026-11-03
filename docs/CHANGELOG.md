@@ -7,7 +7,16 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.7.7 and the Gmail setup.
+Next: the owner's QA of v2.7.8 and the Gmail setup.
+
+## [2.7.8] - 2026-11-03
+
+Meetings always open; same-day booking; Google busy times don't hide slots (D-051).
+
+- Fixed: after closing or cancelling a meeting, clicking another one sometimes did nothing.
+- People can book later the same day (no minimum notice by default; existing events set to 0).
+- Times that are busy in a rep's Google Calendar are still offered; the rep decides afterwards. The switch on Availability is off by default.
+- Fixed: on the booking page, the dates now line up under the days of the week.
 
 ## [2.7.7] - 2026-11-03
 

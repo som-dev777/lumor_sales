@@ -262,4 +262,52 @@ test("v2.7.5: events show Online or Offline, go offline and online, and can be d
   await expect(confirm).toContainText("can't be undone");
   await confirm.getByRole("button", { name: "Delete event" }).click();
   await expect(fay.getByRole("region", { name: "Lumor demo" })).toHaveCount(0);
+  // v2.7.8 (D-051): the page isn't frozen afterwards; other pop-ups still open.
+  await expect(fay.getByRole("dialog")).toHaveCount(0);
+  await shown(fay.getByRole("button", { name: "New event" })).click();
+  await expect(fay.getByRole("dialog", { name: "New event" })).toBeVisible({ timeout: 3000 });
+  await fay.keyboard.press("Escape");
+});
+
+test("v2.7.8: meetings keep opening, after closing quickly and after a cancel (D-051)", async () => {
+  await fay.goto("/calendar?view=list");
+  const open = (who: string) =>
+    shown(fay.getByRole("table", { name: "Upcoming bookings" }))
+      .getByRole("row")
+      .filter({ hasText: who })
+      .getByRole("link", { name: /\d{4}, / })
+      .click();
+  // Close and at once open another meeting, before the page has caught up (slow on the live
+  // site, so page updates are slowed down here): it must still open.
+  await fay.route("**/calendar?*", async (route) => {
+    if (route.request().headers()["rsc"]) await new Promise((ok) => setTimeout(ok, 1500));
+    await route.fallback();
+  });
+  for (let i = 0; i < 2; i++) {
+    await open("Lumor walkthrough with Delta");
+    await expect(fay.getByRole("dialog")).toContainText("Lumor walkthrough with Delta");
+    await fay.keyboard.press("Escape");
+    await open("Gita Gamma");
+    await expect(fay.getByRole("dialog")).toContainText("Gita Gamma");
+    await fay.keyboard.press("Escape");
+  }
+  await expect(fay.getByRole("dialog")).toHaveCount(0);
+  await fay.unrouteAll();
+  // Cancel one; the others still open afterwards.
+  await open("Gita Gamma");
+  await fay
+    .getByRole("dialog")
+    .getByRole("button", { name: "Cancel booking with Gita Gamma" })
+    .click();
+  await fay
+    .getByRole("dialog", { name: "Cancel booking" })
+    .getByRole("button", { name: "Cancel booking" })
+    .click();
+  await expect(fay.getByRole("dialog")).toHaveCount(1);
+  await expect(fay.getByRole("dialog")).toContainText("Cancelled");
+  await fay.keyboard.press("Escape");
+  await open("Lumor walkthrough with Delta");
+  await expect(fay.getByRole("dialog")).toContainText("Lumor walkthrough with Delta");
+  await fay.keyboard.press("Escape");
+  await expect(fay.getByRole("dialog")).toHaveCount(0);
 });

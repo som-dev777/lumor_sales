@@ -33,6 +33,18 @@ export function Dialog({ open, onOpenChange, title, description, size = "md", ch
     document.addEventListener("keydown", onKey, true);
     return () => document.removeEventListener("keydown", onKey, true);
   }, [open, onOpenChange]);
+  // When a dialog disappears while open (say the meeting it belongs to was just cancelled), the
+  // page could stay frozen: nothing clickable. Unfreeze it once no dialog is left (D-051).
+  useEffect(() => {
+    if (!open) return;
+    return () => {
+      setTimeout(() => {
+        if (!document.querySelector('[role="dialog"], [role="alertdialog"]')) {
+          document.body.style.pointerEvents = "";
+        }
+      }, 300);
+    };
+  }, [open]);
   return (
     <RadixDialog.Root open={open} onOpenChange={onOpenChange}>
       <RadixDialog.Portal>

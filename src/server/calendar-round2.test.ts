@@ -7,7 +7,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("nodemailer", () => ({
   createTransport: () => ({ sendMail: async () => ({}) }),
 }));
-import { auditLog, booking, googleConnection, notification } from "@/lib/db/schema";
+import {
+  auditLog,
+  booking,
+  calendarProfile,
+  googleConnection,
+  notification,
+} from "@/lib/db/schema";
 import { createTestDb, insertTestUser } from "@/lib/db/test-db";
 import { PermissionError, type Actor } from "@/lib/permissions";
 import { fromIstLocal } from "@/lib/time";
@@ -475,16 +481,40 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
     expect((patch.body as { attendees: unknown[] }).attendees).toHaveLength(2);
   });
 
-  it("Google busy times remove slots", async () => {
+  it("Google busy times don't hide slots unless the rep turns that on (D-051)", async () => {
     fakeGoogle({ busy: [{ start: TUE_11, end: at("2026-11-03T12:00") }] });
     await demo();
     await connect();
-    const page = (await findBookingPage(t.db, "asha", "demo"))!;
+    // Off by default: the busy time is still offered and can be booked; the rep decides later.
+    let page = (await findBookingPage(t.db, "asha", "demo"))!;
+    expect((await freeSlots(t.db, page, NOW)).map((s) => s.toISOString())).toContain(TUE_11);
+    // Switched on: the busy time is hidden and refused.
+    await t.db.update(calendarProfile).set({ useGoogleBusy: true });
+    page = (await findBookingPage(t.db, "asha", "demo"))!;
     const slots = (await freeSlots(t.db, page, NOW)).map((s) => s.toISOString());
     expect(slots).not.toContain(TUE_11);
     expect(slots).not.toContain(at("2026-11-03T11:30"));
     expect(slots).toContain(at("2026-11-03T12:00"));
     await expect(book()).rejects.toThrow("That time was just taken.");
+    await t.db.update(calendarProfile).set({ useGoogleBusy: false });
+    const { booking: b } = await book();
+    expect(b.startsAt.toISOString()).toBe(TUE_11);
+  });
+
+  it("same-day booking: a new event has no minimum notice (D-051)", async () => {
+    const { availableSlots } = await import("@/lib/slots");
+    const hours = { "2": [{ start: "10:00", end: "18:00" }] };
+    // 3 November 2026 is a Tuesday; at 11:10 IST the 11:30 slot the same day is offered.
+    const now = fromIstLocal("2026-11-03T11:10")!;
+    const slots = availableSlots({
+      hours,
+      daysOff: [],
+      rules: { durationMin: 30, bufferMin: 0, minNoticeHours: 0, maxDaysAhead: 0, maxPerDay: null },
+      busy: [],
+      meetingTypeId: "x",
+      now,
+    });
+    expect(slots[0].toISOString()).toBe(fromIstLocal("2026-11-03T11:30")!.toISOString());
   });
 
   it("when Google fails, the booking stands and the host is told", async () => {

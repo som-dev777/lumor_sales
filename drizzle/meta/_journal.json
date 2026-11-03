@@ -127,6 +127,13 @@
       "when": 1793700732435,
       "tag": "0017_events_delete_no_gap",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1793708024705,
+      "tag": "0018_same_day_google_free",
+      "breakpoints": true
     }
   ]
 }

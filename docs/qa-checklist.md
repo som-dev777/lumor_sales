@@ -436,6 +436,11 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
 - [ ] 14.42 Book an online meeting (with Google connected). Open the email or invite the person
       got and your own Google Calendar event: the Meet link is exactly the same. Add a teammate
       or guest to the meeting: they get the same link too.
+- [ ] 14.43 Calendar: open a meeting, close it and straight away click another: it opens. Cancel
+      one, close it, and click another: it opens.
+- [ ] 14.44 Your booking page: today has times (any time later today). A time that's busy in
+      your Google Calendar is still offered.
+- [ ] 14.45 Your booking page on a laptop: each date sits right under its day (Mon, Tue…).
 
 **Calendly (only if you still use it)**
 

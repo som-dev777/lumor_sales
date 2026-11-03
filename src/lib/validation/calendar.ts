@@ -86,7 +86,7 @@ export const availabilitySchema = z.object({
   // "Co-founder, Lumor", after the rep's name in booking emails (D-043).
   emailTitle: optionalText(120),
   // Take Google Calendar busy times out of the slots (D-047).
-  useGoogleBusy: z.boolean().optional().default(true),
+  useGoogleBusy: z.boolean().optional().default(false),
 });
 export type AvailabilityData = z.infer<typeof availabilitySchema>;
 

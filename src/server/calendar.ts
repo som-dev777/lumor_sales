@@ -144,7 +144,8 @@ export async function profileView(db: DbOrTx, owner: { id: string; name: string 
     daysOff: [],
     notifyEmail: null,
     emailTitle: null,
-    useGoogleBusy: true,
+    // Google busy times don't hide booking times unless the rep turns that on (D-051).
+    useGoogleBusy: false,
     saved: false,
   } satisfies ProfileView;
 }
@@ -160,6 +161,7 @@ async function ensureProfileTx(tx: DbOrTx, actor: Actor, owner: { id: string; na
       slug: view.slug,
       weeklyHours: view.weeklyHours,
       daysOff: [],
+      useGoogleBusy: false,
       createdBy: actor.id,
     })
     .returning();
@@ -528,7 +530,7 @@ const slotArgs = (page: BookingPage, busy: Busy[], now: Date) => ({
 
 /** The rep's Google busy times for this page's booking window (empty without Google, or off). */
 const googleWindow = async (db: Db, page: BookingPage, now: Date) =>
-  page.profile?.useGoogleBusy === false
+  page.profile?.useGoogleBusy !== true
     ? []
     : googleBusy(
         db,

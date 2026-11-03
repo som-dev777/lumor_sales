@@ -231,7 +231,8 @@ export function AvailabilityForm({
             checked={useGoogleBusy}
             onChange={(e) => setUseGoogleBusy(e.target.checked)}
           />{" "}
-          Take times that are busy in my Google Calendar out of my booking slots
+          Hide times that are busy in my Google Calendar (off: people can book them, and you decide
+          afterwards)
         </label>
         <TestEmailButton setup={emailSetup} />
       </section>

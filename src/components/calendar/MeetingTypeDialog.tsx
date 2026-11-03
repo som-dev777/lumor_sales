@@ -32,7 +32,8 @@ export const NEW_MEETING_TYPE: MeetingTypeInput = {
   location: "",
   // No gaps between meetings (D-048).
   bufferMin: 0,
-  minNoticeHours: 4,
+  // Same-day booking by default (D-051).
+  minNoticeHours: 0,
   maxDaysAhead: 30,
   maxPerDay: "",
   googleMeet: true,

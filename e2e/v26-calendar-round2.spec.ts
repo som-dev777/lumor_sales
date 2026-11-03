@@ -256,6 +256,17 @@ test("the booking page on a laptop: details on the left, calendar on the right",
   await visitor.getByRole("button", { name: "Choose a time" }).click();
   await expect(visitor.getByRole("group", { name: "Days" })).toBeVisible();
   await visitor.screenshot({ path: "test-results/v26-desktop-pick.png", fullPage: true });
+  // Each date sits under its weekday (D-051): the centres line up within a few pixels.
+  const centres = await visitor.getByRole("group", { name: "Days" }).evaluate((grid) => {
+    const mid = (el: Element) => {
+      const r = el.getBoundingClientRect();
+      return r.left + r.width / 2;
+    };
+    const cells = [...grid.children];
+    // Every cell after the 7 weekday names is a day (or an empty space before the 1st).
+    return cells.slice(7).map((c, i) => Math.abs(mid(c) - mid(cells[i % 7])));
+  });
+  expect(Math.max(...centres)).toBeLessThan(3);
   await visitor.getByLabel("Time zone").selectOption("Europe/London");
   await expect(visitor.getByLabel("Time zone")).toHaveValue("Europe/London");
   await visitor.context().close();
