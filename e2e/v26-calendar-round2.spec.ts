@@ -99,8 +99,10 @@ test("exit check: a client books on a phone, in IST, with checks on every field"
   // The owner's logo, top and foot (D-043).
   await expect(phone.getByRole("img", { name: "Lumor" }).first()).toBeVisible();
   await expect(phone.getByText("Scheduling by Lumor")).toHaveCount(0);
-  await expect(phone.getByLabel("Time zone")).toHaveValue("Asia/Kolkata");
   await expect(phone.getByText("Times in India Standard Time")).toBeVisible();
+  // First the introduction, then the day and time, with the time zone on top (D-047).
+  await phone.getByRole("button", { name: "Choose a time" }).click();
+  await expect(phone.getByLabel("Time zone")).toHaveValue("Asia/Kolkata");
   // No sideways scrolling on a phone.
   const wide = await phone.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
   expect(wide).toBe(false);
@@ -251,6 +253,7 @@ test("the booking page on a laptop: details on the left, calendar on the right",
     await browser.newContext({ viewport: { width: 1280, height: 860 } })
   ).newPage();
   await visitor.goto(link);
+  await visitor.getByRole("button", { name: "Choose a time" }).click();
   await expect(visitor.getByRole("group", { name: "Days" })).toBeVisible();
   await visitor.screenshot({ path: "test-results/v26-desktop-pick.png", fullPage: true });
   await visitor.getByLabel("Time zone").selectOption("Europe/London");

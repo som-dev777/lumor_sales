@@ -10,7 +10,9 @@ app. Lines in _italics_ explain how the app adapts a line; they are not part of 
 
 ## Confirmation (sent at once)
 
-Subject: You’re booked: Lumor demo on {event date} at {event time}
+Subject: {event title} · {event date} at {event time}
+
+_(From 2.7.4 the subject starts with the event's title, then the date (owner, D-047); "You're booked" is the heading inside.)_
 
 Hi {invitee first name},
 

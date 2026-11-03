@@ -16,7 +16,9 @@ import {
 } from "@/lib/db/schema";
 import { createTestDb, insertTestUser } from "@/lib/db/test-db";
 import type { Actor } from "@/lib/permissions";
-import { fromIstLocal } from "@/lib/time";
+import { fromIstLocal, toIstDate } from "@/lib/time";
+
+const istDay = (d: Date) => toIstDate(d);
 import {
   bookingFormSchema,
   checkStandardFields,
@@ -48,6 +50,7 @@ import {
   sendDueReminders,
   whereOf,
   findBookingPage,
+  freeSlots,
 } from "./calendar";
 import { calendlySchema, handleCalendly, verifyCalendlySignature } from "./calendly";
 import { createPerson } from "./leads/people";
@@ -284,12 +287,17 @@ describe("the owner's emails (D-043)", () => {
       daysOff: [],
       notifyEmail: null,
       emailTitle: "Co-founder, Lumor",
+      useGoogleBusy: true,
     });
     await demo({ questions: [{ label: "Your role", required: false }] });
     const p = await priyaOnPlan();
     await book({ answers: ["Research Head"] });
     const toPriya = mails.find((m) => m.to.includes("priya@acme.example"))!;
-    expect(toPriya.subject).toBe("You’re booked: Lumor demo on Wednesday 4 November at 11:00 am");
+    // The event's title first, then the date (D-047); the calendar file is attached.
+    expect(toPriya.subject).toBe(
+      "Lumor Demo: see your research in 20 minutes · Wednesday 4 November at 11:00 am",
+    );
+    expect(toPriya.text).toContain("You’re booked");
     expect(toPriya.text).toContain("Hi Priya,");
     expect(toPriya.text).toContain("Thanks for booking a Lumor demo.");
     expect(toPriya.text).toContain("With: Asha Rao, Co-founder, Lumor");
@@ -457,7 +465,7 @@ describe("Schedule a meeting (D-043)", () => {
       personId: p.id,
     });
     expect((await liveEnrolment(t.db, p.id))!.status).toBe("Paused");
-    const sent = mails.find((m) => m.subject.startsWith("Invitation:"))!;
+    const sent = mails.find((m) => m.subject.startsWith("Lumor walkthrough ·"))!;
     expect(sent.to).toEqual(["priya@acme.example", "ravi@acme.example"]);
     expect(sent.cc).toEqual(["boss@lumor.tech"]);
     expect(sent.text).toContain("Asha Rao has invited you to Lumor walkthrough.");
@@ -639,9 +647,9 @@ describe("guests by email and the slot report (D-045)", () => {
     const after = await addGuest(t.db, rep, b.id, "CFO@acme.example", NOW);
     expect(after.ccEmails).toEqual(["cfo@acme.example"]);
     // Without Google, the guest gets our invitation with a calendar file.
-    expect(
-      mails.some((m) => m.to.includes("cfo@acme.example") && m.subject.startsWith("Invitation:")),
-    ).toBe(true);
+    expect(mails.some((m) => m.to.includes("cfo@acme.example") && m.subject.includes(" · "))).toBe(
+      true,
+    );
     await expect(addGuest(t.db, rep, b.id, "priya@acme.example", NOW)).rejects.toThrow(
       "already on this meeting",
     );
@@ -659,5 +667,76 @@ describe("guests by email and the slot report (D-045)", () => {
     expect(wed.blocked[0]).toMatchObject({ from: "11:00 am", reason: "A meeting" });
     expect(wed.offered[0].count).toBeGreaterThan(0);
     expect(r.rules[0]).toMatchObject({ durationMin: 20, minNoticeHours: 4 });
+  });
+});
+
+describe("taken times and why times are missing (D-047)", () => {
+  it("a booked time, and a meeting Fay scheduled herself, aren't offered to anyone else", async () => {
+    await demo();
+    const page = (await findBookingPage(t.db, "asha", "demo"))!;
+    const before = (await freeSlots(t.db, page, NOW)).map((d) => d.toISOString());
+    expect(before).toContain(WED_11);
+    await book();
+    await scheduleMeeting(
+      t.db,
+      rep,
+      scheduleMeetingSchema.parse({
+        title: "Internal sync",
+        date: "2026-11-04",
+        time: "15:00",
+        durationMin: 60,
+        how: "meet",
+        to: "ops@lumor.tech",
+      }),
+      NOW,
+    );
+    const after = (await freeSlots(t.db, page, NOW)).map((d) => d.toISOString());
+    expect(after).not.toContain(WED_11);
+    expect(after).not.toContain(at("2026-11-04T15:00"));
+    expect(after).not.toContain(at("2026-11-04T15:40"));
+    // Someone else trying the same time is refused.
+    await expect(book({ email: "other@beta.example" })).rejects.toThrow("just taken");
+    await expect(
+      book({ email: "late@beta.example", startsAt: at("2026-11-04T15:20") }),
+    ).rejects.toThrow("just taken");
+  });
+
+  it("every start the hours allow is offered on every day, and each missing one says why", async () => {
+    await saveAvailability(t.db, rep, rep.id, {
+      slug: "asha",
+      weeklyHours: {
+        "1": [{ start: "11:00", end: "19:30" }],
+        "2": [{ start: "11:00", end: "19:30" }],
+        "3": [
+          { start: "11:00", end: "13:00" },
+          { start: "14:00", end: "19:30" },
+        ],
+        "4": [{ start: "11:00", end: "19:30" }],
+        "5": [{ start: "11:00", end: "19:30" }],
+        "6": [],
+        "7": [],
+      },
+      daysOff: [],
+      notifyEmail: null,
+      emailTitle: null,
+      useGoogleBusy: true,
+    });
+    await demo({ durationMin: 30, bufferMin: 10, minNoticeHours: 0 });
+    const page = (await findBookingPage(t.db, "asha", "demo"))!;
+    const slots = await freeSlots(t.db, page, NOW);
+    // Mon 2 Nov from 09:00: 11:00…19:00 every 30 min = 17. Wed: 11:00–12:30 (4) + 14:00–19:00 (11).
+    expect(slots.filter((s) => istDay(s) === "2026-11-02")).toHaveLength(17);
+    expect(slots.filter((s) => istDay(s) === "2026-11-04")).toHaveLength(15);
+    expect(slots.filter((s) => istDay(s) === "2026-11-07")).toHaveLength(0);
+    // A booking at 12:00 with a 10-minute gap also takes out 11:30 and 12:30, and says so.
+    await book({ startsAt: at("2026-11-04T12:00") });
+    const r = (await slotReport(t.db, rep.id, NOW, 3))!;
+    const wed = r.days.find((d) => d.date === "2026-11-04")!.offered[0];
+    expect(wed).toMatchObject({ possible: 15, count: 12 });
+    expect(wed.missing).toEqual([
+      { time: "11:30", reason: "too close to a meeting (the gap)" },
+      { time: "12:00", reason: "a meeting" },
+      { time: "12:30", reason: "too close to a meeting (the gap)" },
+    ]);
   });
 });

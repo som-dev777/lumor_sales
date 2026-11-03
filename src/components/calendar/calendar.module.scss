@@ -1132,3 +1132,45 @@
     border-color: var(--color-primary);
   }
 }
+
+// Why some times are missing (D-047).
+.missingList {
+  margin: var(--space-1) 0 var(--space-2);
+  padding-left: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+// The booking page in steps (D-047): introduction → day and time → details.
+.introCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-2) 0;
+
+  .bigButton {
+    align-self: flex-start;
+
+    @include mobile {
+      align-self: stretch;
+    }
+  }
+}
+
+.introBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.introBarTitle {
+  font-family: var(--font-brand);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}

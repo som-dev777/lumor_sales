@@ -414,6 +414,18 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
       **Details**.
 - [ ] 14.32 **Plans**: no "(draft)" names, no Archive; open one of your plans → **Delete**.
 
+**v2.7.4**
+
+- [ ] 14.33 Calendar → Availability → **Send me a test email**: it arrives, or the message says why
+      not.
+- [ ] 14.34 Book from your phone: first the introduction with **Choose a time**, then the time zone
+      on top of the calendar, then your details.
+- [ ] 14.35 The person who booked gets one email from **Lumor**, subject "{event title} · {date}",
+      with your text and a calendar file, and no "Invitation from an unknown sender".
+- [ ] 14.36 Your rep inbox gets "… booked: …".
+- [ ] 14.37 Try to book the same time again in another window: it's gone, or refused.
+- [ ] 14.38 Availability → **Why some times are missing**: every missing time has a reason.
+
 **Calendly (only if you still use it)**
 
 - [ ] 14.25 Follow docs/deploy.md → "Calendly". Book on Calendly: the person gets Meeting booked

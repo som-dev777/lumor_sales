@@ -40,7 +40,24 @@ export function gmailFrom(): string {
 type Transport = { sendMail: (m: Record<string, unknown>) => Promise<unknown> };
 
 /** Sends one email through Gmail's mail server with an App Password (D-046). */
-async function sendWithGmail(email: Email, transport?: Transport): Promise<boolean> {
+export type SendResult = { ok: boolean; error?: string };
+
+/** Why Gmail refused, in plain words (never the password). */
+function gmailProblem(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
+  if (/535|Username and Password not accepted|Invalid login|BadCredentials/i.test(msg)) {
+    return "Gmail refused the login. Check GMAIL_USER is the full address and GMAIL_APP_PASSWORD is the 16-letter App Password (not the normal password).";
+  }
+  if (/Application-specific password required|534/i.test(msg)) {
+    return "Gmail needs an App Password: turn on 2-Step Verification, then create one at myaccount.google.com/apppasswords.";
+  }
+  if (/timeout|ETIMEDOUT|ECONNREFUSED|ENOTFOUND/i.test(msg)) {
+    return "Couldn't reach Gmail's mail server. Try again in a minute.";
+  }
+  return `Gmail said: ${msg.slice(0, 200)}`;
+}
+
+async function sendWithGmail(email: Email, transport?: Transport): Promise<SendResult> {
   const to = Array.isArray(email.to) ? email.to : [email.to];
   try {
     const t =
@@ -75,10 +92,10 @@ async function sendWithGmail(email: Email, transport?: Transport): Promise<boole
           }
         : {}),
     });
-    return true;
+    return { ok: true };
   } catch (e) {
     console.error(`Email to ${to.join(", ")} failed (Gmail):`, e instanceof Error ? e.message : e);
-    return false;
+    return { ok: false, error: gmailProblem(e) };
   }
 }
 
@@ -91,8 +108,30 @@ export async function sendEmail(
   fetcher: typeof fetch = fetch,
   transport?: Transport,
 ): Promise<boolean> {
+  return (await sendEmailResult(email, fetcher, transport)).ok;
+}
+
+/** How emails go out right now, for the test button (D-047). */
+export function emailSetup(): { via: "Gmail" | "Resend" | null; from: string | null } {
+  if (gmailConfigured()) return { via: "Gmail", from: gmailFrom() };
+  if (resendConfigured()) return { via: "Resend", from: process.env.EMAIL_FROM!.trim() };
+  return { via: null, from: null };
+}
+
+/** Sends one email and says why it failed, if it did (D-047). */
+export async function sendEmailResult(
+  email: Email,
+  fetcher: typeof fetch = fetch,
+  transport?: Transport,
+): Promise<SendResult> {
   if (gmailConfigured()) return sendWithGmail(email, transport);
-  if (!resendConfigured()) return false;
+  if (!resendConfigured()) {
+    return {
+      ok: false,
+      error:
+        "Email isn't set up on this site: add GMAIL_USER and GMAIL_APP_PASSWORD on Netlify, then deploy again.",
+    };
+  }
   try {
     const res = await fetcher("https://api.resend.com/emails", {
       method: "POST",
@@ -122,12 +161,14 @@ export async function sendEmail(
       }),
       signal: AbortSignal.timeout(10_000),
     });
-    if (!res.ok)
+    if (!res.ok) {
       console.error(`Email to ${String(email.to)} failed: Resend answered ${res.status}.`);
-    return res.ok;
+      return { ok: false, error: `Resend refused it (status ${res.status}).` };
+    }
+    return { ok: true };
   } catch (e) {
     console.error(`Email to ${String(email.to)} failed:`, e instanceof Error ? e.message : e);
-    return false;
+    return { ok: false, error: "Couldn't reach Resend. Try again in a minute." };
   }
 }
 

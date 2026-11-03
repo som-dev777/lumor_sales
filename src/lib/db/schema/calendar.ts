@@ -48,6 +48,8 @@ export const calendarProfile = sqliteTable(
     notifyEmail: text("notify_email"),
     // "Co-founder, Lumor": after the rep's name in booking emails (D-043).
     emailTitle: text("email_title"),
+    // Times busy in the rep's Google Calendar are taken out of their booking slots (D-047).
+    useGoogleBusy: flag("use_google_busy").notNull().default(true),
   },
   (t) => [check("calendar_profile_slug_check", sql`${t.slug} GLOB '[a-z0-9]*'`)],
 );

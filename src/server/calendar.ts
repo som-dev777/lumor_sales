@@ -19,6 +19,7 @@ import { assertCan, can, PermissionError, type Actor } from "@/lib/permissions";
 import {
   availableSlots,
   DEFAULT_HOURS,
+  explainDay,
   isOffered,
   isoWeekday,
   type Busy,
@@ -97,6 +98,8 @@ export type ProfileView = {
   notifyEmail: string | null;
   /** "Co-founder, Lumor" after the rep's name in emails (D-043). */
   emailTitle: string | null;
+  /** Take Google Calendar busy times out of the slots (D-047). */
+  useGoogleBusy: boolean;
   /** False until the rep saves their hours or creates a meeting type. */
   saved: boolean;
 };
@@ -123,6 +126,7 @@ export async function profileView(db: DbOrTx, owner: { id: string; name: string 
       daysOff: row.daysOff,
       notifyEmail: row.notifyEmail,
       emailTitle: row.emailTitle,
+      useGoogleBusy: row.useGoogleBusy,
       saved: true,
     };
   }
@@ -132,6 +136,7 @@ export async function profileView(db: DbOrTx, owner: { id: string; name: string 
     daysOff: [],
     notifyEmail: null,
     emailTitle: null,
+    useGoogleBusy: true,
     saved: false,
   } satisfies ProfileView;
 }
@@ -192,6 +197,7 @@ export async function saveAvailability(
         daysOff,
         notifyEmail: data.notifyEmail,
         emailTitle: data.emailTitle,
+        useGoogleBusy: data.useGoogleBusy,
       })
       .where(eq(calendarProfile.id, before.id))
       .returning();
@@ -207,6 +213,7 @@ export async function saveAvailability(
         daysOff: before.daysOff,
         notifyEmail: before.notifyEmail,
         emailTitle: before.emailTitle,
+        useGoogleBusy: before.useGoogleBusy,
       },
       after: {
         slug: after.slug,
@@ -214,6 +221,7 @@ export async function saveAvailability(
         daysOff: after.daysOff,
         notifyEmail: after.notifyEmail,
         emailTitle: after.emailTitle,
+        useGoogleBusy: after.useGoogleBusy,
       },
     });
     return after;
@@ -431,8 +439,13 @@ async function busyFor(
         g.start.getTime() !== except.startsAt.getTime() ||
         g.end.getTime() !== except.endsAt.getTime(),
     )
-    .map((g) => ({ ...g, bufferMin: 0, meetingTypeId: "google" }));
-  return [...rows, ...fromGoogle];
+    .map((g) => ({
+      ...g,
+      bufferMin: 0,
+      meetingTypeId: "google",
+      label: "busy in your Google Calendar",
+    }));
+  return [...rows.map((r) => ({ ...r, label: "a meeting" })), ...fromGoogle];
 }
 
 const slotArgs = (page: BookingPage, busy: Busy[], now: Date) => ({
@@ -444,14 +457,16 @@ const slotArgs = (page: BookingPage, busy: Busy[], now: Date) => ({
   now,
 });
 
-/** The rep's Google busy times for this page's booking window (empty without Google). */
-const googleWindow = (db: Db, page: BookingPage, now: Date) =>
-  googleBusy(
-    db,
-    page.host.id,
-    now,
-    new Date(now.getTime() + (page.type.maxDaysAhead + 2) * 24 * 3600_000),
-  );
+/** The rep's Google busy times for this page's booking window (empty without Google, or off). */
+const googleWindow = async (db: Db, page: BookingPage, now: Date) =>
+  page.profile?.useGoogleBusy === false
+    ? []
+    : googleBusy(
+        db,
+        page.host.id,
+        now,
+        new Date(now.getTime() + (page.type.maxDaysAhead + 2) * 24 * 3600_000),
+      );
 
 /** The free start times on a booking page. */
 export async function freeSlots(db: Db, page: BookingPage, now = new Date(), exceptId?: string) {
@@ -478,8 +493,13 @@ export type SlotReportDay = {
   dayOff: boolean;
   /** What takes time out of the hours: Google busy times and meetings (with gaps). */
   blocked: { from: string; to: string; reason: string }[];
-  /** Free times offered that day, per event. */
-  offered: { name: string; count: number }[];
+  /** Free times offered that day, per event, out of the starts the hours allow, and why the rest aren't. */
+  offered: {
+    name: string;
+    count: number;
+    possible: number;
+    missing: { time: string; reason: string }[];
+  }[];
 };
 
 /**
@@ -496,20 +516,25 @@ export async function slotReport(db: Db, ownerId: string, now = new Date(), days
   const host = await loadHost(db, ownerId);
   const types = (await listMeetingTypes(db, ownerId)).filter((t) => t.active);
   const until = new Date(now.getTime() + (days + 1) * 24 * 3600_000);
-  const google = await googleBusyCheck(db, ownerId, now, until);
+  const google = profile.useGoogleBusy
+    ? await googleBusyCheck(db, ownerId, now, until)
+    : { ok: null, busy: [] as { start: Date; end: Date }[] };
   const meetings = await busyFor(db, ownerId, now, null, []);
   const today = todayIst(now);
   const time = (d: Date) => formatIst(d, "h:mm aaa");
-  const perType = types.map((type) => ({
-    name: type.name,
-    slots: availableSlots(
-      slotArgs(
-        { host, profile, type },
-        [...meetings, ...google.busy.map((g) => ({ ...g, bufferMin: 0, meetingTypeId: "google" }))],
-        now,
-      ),
-    ),
-  }));
+  const busy = [
+    ...meetings,
+    ...google.busy.map((g) => ({
+      ...g,
+      bufferMin: 0,
+      meetingTypeId: "google",
+      label: "busy in your Google Calendar",
+    })),
+  ];
+  const perType = types.map((type) => {
+    const args = slotArgs({ host, profile, type }, busy, now);
+    return { name: type.name, args, slots: availableSlots(args) };
+  });
   const out: SlotReportDay[] = [];
   for (let i = 0; i < days; i++) {
     const date = addDaysIst(today, i);
@@ -532,14 +557,21 @@ export async function slotReport(db: Db, ownerId: string, now = new Date(), days
           reason: b.bufferMin ? "A meeting (and its gap)" : "A meeting",
         })),
       ],
-      offered: perType.map((t) => ({
-        name: t.name,
-        count: t.slots.filter((s) => toIstDate(s) === date).length,
-      })),
+      offered: perType.map((t) => {
+        const checks = explainDay(date, t.args);
+        return {
+          name: t.name,
+          count: t.slots.filter((s) => toIstDate(s) === date).length,
+          possible: checks.length,
+          // Each start time the hours allow but that isn't offered, and why (D-047).
+          missing: checks.filter((c) => c.reason).map((c) => ({ time: c.time, reason: c.reason! })),
+        };
+      }),
     });
   }
   return {
     google: google.ok,
+    useGoogleBusy: profile.useGoogleBusy,
     days: out,
     rules: types.map((t) => ({
       name: t.name,
@@ -837,6 +869,9 @@ async function insertBooking(
       message: replacing?.message ?? null,
     })
     .returning();
+  // Checked again after saving, inside the same transaction (D-047): if two people book
+  // overlapping times at once, the second one is refused and nothing is saved for it.
+  await assertNoOverlap(tx, page.host.id, row);
   await writeAudit(tx, {
     userId: page.host.id,
     entityType: "Booking",
@@ -893,6 +928,24 @@ async function insertBooking(
     .orderBy(desc(activity.createdAt))
     .limit(1);
   return { row: linked, sync: { ...sync, activityId: logged?.id ?? null } };
+}
+
+/** Refuses a booking that overlaps another confirmed meeting of the rep (hosting or a teammate). */
+async function assertNoOverlap(tx: DbOrTx, hostId: string, row: BookingRow) {
+  const [clash] = await tx
+    .select({ id: booking.id })
+    .from(booking)
+    .where(
+      and(
+        involves(hostId),
+        eq(booking.status, "Confirmed"),
+        ne(booking.id, row.id),
+        lt(booking.startsAt, row.endsAt),
+        gt(booking.endsAt, row.startsAt),
+      ),
+    )
+    .limit(1);
+  if (clash) throw new LeadError(TAKEN);
 }
 
 /** The Meet link, once Google made it, joins the Meeting booked entry on the timeline. */
@@ -1318,7 +1371,8 @@ export async function addGuest(
   });
   const team = await teamOf(db, after);
   await syncAttendees(db, after, page, team);
-  if (!after.googleEventId && emailConfigured()) {
+  // Google doesn't email guests (D-047): ours carries the invite.
+  if (emailConfigured()) {
     try {
       await send(
         address,
@@ -1906,6 +1960,7 @@ function inviteeMailOf(b: BookingRow, page: BookingPage, token: string | null): 
   return {
     inviteeName: b.inviteeName,
     eventName: emailNameOf(b, page),
+    eventTitle: nameOf(b, page),
     startsAt: b.startsAt,
     timeZone: b.inviteeTimeZone,
     durationMin: Math.round((b.endsAt.getTime() - b.startsAt.getTime()) / 60_000),
@@ -1934,14 +1989,15 @@ async function sendBookingEmails(db: Db, job: MailJob) {
     const team = "team" in job ? job.team : await teamOf(db, b);
     const fromGoogle = Boolean(b.googleEventId);
     const cancel = job.kind === "cancelled";
-    const ics = fromGoogle
-      ? undefined
-      : buildIcs(eventOf(b, page, cancel ? "CANCEL" : "REQUEST", team));
+    // Google no longer emails anyone (D-047), so every guest gets our calendar file. Only the
+    // host, whose Google Calendar already has the event, goes without it.
+    const ics = buildIcs(eventOf(b, page, cancel ? "CANCEL" : "REQUEST", team));
     const actorId = "actorId" in job ? (job.actorId ?? null) : null;
     const invitee = inviteeMailOf(b, page, "token" in job ? job.token : null);
     // A meeting the rep scheduled goes to its To list with CC copied; a booking to its booker.
     const to = page.type.hidden && b.toEmails.length ? b.toEmails : b.inviteeEmail;
-    const cc = page.type.hidden ? b.ccEmails : [];
+    // CC: a scheduled meeting's CC list, or guests added by email (D-045).
+    const cc = b.ccEmails;
 
     if (job.kind === "booked") {
       await send(
@@ -2008,7 +2064,13 @@ async function sendBookingEmails(db: Db, job: MailJob) {
           : repMovedMail({ ...rep, from: job.old.startsAt, to: b.startsAt, by: job.by });
     for (const m of team.filter((x) => x.id !== actorId)) {
       // The host gets Google's own invite; teammates without Google get our file.
-      await send(m.notifyTo, b.inviteeEmail, repMail, m.host ? undefined : ics, cancel);
+      await send(
+        m.notifyTo,
+        b.inviteeEmail,
+        repMail,
+        m.host && fromGoogle ? undefined : ics,
+        cancel,
+      );
     }
   } catch (e) {
     console.error("Booking email failed:", e instanceof Error ? e.message : e);
@@ -2037,16 +2099,14 @@ async function sendTeammateEmail(
     const subject = j.added
       ? `${j.by} added you to ${j.page.type.name} with ${j.b.inviteeName}`
       : `${j.by} removed you from ${j.page.type.name} with ${j.b.inviteeName}`;
-    const ics = j.b.googleEventId
-      ? undefined
-      : buildIcs(
-          eventOf(
-            j.b,
-            j.page,
-            j.added ? "REQUEST" : "CANCEL",
-            j.added ? j.team : [...j.team, { ...j.mate, notifyTo: to, host: false }],
-          ),
-        );
+    const ics = buildIcs(
+      eventOf(
+        j.b,
+        j.page,
+        j.added ? "REQUEST" : "CANCEL",
+        j.added ? j.team : [...j.team, { ...j.mate, notifyTo: to, host: false }],
+      ),
+    );
     await send(
       to,
       j.page.host.email,

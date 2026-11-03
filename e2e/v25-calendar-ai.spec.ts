@@ -78,6 +78,7 @@ test("exit check: a signed-out visitor books a slot and sees the confirmation", 
   await visitor.goto(new URL(link).pathname);
   await expect(shown(visitor.getByRole("heading", { name: "Lumor demo" }))).toBeVisible();
   await expect(visitor.getByText("Cara Calendar", { exact: true })).toBeVisible();
+  await visitor.getByRole("button", { name: "Choose a time" }).click();
   const firstTime = visitor.getByRole("group", { name: "Times" }).getByRole("button").first();
   const chosen = (await firstTime.innerText()).trim();
   await firstTime.click();
@@ -100,6 +101,7 @@ test("exit check: a signed-out visitor books a slot and sees the confirmation", 
 
   // The slot is gone from the booking page.
   await visitor.goto(new URL(link).pathname);
+  await visitor.getByRole("button", { name: "Choose a time" }).click();
   const times = visitor.getByRole("group", { name: "Times" });
   await expect(times.getByRole("button").first()).not.toHaveText(chosen);
   await visitor.context().close();

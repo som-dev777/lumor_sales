@@ -193,6 +193,8 @@ export function SlotPicker({
   const mi = months.indexOf(month);
   return (
     <div className={styles.stack}>
+      {/* The time zone first (D-047): India Standard Time unless they change it. */}
+      <TimeZonePicker tz={tz} />
       <div className={styles.picker}>
         <div className={styles.monthBox}>
           <div className={styles.monthHead}>
@@ -260,7 +262,6 @@ export function SlotPicker({
           </div>
         </div>
       </div>
-      <TimeZonePicker tz={tz} />
     </div>
   );
 }

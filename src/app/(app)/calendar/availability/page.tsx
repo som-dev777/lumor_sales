@@ -15,6 +15,7 @@ import { requireUser } from "@/lib/session";
 import { formatIst, formatIstDate, todayIst } from "@/lib/time";
 import { appUrl } from "@/lib/tokens";
 import { listMeetingTypes, previewSlots, profileView, slotReport } from "@/server/calendar";
+import { emailSetup } from "@/server/email";
 import { connectionView, googleConfigured } from "@/server/google/google";
 
 export const metadata: Metadata = { title: "Availability" };
@@ -115,6 +116,12 @@ async function Availability({
         baseUrl={appUrl()}
         today={todayIst(now)}
         loginEmail={viewer.email}
+        emailSetup={(() => {
+          const e = emailSetup();
+          return e.via
+            ? `Emails go out through ${e.via}, from ${e.from}. People who book see that sender; replies come to you.`
+            : "Emails aren't set up on this site yet, so nobody is emailed (see docs/deploy.md).";
+        })()}
         meetingTypes={types
           .filter((t) => t.active)
           .map((t) => ({ name: t.name, durationMin: t.durationMin }))}
@@ -179,6 +186,12 @@ function WhyMissing({ report }: { report: NonNullable<Awaited<ReturnType<typeof 
           more times show than you may expect. Disconnect and connect Google again above.
         </Alert>
       )}
+      {!report.useGoogleBusy && (
+        <p className={styles.muted}>
+          Google Calendar busy times are switched off for booking (Availability → Booking emails
+          above).
+        </p>
+      )}
       {report.google === true && (
         <p className={styles.muted}>
           Your Google Calendar is checked: anything marked busy there (including all-day events set
@@ -209,7 +222,26 @@ function WhyMissing({ report }: { report: NonNullable<Awaited<ReturnType<typeof 
                         </div>
                       ))}
                 </td>
-                <td>{d.offered.map((o) => `${o.name}: ${o.count}`).join(" · ") || "—"}</td>
+                <td>
+                  {d.offered.length === 0
+                    ? "—"
+                    : d.offered.map((o) => (
+                        <div key={o.name}>
+                          <strong>
+                            {o.name}: {o.count} of {o.possible}
+                          </strong>
+                          {o.missing.length > 0 && (
+                            <ul className={styles.missingList}>
+                              {o.missing.map((m) => (
+                                <li key={m.time}>
+                                  {m.time} · {m.reason}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                </td>
               </tr>
             ))}
           </tbody>

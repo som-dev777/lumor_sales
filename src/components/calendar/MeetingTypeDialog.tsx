@@ -30,7 +30,8 @@ export const NEW_MEETING_TYPE: MeetingTypeInput = {
   durationMin: 30,
   description: "",
   location: "",
-  bufferMin: 10,
+  // No gap by default (D-047): a gap also hides the slots right next to each meeting.
+  bufferMin: 0,
   minNoticeHours: 4,
   maxDaysAhead: 30,
   maxPerDay: "",
@@ -184,6 +185,7 @@ function MeetingTypeForm({
         )}
         <TextField
           label="Gap after (minutes)"
+          hint="Free time after each meeting. It also hides the slot just before and after a booked meeting."
           type="number"
           min={0}
           max={60}

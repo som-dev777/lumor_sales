@@ -55,6 +55,8 @@ export type InviteeMail = {
   inviteeName: string;
   /** The event's name in emails ("Lumor demo"). */
   eventName: string;
+  /** The event's full title, first in the subject (D-047), e.g. "Lumor demo: see your research in 30 minutes". */
+  eventTitle?: string;
   startsAt: Date;
   timeZone: string;
   durationMin: number;
@@ -74,8 +76,10 @@ export function confirmationMail(m: InviteeMail): Mail {
   const time = timeText(m.startsAt, m.timeZone);
   const where = whereLine(m.where);
   return {
-    subject: `You’re booked: ${m.eventName} on ${date} at ${time}`,
+    // The event's title, then the date (owner, D-047).
+    subject: `${m.eventTitle ?? m.eventName} · ${date} at ${time}`,
     content: {
+      heading: "You’re booked",
       intro: [
         `Hi ${first(m.inviteeName)},`,
         `Thanks for booking ${article(m.eventName)} ${m.eventName}. Here are the details:`,
@@ -245,7 +249,7 @@ export function movedMail(m: InviteeMail, from: Date, by: string | null): Mail {
   const date = dateText(m.startsAt, m.timeZone);
   const time = timeText(m.startsAt, m.timeZone);
   return {
-    subject: `Moved: your ${m.eventName} is now on ${date} at ${time}`,
+    subject: `${m.eventTitle ?? m.eventName} · moved to ${date} at ${time}`,
     content: {
       ...base.content,
       intro: [
@@ -258,13 +262,16 @@ export function movedMail(m: InviteeMail, from: Date, by: string | null): Mail {
 
 /** To the person who booked when the meeting is cancelled. */
 export function cancelledMail(
-  m: Pick<InviteeMail, "inviteeName" | "eventName" | "startsAt" | "timeZone" | "hostName">,
+  m: Pick<
+    InviteeMail,
+    "inviteeName" | "eventName" | "eventTitle" | "startsAt" | "timeZone" | "hostName"
+  >,
   o: { by: string | null; reason: string | null; bookAgainUrl: string | null },
 ): Mail {
   const date = dateText(m.startsAt, m.timeZone);
   const time = timeText(m.startsAt, m.timeZone);
   return {
-    subject: `Cancelled: ${m.eventName} on ${date}`,
+    subject: `${m.eventTitle ?? m.eventName} · cancelled (${date})`,
     content: {
       intro: [
         `Hi ${first(m.inviteeName)},`,
@@ -283,8 +290,9 @@ export function invitationMail(m: InviteeMail): Mail {
   const time = timeText(m.startsAt, m.timeZone);
   const where = whereLine(m.where);
   return {
-    subject: `Invitation: ${m.eventName} on ${date} at ${time}`,
+    subject: `${m.eventTitle ?? m.eventName} · ${date} at ${time}`,
     content: {
+      heading: "You’re invited",
       intro: [`Hi,`, `${m.hostName} has invited you to ${m.eventName}.`],
       rows: [
         [

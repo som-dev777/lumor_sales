@@ -11,6 +11,7 @@ import { minutesOf, nextRange } from "@/lib/slots";
 import { formatIstDate } from "@/lib/time";
 import { MAX_RANGES_PER_DAY, toSlug } from "@/lib/validation/calendar";
 import { saveAvailabilityAction } from "@/server/actions/calendar";
+import { TestEmailButton } from "./TestEmailButton";
 import styles from "./calendar.module.scss";
 
 const DAYS = ["1", "2", "3", "4", "5", "6", "7"] as const;
@@ -22,13 +23,17 @@ export function AvailabilityForm({
   today,
   loginEmail,
   meetingTypes,
+  emailSetup,
 }: {
+  /** How emails go out, in words (D-047). */
+  emailSetup: string;
   initial: {
     slug: string;
     weeklyHours: WeeklyHours;
     daysOff: string[];
     notifyEmail: string | null;
     emailTitle: string | null;
+    useGoogleBusy: boolean;
   };
   baseUrl: string;
   today: string;
@@ -42,6 +47,7 @@ export function AvailabilityForm({
   const [slug, setSlug] = useState(initial.slug);
   const [notifyEmail, setNotifyEmail] = useState(initial.notifyEmail ?? "");
   const [emailTitle, setEmailTitle] = useState(initial.emailTitle ?? "");
+  const [useGoogleBusy, setUseGoogleBusy] = useState(initial.useGoogleBusy);
   const [newDay, setNewDay] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +78,7 @@ export function AvailabilityForm({
         daysOff,
         notifyEmail,
         emailTitle,
+        useGoogleBusy,
       });
       if (r.ok) notify("success", r.message ?? "Saved.");
       else {
@@ -218,6 +225,15 @@ export function AvailabilityForm({
           hint="Shown after your name in the confirmation people get: “With: Your Name, Co-founder, Lumor”."
           onChange={(e) => setEmailTitle(e.target.value)}
         />
+        <label className={styles.checkRow}>
+          <input
+            type="checkbox"
+            checked={useGoogleBusy}
+            onChange={(e) => setUseGoogleBusy(e.target.checked)}
+          />{" "}
+          Take times that are busy in my Google Calendar out of my booking slots
+        </label>
+        <TestEmailButton setup={emailSetup} />
       </section>
 
       <section className={styles.card} aria-label="Booking page">

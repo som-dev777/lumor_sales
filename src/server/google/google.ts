@@ -270,6 +270,8 @@ const pending = (body: Record<string, unknown>) =>
 export type GoogleResult = { ok: true; eventId: string; meetLink: string | null } | { ok: false };
 
 /** Creates the event (Google emails the invite). Null result when not connected. */
+// Google never emails the guests itself (D-047): its invites came from the rep's own account as
+// "Invitation from an unknown sender" with no content. Lumor's own emails carry the invite.
 export async function createGoogleEvent(
   db: Db,
   hostId: string,
@@ -280,7 +282,7 @@ export async function createGoogleEvent(
   if (!token) return (await connectionView(db, hostId)) ? { ok: false } : null;
   try {
     const r = await fetchJson(
-      `${API}/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all`,
+      `${API}/calendars/primary/events?conferenceDataVersion=1&sendUpdates=none`,
       {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -318,7 +320,7 @@ export async function updateGoogleEvent(
   if (!token) return false;
   try {
     const r = await fetchJson(
-      `${API}/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=all`,
+      `${API}/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=none`,
       {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -345,7 +347,7 @@ export async function deleteGoogleEvent(db: Db, hostId: string, eventId: string)
   if (!token) return false;
   try {
     const res = await fetch(
-      `${API}/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=all`,
+      `${API}/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=none`,
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },

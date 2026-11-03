@@ -153,7 +153,9 @@ Use this instead of Resend when you don't want to use your company domain.
 4. Netlify → Environment variables: add `GMAIL_USER` = the Gmail address and
    `GMAIL_APP_PASSWORD` = the 16 letters. Optional: `EMAIL_FROM` = `Somnath at Lumor
 <the Gmail address>` to choose the name people see.
-5. **Deploys → Trigger deploy**. Book a test meeting with your own address to check.
+5. **Deploys → Trigger deploy**. Then Calendar → Availability → **Send me a test email**.
+6. The picture people see next to the email is that Gmail account's profile photo: sign in to
+   it, click the round picture top right → the pencil → upload `public/lumor-icon-512.png`.
 
 ## Calendly (F27, optional)
 

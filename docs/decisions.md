@@ -912,3 +912,41 @@ replaces it.
     (prospects see the address). Gmail's limit (about 500 emails a day) is far above our use.
   - Everything else (calendar files, PDFs, CC) works the same.
   - **Version 2.7.3** (PATCH).
+
+## D-047: Booking emails, the booking page in steps, taken times, missing slots (owner, 2026-11-03)
+
+- **Date:** 2026-11-03 · **Status:** Accepted
+- **Owner's findings and my choices:**
+  1. **"Invitation from an unknown sender" with no content, from "Somnath Chakravarti":** that
+     was Google Calendar's own invite, sent from the rep's Google account because we asked
+     Google to email the guests (`sendUpdates=all`). Now Google never emails anyone
+     (`sendUpdates=none`); Lumor's branded emails go instead, each with the calendar file
+     attached (the host's own copy is in their Google Calendar). Google still keeps the event
+     and its Meet link.
+  2. **Subjects** start with the event's title, then the date: "Lumor demo: … · Wednesday 4
+     November at 3:00 pm" (also moved, cancelled and invitations). The body keeps the owner's
+     wording under a "You're booked" heading.
+  3. **Sender name and avatar:** the sender is "Lumor <the Gmail address>" (D-046). The round
+     picture in people's inboxes is the sending Gmail account's own profile photo, which the
+     app can't set: the owner sets the Lumor icon (public/lumor-icon-512.png) as that
+     account's photo. The icon is saved in the app as public/lumor-icon.svg.
+  4. **The rep got no email:** booking emails were going nowhere (email wasn't set up, or was
+     failing). Rep emails already go to each rep's own address (their booking-email address,
+     or their login email), so they follow whoever's booking link was used. New: **Send me a
+     test email** on Availability, which says how emails go out and, if sending fails, why
+     (for example a wrong App Password).
+  5. **Taken times:** booked meetings, meetings a rep schedules themselves and meetings they're a
+     teammate on are never offered. New: after saving a booking the app checks again for any
+     overlapping meeting in the same transaction and refuses the second of two people booking at
+     once.
+  6. **Missing slots:** the rules offer every start the hours allow, every 30 minutes (every 15
+     for meetings of 20 minutes or less). Times go missing because of the minimum notice, a
+     booked meeting, its **gap** (a 10-minute gap after a 12:00 meeting also hides 11:30 and
+     12:30), Google Calendar busy times, or the day's limit. Now: new events start with **no
+     gap**; the Availability report lists **every missing time with its reason**; and a switch
+     on Availability lets a rep stop using Google busy times for booking (migration 0016,
+     `calendar_profile.use_google_busy`, default on).
+  7. **The booking page in steps (phone and desktop):** 1) the introduction (who, the event,
+     how long, how to meet, the description) with **Choose a time**; 2) the day and time, with
+     the **time zone at the top** (India Standard Time unless changed); 3) the details form.
+  - **Version 2.7.4** (PATCH).

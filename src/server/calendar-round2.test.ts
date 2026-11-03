@@ -399,7 +399,8 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
     });
     const create = calls.find((c) => c.method === "POST" && c.url.includes("/events"))!;
     expect(create.url).toContain("conferenceDataVersion=1");
-    expect(create.url).toContain("sendUpdates=all");
+    // Google doesn't email guests; Lumor's own emails carry the invite (D-047).
+    expect(create.url).toContain("sendUpdates=none");
     expect(create.body).toMatchObject({
       conferenceData: { createRequest: { conferenceSolutionKey: { type: "hangoutsMeet" } } },
       attendees: [{ email: "priya@acme.example", displayName: "Priya Sharma" }],

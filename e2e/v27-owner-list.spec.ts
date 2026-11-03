@@ -81,6 +81,9 @@ test("exit check: a client books on a phone with a required checkbox question", 
   const phone = await ctx.newPage();
   await phone.goto(link);
   await expect(phone.getByRole("img", { name: "Lumor" }).first()).toBeVisible();
+  // Step 1 is the introduction (D-047).
+  await expect(phone.getByRole("group", { name: "Times" })).toHaveCount(0);
+  await phone.getByRole("button", { name: "Choose a time" }).click();
   await phone.getByRole("group", { name: "Times" }).getByRole("button").first().click();
 
   // Email comes first; the closed country box shows "IN +91"; no "Required" line.

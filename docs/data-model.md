@@ -472,4 +472,4 @@ columns `calendar_profile.notify_email`, `meeting_type.google_meet`, `booking.go
 and `booking.meet_link`. 0014 (v2.7.0, D-043) makes `person.linkedin_url` optional (with the
 LinkedIn-or-email check) and adds `person.review_note`; adds `calendly_booking`; the round 3
 calendar columns on `calendar_profile`, `meeting_type` and `booking`; `plan_step.custom_purpose`;
-`report_run.shared_with`; and the `report` and `calendly` notification kinds. 0015 (v2.7.2, D-045) turns the seeded draft plans into ordinary Official plans and drops "(draft)" from their names. From 2.7.2 a meeting's `cc_emails` also holds guests added by email.
+`report_run.shared_with`; and the `report` and `calendly` notification kinds. 0015 (v2.7.2, D-045) turns the seeded draft plans into ordinary Official plans and drops "(draft)" from their names. From 2.7.2 a meeting's `cc_emails` also holds guests added by email. 0016 (v2.7.4, D-047) adds `calendar_profile.use_google_busy` (default on).

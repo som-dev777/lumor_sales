@@ -1,9 +1,8 @@
-import { Clock, Globe, MapPin, Video } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { BookingWidget } from "@/components/calendar/BookingWidget";
+import { BookingWidget, type IntroFact } from "@/components/calendar/BookingWidget";
 import styles from "@/components/calendar/calendar.module.scss";
 import { StatusMessage } from "@/components/ui/StatusMessage";
 import { fieldRules } from "@/lib/booking-fields";
@@ -41,60 +40,44 @@ async function Book({ params }: Pick<PageProps<"/book/[rep]/[type]">, "params">)
     : location && /^https?:\/\//.test(location)
       ? "Video call (link in your confirmation)"
       : (location ?? "We'll send the details");
-  return (
-    <div className={styles.bookingShell}>
-      <aside className={styles.bookingInfo}>
-        <p className={styles.host}>{page.host.name}</p>
-        <h1 className={styles.bookingTitle}>{page.type.name}</h1>
-        <ul className={styles.factList}>
-          <li>
-            <Clock size={16} aria-hidden /> {page.type.durationMin} minutes
-          </li>
-          {rules.mode.show ? (
-            <li>
-              <MapPin size={16} aria-hidden /> Online or in person: you choose
-            </li>
-          ) : google ? (
-            <li>
-              <Video size={16} aria-hidden /> Google Meet (the link comes with your confirmation)
-            </li>
-          ) : (
-            location && (
-              <li>
-                {/^https?:\/\//.test(location) ? (
-                  <>
-                    <Video size={16} aria-hidden /> Video call (link in your confirmation)
-                  </>
-                ) : (
-                  <>
-                    <MapPin size={16} aria-hidden /> {location}
-                  </>
-                )}
-              </li>
-            )
-          )}
-          <li>
-            <Globe size={16} aria-hidden /> Times in India Standard Time; change below
-          </li>
-        </ul>
-        {page.type.description && <p className={styles.description}>{page.type.description}</p>}
-      </aside>
-      <section className={styles.bookingMain} aria-label="Book a time">
-        {page.type.active ? (
-          <BookingWidget
-            profileSlug={page.profile.slug}
-            typeSlug={page.type.slug}
-            slots={slots.map((s) => s.toISOString())}
-            questions={page.type.questions}
-            durationMin={page.type.durationMin}
-            fields={rules}
-            address={page.type.inPersonAddress}
-            online={online}
-          />
-        ) : (
-          <p className={styles.emptySlots}>This meeting isn&rsquo;t taking bookings right now.</p>
-        )}
-      </section>
+  // What the introduction step shows (D-047): the event, then "Choose a time".
+  const facts: IntroFact[] = [
+    { icon: "clock", text: `${page.type.durationMin} minutes` },
+    ...(rules.mode.show
+      ? [{ icon: "pin" as const, text: "Online or in person: you choose" }]
+      : google
+        ? [{ icon: "video" as const, text: "Google Meet (the link comes with your confirmation)" }]
+        : location
+          ? [
+              /^https?:\/\//.test(location)
+                ? { icon: "video" as const, text: "Video call (link in your confirmation)" }
+                : { icon: "pin" as const, text: location },
+            ]
+          : []),
+    { icon: "globe", text: "Times in India Standard Time; you can change the time zone" },
+  ];
+  return page.type.active ? (
+    <BookingWidget
+      profileSlug={page.profile.slug}
+      typeSlug={page.type.slug}
+      slots={slots.map((s) => s.toISOString())}
+      questions={page.type.questions}
+      durationMin={page.type.durationMin}
+      fields={rules}
+      address={page.type.inPersonAddress}
+      online={online}
+      intro={{
+        host: page.host.name,
+        title: page.type.name,
+        description: page.type.description,
+        facts,
+      }}
+    />
+  ) : (
+    <div className={styles.introCard}>
+      <p className={styles.host}>{page.host.name}</p>
+      <h1 className={styles.bookingTitle}>{page.type.name}</h1>
+      <p className={styles.emptySlots}>This meeting isn&rsquo;t taking bookings right now.</p>
     </div>
   );
 }

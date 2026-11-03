@@ -32,9 +32,12 @@ import {
   rescheduleSlots,
   saveAvailability,
   saveMeetingType,
+  profileView,
   scheduleMeeting,
   setMeetingTypeActive,
 } from "../calendar";
+import { renderMail } from "../calendar-mail";
+import { sendEmailResult } from "../email";
 import { disconnectGoogle } from "../google/google";
 import { LeadError } from "../leads/companies";
 
@@ -300,4 +303,28 @@ export async function rescheduleMyBooking(code: string, startsAt: string): Promi
     console.error(e);
     return { ok: false, error: "Couldn't reschedule. Please try again." };
   }
+}
+
+/**
+ * Send me a test email (D-047): to the rep's own booking-email address, so they can see that
+ * booking emails reach them, or read why not. Changes nothing.
+ */
+export async function sendTestEmail(): Promise<ActionResult> {
+  const viewer = await requireUser();
+  const db = getDb();
+  const profile = await profileView(db, viewer);
+  const to = profile.notifyEmail ?? viewer.email;
+  const { text, html } = renderMail({
+    heading: "Emails work",
+    intro: [
+      `Hi ${viewer.name.split(" ")[0]},`,
+      "This is a test from the Lumor Sales Hub. Booking alerts for your meetings come to this address, and the people who book get their confirmation and reminders from the same sender.",
+    ],
+    rows: [],
+    signoff: ["Lumor"],
+  });
+  const r = await sendEmailResult({ to, subject: "Test email from Lumor Sales Hub", text, html });
+  return r.ok
+    ? { ok: true, message: `Sent to ${to}. Check your inbox (and spam) in a minute.` }
+    : { ok: false, error: r.error ?? "It couldn't be sent." };
 }

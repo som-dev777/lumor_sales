@@ -14,7 +14,14 @@ export type SlotRules = {
 };
 
 /** A confirmed booking that blocks time: its own gap after it counts too. */
-export type Busy = { start: Date; end: Date; bufferMin: number; meetingTypeId: string };
+export type Busy = {
+  start: Date;
+  end: Date;
+  bufferMin: number;
+  meetingTypeId: string;
+  /** What it is, for the "why is this time missing" report (D-047). */
+  label?: string;
+};
 
 /** Monday to Friday, 10:00–18:00 IST: every rep's starting hours. */
 export const DEFAULT_HOURS: WeeklyHours = {
@@ -165,4 +172,51 @@ export function nextRange(last: TimeRange): TimeRange | null {
   if (start + 15 > 23 * 60 + 59) return null;
   const end = Math.min(start + length, 23 * 60 + 59);
   return { start: hhmm(start), end: hhmm(end) };
+}
+
+/**
+ * Every start time a day's hours allow, and why each one isn't offered (null = offered). For
+ * the Availability report (D-047); uses exactly the same rules as availableSlots.
+ */
+export function explainDay(
+  date: IstDate,
+  args: Parameters<typeof availableSlots>[0],
+): { time: string; reason: string | null }[] {
+  const { hours, daysOff, rules, busy, meetingTypeId, now } = args;
+  const earliest = now.getTime() + rules.minNoticeHours * 60 * MINUTE;
+  const step = slotStep(rules.durationMin);
+  const out: { time: string; reason: string | null }[] = [];
+  const full = dayIsFull(date, rules, busy, meetingTypeId);
+  for (const range of hours[String(isoWeekday(date))] ?? []) {
+    const from = minutesOf(range.start);
+    const to = minutesOf(range.end);
+    if (from === null || to === null) continue;
+    for (let t = from; t + rules.durationMin <= to; t += step) {
+      const start = fromIstLocal(`${date}T${hhmm(t)}`)!;
+      const s = start.getTime();
+      const e = s + rules.durationMin * MINUTE;
+      let reason: string | null = null;
+      if (daysOff.includes(date)) reason = "day off";
+      else if (s < earliest) reason = `inside the ${rules.minNoticeHours} h minimum notice`;
+      else if (full) reason = `the day's limit of ${rules.maxPerDay} is reached`;
+      else {
+        const hit = busy.find((b) =>
+          overlaps(
+            s,
+            e + rules.bufferMin * MINUTE,
+            b.start.getTime(),
+            b.end.getTime() + b.bufferMin * MINUTE,
+          ),
+        );
+        if (hit) {
+          const direct = overlaps(s, e, hit.start.getTime(), hit.end.getTime());
+          reason = direct
+            ? (hit.label ?? "already booked")
+            : `too close to ${hit.label ?? "a meeting"} (the gap)`;
+        }
+      }
+      out.push({ time: hhmm(t), reason });
+    }
+  }
+  return out;
 }

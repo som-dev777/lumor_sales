@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, CalendarCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarCheck, Clock, Globe, MapPin, Video } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Alert } from "@/components/ui/Alert";
@@ -19,10 +19,68 @@ import {
 } from "@/lib/validation/calendar";
 import { bookSlot } from "@/server/actions/calendar";
 import { PhoneField } from "./PhoneField";
-import { formatDay, formatTime, SlotPicker, useTimeZone, zoneName } from "./SlotPicker";
+import {
+  formatDay,
+  formatTime,
+  SlotPicker,
+  useTimeZone,
+  zoneName,
+} from "./SlotPicker";
 import styles from "./calendar.module.scss";
 
 type Answer = string | string[];
+
+export type IntroFact = { icon: "clock" | "video" | "pin" | "globe"; text: string };
+const FACT_ICON = { clock: Clock, video: Video, pin: MapPin, globe: Globe };
+
+/** The first step (D-047): what the meeting is, then "Choose a time". */
+function Intro({
+  intro,
+  onNext,
+  compact = false,
+  onBack,
+}: {
+  intro: { host: string; title: string; description: string | null; facts: IntroFact[] };
+  onNext?: () => void;
+  compact?: boolean;
+  onBack?: () => void;
+}) {
+  if (compact) {
+    return (
+      <div className={styles.introBar}>
+        <div>
+          <p className={styles.host}>{intro.host}</p>
+          <p className={styles.introBarTitle}>{intro.title}</p>
+        </div>
+        {onBack && (
+          <Button variant="ghost" onClick={onBack}>
+            <ArrowLeft size={16} aria-hidden /> About this meeting
+          </Button>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div className={styles.introCard}>
+      <p className={styles.host}>{intro.host}</p>
+      <h1 className={styles.bookingTitle}>{intro.title}</h1>
+      <ul className={styles.factList}>
+        {intro.facts.map((f) => {
+          const Icon = FACT_ICON[f.icon];
+          return (
+            <li key={f.text}>
+              <Icon size={16} aria-hidden /> {f.text}
+            </li>
+          );
+        })}
+      </ul>
+      {intro.description && <p className={styles.description}>{intro.description}</p>}
+      <Button className={styles.bigButton} onClick={onNext}>
+        Choose a time <ArrowRight size={16} aria-hidden />
+      </Button>
+    </div>
+  );
+}
 
 /** The public booking page's picker and form (F22). No sign-in. */
 export function BookingWidget({
@@ -34,7 +92,10 @@ export function BookingWidget({
   fields,
   address,
   online,
+  intro,
 }: {
+  /** The introduction step: who, what, how long (D-047). */
+  intro: { host: string; title: string; description: string | null; facts: IntroFact[] };
   profileSlug: string;
   typeSlug: string;
   slots: string[];
@@ -50,7 +111,7 @@ export function BookingWidget({
   const router = useRouter();
   const tz = useTimeZone();
   const [slot, setSlot] = useState<string | null>(null);
-  const [step, setStep] = useState<"pick" | "form">("pick");
+  const [step, setStep] = useState<"intro" | "pick" | "form">("intro");
   const [values, setValues] = useState({
     name: "",
     email: "",
@@ -84,9 +145,14 @@ export function BookingWidget({
     clear(`answers.${i}`);
   };
 
+  if (step === "intro") {
+    return <Intro intro={intro} onNext={() => setStep(slot ? "form" : "pick")} />;
+  }
+
   if (step === "pick" || !slot) {
     return (
       <div className={styles.stack}>
+        <Intro intro={intro} compact onBack={() => setStep("intro")} />
         <h2 className={styles.stepTitle}>Pick a day and time</h2>
         <SlotPicker
           slots={slots}
@@ -136,6 +202,7 @@ export function BookingWidget({
     <form
       className={styles.stack}
       noValidate
+      aria-label="Your details"
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
@@ -167,6 +234,7 @@ export function BookingWidget({
         });
       }}
     >
+      <Intro intro={intro} compact />
       <div className={styles.chosen}>
         <CalendarCheck size={20} aria-hidden />
         <div>

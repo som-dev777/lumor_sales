@@ -7,7 +7,18 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.7.2 and the Gmail setup.
+Next: the owner's QA of v2.7.4 and the Gmail setup.
+
+## [2.7.4] - 2026-11-03
+
+Booking emails, the booking page in steps, taken times and missing slots (D-047).
+
+- People who book now get Lumor's own email (the event's title and date in the subject, your wording inside, the calendar file attached) instead of Google's "Invitation from an unknown sender". Google still keeps the event and the Meet link.
+- **Send me a test email** on Calendar → Availability shows how emails go out and, if they fail, exactly why.
+- The booking page goes in steps: first what the meeting is about with **Choose a time**, then the day and time with the time zone on top, then the details.
+- A time someone has booked, or a meeting you scheduled, is never offered again, even when two people book at the same moment.
+- Availability's **Why some times are missing** lists every missing time and its reason (minimum notice, a meeting, the gap after it, Google Calendar busy). New events start with no gap. You can switch off using Google Calendar busy times for booking.
+- Your Lumor icon is saved for the Gmail account's profile photo (the picture people see next to the email).
 
 ## [2.7.3] - 2026-11-03
 

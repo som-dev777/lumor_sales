@@ -1,0 +1,1 @@
+ALTER TABLE `calendar_profile` ADD `use_google_busy` integer DEFAULT true NOT NULL;
