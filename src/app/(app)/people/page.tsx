@@ -15,7 +15,7 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { getDb } from "@/lib/db/client";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
-import { formatIstDate } from "@/lib/time";
+import { formatIstDate, todayIst } from "@/lib/time";
 import { appNow } from "@/lib/clock";
 import { usablePlans } from "@/server/plans/plans";
 import { backlogByPerson } from "@/server/today";
@@ -230,6 +230,7 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
             canReassign={isAdmin}
             owners={options.owners}
             plans={plans}
+            today={todayIst(await appNow())}
             rows={rows.map((r) => ({
               id: r.id,
               fullName: r.fullName,
@@ -240,6 +241,10 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
               stage: r.stage,
               nextAction: r.nextAction,
               nextActionLabel: r.nextActionDate ? formatIstDate(r.nextActionDate) : null,
+              nextActionDate: r.nextActionDate,
+              // Owner or Admin, as on the person page; closed leads don't need follow-ups.
+              canEdit:
+                (r.ownerId === viewer.id || isAdmin) && r.stage !== "Lost" && r.stage !== "Paid",
               // Late only while it's still a backlog: anything logged since clears it (D-055).
               overdue: backlog.has(r.id),
               ownerName: r.ownerName,

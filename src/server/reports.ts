@@ -2,6 +2,7 @@
 // changes later. Anyone can report on themselves; Admins on the team or anyone. Each report is
 // audited when made and when its AI summary is written.
 import { and, desc, eq, gte, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import { writeAudit } from "@/lib/audit";
 import { csvFile } from "@/lib/csv";
@@ -13,6 +14,24 @@ import { istDateSpan, toIstDate } from "@/lib/time";
 import { runPrompt } from "./ai/client";
 import { funnelTotals, planPerformance, type Conversion, type Counts } from "./dashboard";
 import { LeadError } from "./leads/companies";
+import { newOutreach } from "./outreach";
+import {
+  NUMBER_KEYS,
+  NUMBER_SECTIONS,
+  PIPELINE_COLUMNS,
+  REPORT_COLUMNS,
+} from "@/lib/report-columns";
+
+export { NUMBER_SECTIONS, PIPELINE_COLUMNS, REPORT_COLUMNS };
+const COLUMNS = REPORT_COLUMNS;
+import {
+  applyEdits,
+  cleanEdits,
+  hiddenOf,
+  SECTION_KEYS,
+  type ReportEdits,
+  type ReportSection,
+} from "@/lib/report-shape";
 
 export type PersonNumbers = {
   userId: string | null;
@@ -52,9 +71,37 @@ export type PipelineRow = {
   stages: Record<string, number>;
 };
 
+/** One thing done with a person, for the What happened section (D-057). */
+export type DetailAction = {
+  at: string;
+  rep: string;
+  personId: string | null;
+  person: string | null;
+  company: string | null;
+  what: string;
+  channel: string | null;
+  text: string | null;
+};
+
+/** What happened in the period, by name (a daily sales report, D-057). */
+export type ReportDetails = {
+  companies: { at: string; name: string; by: string | null; companyId: string }[];
+  people: {
+    at: string;
+    name: string;
+    title: string | null;
+    company: string | null;
+    by: string | null;
+    personId: string;
+  }[];
+  actions: DetailAction[];
+  /** Rows left out after the first DETAIL_LIMIT of each list. */
+  more: { companies: number; people: number; actions: number };
+};
+
 export type ReportData = {
-  /** 2 from v2.7.0 (adds the Pipeline section); older saved reports are 1. */
-  version: 1 | 2;
+  /** 2 from v2.7.0 (adds Pipeline); 3 from v2.11.0 (adds What happened). Older ones stay. */
+  version: 1 | 2 | 3;
   title: string;
   scope: "team" | "person";
   personName: string | null;
@@ -66,23 +113,201 @@ export type ReportData = {
   funnel: { totals: Counts; conversions: Conversion[] };
   plans: Awaited<ReturnType<typeof planPerformance>>;
   pipeline?: { people: PipelineRow[]; total: PipelineRow };
+  details?: ReportDetails;
 };
 
-export const PIPELINE_COLUMNS: {
-  key: Exclude<keyof PipelineRow, "userId" | "name" | "stages">;
-  label: string;
-}[] = [
-  { key: "peopleAdded", label: "People added" },
-  { key: "companiesAdded", label: "Companies added" },
-  { key: "newOutreach", label: "New outreach" },
-  { key: "replied", label: "Replied" },
-  { key: "converted", label: "Converted" },
-  { key: "noResponse", label: "No response yet" },
-];
+/** The most rows each What happened list keeps. */
+export const DETAIL_LIMIT = 500;
+const DETAIL_TEXT_MAX = 1500;
+const DETAIL_TYPES = [
+  "Request sent",
+  "Message sent",
+  "InMail sent",
+  "Call",
+  "Reply received",
+  "Meeting booked",
+  "Meeting held",
+  "Meeting note",
+] as const;
 
-const OUTREACH_TYPES = ["Request sent", "Message sent", "InMail sent", "Call"] as const;
+/** A plain description of an activity for the What happened list. */
+export function detailWhat(a: {
+  type: string;
+  channel: string | null;
+  requestNote: boolean;
+  callOutcome: string | null;
+  replyType: string | null;
+}): string {
+  switch (a.type) {
+    case "Request sent":
+      return a.requestNote ? "Connection request with a note" : "Connection request";
+    case "Message sent":
+      return a.channel === "Email" ? "Email" : `Message (${a.channel ?? "LinkedIn"})`;
+    case "InMail sent":
+      return "InMail";
+    case "Call":
+      return a.callOutcome ? `Call · ${a.callOutcome}` : "Call";
+    case "Reply received":
+      return a.replyType ? `Reply · ${a.replyType}` : "Reply";
+    case "Meeting note":
+      return "Note";
+    default:
+      return a.type;
+  }
+}
 
-/** The Pipeline section (D-043) for the people in a report. */
+/** Companies and people added, and everything done with people, in the period (D-057). */
+async function buildDetails(
+  db: DbOrTx,
+  range: { start: Date; end: Date },
+  repId: string | null,
+): Promise<ReportDetails> {
+  const maker = alias(user, "maker");
+  const companies = await db
+    .select({ id: company.id, name: company.name, at: company.createdAt, by: maker.name })
+    .from(company)
+    .leftJoin(maker, eq(maker.id, company.createdBy))
+    .where(
+      and(
+        gte(company.createdAt, range.start),
+        lt(company.createdAt, range.end),
+        repId ? eq(company.createdBy, repId) : undefined,
+      ),
+    )
+    .orderBy(company.createdAt);
+  const people = await db
+    .select({
+      id: person.id,
+      name: person.fullName,
+      title: person.title,
+      company: company.name,
+      at: person.createdAt,
+      by: maker.name,
+    })
+    .from(person)
+    .leftJoin(company, eq(company.id, person.companyId))
+    .leftJoin(maker, eq(maker.id, person.createdBy))
+    .where(
+      and(
+        gte(person.createdAt, range.start),
+        lt(person.createdAt, range.end),
+        repId ? eq(person.createdBy, repId) : undefined,
+      ),
+    )
+    .orderBy(person.createdAt);
+  const actions = await db
+    .select({
+      at: activity.occurredAt,
+      rep: maker.name,
+      personId: activity.personId,
+      person: person.fullName,
+      company: company.name,
+      type: activity.type,
+      channel: activity.channel,
+      requestNote: activity.requestNote,
+      callOutcome: activity.callOutcome,
+      replyType: activity.replyType,
+      text: activity.content,
+    })
+    .from(activity)
+    .leftJoin(person, eq(person.id, activity.personId))
+    .leftJoin(company, eq(company.id, person.companyId))
+    .leftJoin(maker, eq(maker.id, activity.userId))
+    .where(
+      and(
+        inArray(activity.type, [...DETAIL_TYPES]),
+        gte(activity.occurredAt, range.start),
+        lt(activity.occurredAt, range.end),
+        repId ? eq(activity.userId, repId) : undefined,
+      ),
+    )
+    .orderBy(activity.occurredAt);
+  const cut = (t: string | null) =>
+    t && t.length > DETAIL_TEXT_MAX ? `${t.slice(0, DETAIL_TEXT_MAX - 1)}…` : t;
+  return {
+    companies: companies.slice(0, DETAIL_LIMIT).map((c) => ({
+      at: c.at.toISOString(),
+      name: c.name,
+      by: c.by,
+      companyId: c.id,
+    })),
+    people: people.slice(0, DETAIL_LIMIT).map((p) => ({
+      at: p.at.toISOString(),
+      name: p.name,
+      title: p.title,
+      company: p.company,
+      by: p.by,
+      personId: p.id,
+    })),
+    actions: actions.slice(0, DETAIL_LIMIT).map((a) => ({
+      at: a.at.toISOString(),
+      rep: a.rep ?? "—",
+      personId: a.personId,
+      person: a.person,
+      company: a.company,
+      what: detailWhat(a),
+      channel: a.type === "Meeting note" ? null : a.channel,
+      text: cut(a.text),
+    })),
+    more: {
+      companies: Math.max(0, companies.length - DETAIL_LIMIT),
+      people: Math.max(0, people.length - DETAIL_LIMIT),
+      actions: Math.max(0, actions.length - DETAIL_LIMIT),
+    },
+  };
+}
+
+/** Stages that mean converted (a manual move in the edit form counts too, D-057). */
+const CONVERTED_STAGES = ["Paid", "Active customer"] as const;
+
+/**
+ * People converted in the period (D-057): marked converted with a date in it, or moved to Paid or
+ * Active customer in it. Each person once, with their owner and company's deal value.
+ */
+async function convertedPeople(
+  db: DbOrTx,
+  range: { start: Date; end: Date },
+  span: DateSpan,
+  ownerIds: string[],
+) {
+  if (ownerIds.length === 0) return [];
+  const moved = await db
+    .select({ personId: activity.personId })
+    .from(activity)
+    .where(
+      and(
+        eq(activity.type, "Stage change"),
+        inArray(activity.toStage, [...CONVERTED_STAGES]),
+        gte(activity.occurredAt, range.start),
+        lt(activity.occurredAt, range.end),
+      ),
+    );
+  const movedIds = [...new Set(moved.map((m) => m.personId))];
+  return db
+    .select({
+      personId: person.id,
+      ownerId: person.ownerId,
+      companyId: person.companyId,
+      value: company.dealValueInr,
+    })
+    .from(person)
+    .leftJoin(company, eq(company.id, person.companyId))
+    .where(
+      and(
+        inArray(person.ownerId, ownerIds),
+        or(
+          and(
+            eq(person.converted, true),
+            gte(person.convertedDate, span.from),
+            lt(person.convertedDate, toIstDate(range.end)),
+          ),
+          movedIds.length ? inArray(person.id, movedIds) : sql`0`,
+        ),
+      ),
+    );
+}
+
+/** The Pipeline section (D-043; numbers aligned with Today and People in D-057). */
 async function buildPipeline(
   db: DbOrTx,
   people: PersonNumbers[],
@@ -126,45 +351,48 @@ async function buildPipeline(
       )) {
       if (r.by) rows.get(r.by)!.companiesAdded += 1;
     }
-    // First outreach touch per person (ever), and replies after it.
-    const touches = await db
-      .select({ personId: activity.personId, userId: activity.userId, at: activity.occurredAt })
-      .from(activity)
-      .where(and(inArray(activity.type, [...OUTREACH_TYPES]), lt(activity.occurredAt, range.end)))
-      .orderBy(activity.occurredAt);
-    const first = new Map<string, { userId: string; at: Date }>();
-    for (const t of touches) {
-      if (t.personId && !first.has(t.personId)) first.set(t.personId, t);
-    }
-    const replies = await db
-      .select({ personId: activity.personId, userId: activity.userId, at: activity.occurredAt })
-      .from(activity)
-      .where(eq(activity.type, "Reply received"));
-    const repliedInRange = new Map<string, Set<string>>();
-    for (const r of replies) {
-      if (!r.personId || r.at < range.start || r.at >= range.end) continue;
-      const set = repliedInRange.get(r.userId) ?? new Set<string>();
-      set.add(r.personId);
-      repliedInRange.set(r.userId, set);
-    }
-    for (const [userId, set] of repliedInRange) {
+    // New outreach: the same rule as Today (D-057). No response yet: of those, nobody replied.
+    const repliedEver = new Set(
+      (
+        await db
+          .select({ personId: activity.personId })
+          .from(activity)
+          .where(eq(activity.type, "Reply received"))
+      ).map((r) => r.personId),
+    );
+    for (const [userId, set] of await newOutreach(db, range, ids)) {
       const row = rows.get(userId);
-      if (row) row.replied = set.size;
-    }
-    for (const [personId, t] of first) {
-      if (t.at < range.start || t.at >= range.end) continue;
-      const row = rows.get(t.userId);
       if (!row) continue;
-      row.newOutreach += 1;
-      if (!replies.some((r) => r.personId === personId && r.at >= t.at)) row.noResponse += 1;
+      row.newOutreach = set.size;
+      row.noResponse = [...set].filter((id) => !repliedEver.has(id)).length;
     }
-    // Where their people stand now.
+    // Replied: each person who replied in the period (or was moved to Replied), by their owner.
+    const repliedIds = new Set(
+      (
+        await db
+          .select({ personId: activity.personId })
+          .from(activity)
+          .where(
+            and(
+              or(
+                eq(activity.type, "Reply received"),
+                and(eq(activity.type, "Stage change"), eq(activity.toStage, "Replied")),
+              ),
+              gte(activity.occurredAt, range.start),
+              lt(activity.occurredAt, range.end),
+            ),
+          )
+      ).map((r) => r.personId),
+    );
+    // Where their people stand now, and who replied, by owner.
     for (const r of await db
-      .select({ ownerId: person.ownerId, stage: person.stage })
+      .select({ id: person.id, ownerId: person.ownerId, stage: person.stage })
       .from(person)
       .where(inArray(person.ownerId, ids))) {
       const row = rows.get(r.ownerId);
-      if (row) row.stages[r.stage] = (row.stages[r.stage] ?? 0) + 1;
+      if (!row) continue;
+      row.stages[r.stage] = (row.stages[r.stage] ?? 0) + 1;
+      if (repliedIds.has(r.id)) row.replied += 1;
     }
   }
   const list = [...rows.values()];
@@ -187,25 +415,6 @@ async function buildPipeline(
 }
 
 export type ReportTarget = { scope: "team" } | { scope: "person"; userId: string };
-
-const NUMBER_KEYS = [
-  "requests",
-  "messages",
-  "emails",
-  "calls",
-  "callsConnected",
-  "replies",
-  "meetingsBooked",
-  "meetingsHeld",
-  "proposals",
-  "trials",
-  "conversions",
-  "dealValueInr",
-  "stepsDone",
-  "stepsOnTime",
-  "stepsLate",
-  "stepsNotRecorded",
-] as const satisfies readonly (keyof PersonNumbers)[];
 
 const zero = (userId: string | null, name: string): PersonNumbers => ({
   userId,
@@ -279,26 +488,9 @@ export async function buildReport(
     }
   }
 
-  // Conversions: the owner's people converted in the period, and their companies' deal values.
+  // Conversions: the owner's people converted in the period (D-057), and their deal values.
   const ids = [...rows.keys()];
-  const converted = ids.length
-    ? await db
-        .select({
-          ownerId: person.ownerId,
-          companyId: person.companyId,
-          value: company.dealValueInr,
-        })
-        .from(person)
-        .leftJoin(company, eq(company.id, person.companyId))
-        .where(
-          and(
-            eq(person.converted, true),
-            gte(person.convertedDate, span.from),
-            lt(person.convertedDate, toIstDate(range.end)),
-            inArray(person.ownerId, ids),
-          ),
-        )
-    : [];
+  const converted = await convertedPeople(db, range, span, ids);
   const counted = new Set<string>();
   for (const c of converted) {
     const r = rows.get(c.ownerId)!;
@@ -316,7 +508,7 @@ export async function buildReport(
   const personName = target.scope === "person" ? people[0].name : null;
   const repIds = target.scope === "person" ? [target.userId] : null;
   return {
-    version: 2,
+    version: 3,
     title: `${personName ?? "Team"} · ${spanLabel(span)}`,
     scope: target.scope,
     personName,
@@ -328,6 +520,7 @@ export async function buildReport(
     funnel: await funnelTotals(db, range, repIds),
     plans: await planPerformance(db, range, repIds),
     pipeline: await buildPipeline(db, people, range),
+    details: await buildDetails(db, range, target.scope === "person" ? target.userId : null),
   };
 }
 
@@ -437,56 +630,94 @@ export async function getReport(db: DbOrTx, viewer: Actor, id: string) {
     .select()
     .from(reportRun)
     .where(and(eq(reportRun.id, id), visibleTo(viewer)));
-  return row ? { ...row, data: row.data as ReportData } : null;
+  return row
+    ? {
+        ...row,
+        data: row.data as ReportData,
+        edits: (row.edits ?? {}) as Record<string, number>,
+        hiddenSections: row.hiddenSections ?? [],
+      }
+    : null;
 }
 
 // --- CSV ------------------------------------------------------------------------------------
 
-const COLUMNS: { key: (typeof NUMBER_KEYS)[number]; label: string }[] = [
-  { key: "requests", label: "Connection requests" },
-  { key: "messages", label: "Messages" },
-  { key: "emails", label: "Emails" },
-  { key: "calls", label: "Calls" },
-  { key: "callsConnected", label: "Calls connected" },
-  { key: "replies", label: "Replies" },
-  { key: "meetingsBooked", label: "Meetings booked" },
-  { key: "meetingsHeld", label: "Meetings held" },
-  { key: "proposals", label: "Proposals sent" },
-  { key: "trials", label: "Trials" },
-  { key: "conversions", label: "Conversions" },
-  { key: "dealValueInr", label: "Deal value (INR)" },
-  { key: "stepsDone", label: "Plan steps done" },
-  { key: "stepsOnTime", label: "On time" },
-  { key: "stepsLate", label: "Late" },
-  { key: "stepsNotRecorded", label: "Due date not recorded" },
-];
-export const REPORT_COLUMNS = COLUMNS;
-
 const pct = (n: number | null) => (n === null ? "" : `${Math.round(n * 100)}%`);
 
-/** One CSV with every table, each under its own heading row. */
-export function reportCsv(r: ReportData, aiSummary: string | null): string {
-  const rows: unknown[][] = [
-    [r.title],
-    ["Period", r.from, r.to],
-    ["Made", r.generatedAt],
-    [],
-    ["Activity, outcomes and plan adherence"],
-    ["Person", ...COLUMNS.map((c) => c.label)],
-    ...[...r.people, r.total].map((p) => [p.name, ...COLUMNS.map((c) => p[c.key])]),
-    [],
-    ["Funnel"],
-    ["Conversion", "From", "To", "Rate", "Benchmark"],
-    ...r.funnel.conversions.map((c) => [c.label, c.from, c.to, pct(c.rate), pct(c.benchmark)]),
-    [],
-    ["Plan performance"],
-    ["Plan", "Step", "Enrolled / done", "Replied", "Reply rate"],
-    ...r.plans.flatMap((p) => [
-      [p.name, "All", p.enrolled, p.replied, pct(p.replyRate)],
-      ...p.steps.map((s) => [p.name, s.order, s.done, s.replies, pct(s.rate)]),
-    ]),
-  ];
-  if (aiSummary) rows.push([], ["AI summary"], [aiSummary]);
+/** One CSV with every included table, each under its own heading row (D-057). */
+export function reportCsv(
+  r: ReportData,
+  aiSummary: string | null,
+  hidden: readonly ReportSection[] = [],
+): string {
+  const on = (k: ReportSection) => !hidden.includes(k);
+  const label = (key: string) => COLUMNS.find((c) => c.key === key)!.label;
+  const rows: unknown[][] = [[r.title], ["Period", r.from, r.to], ["Made", r.generatedAt]];
+  if (aiSummary && on("summary")) rows.push([], ["AI summary"], [aiSummary]);
+  if (r.pipeline && on("pipeline")) {
+    rows.push(
+      [],
+      ["Pipeline"],
+      ["Person", ...PIPELINE_COLUMNS.map((c) => c.label)],
+      ...[...r.pipeline.people, r.pipeline.total].map((p) => [
+        p.name,
+        ...PIPELINE_COLUMNS.map((c) => p[c.key]),
+      ]),
+    );
+  }
+  for (const sec of NUMBER_SECTIONS) {
+    if (!on(sec.key)) continue;
+    rows.push(
+      [],
+      [sec.title],
+      ["Person", ...sec.keys.map(label)],
+      ...[...r.people, r.total].map((p) => [p.name, ...sec.keys.map((k) => p[k])]),
+    );
+  }
+  if (on("funnel")) {
+    rows.push(
+      [],
+      ["Funnel"],
+      ["Conversion", "From", "To", "Rate", "Benchmark"],
+      ...r.funnel.conversions.map((c) => [c.label, c.from, c.to, pct(c.rate), pct(c.benchmark)]),
+    );
+  }
+  if (on("plans")) {
+    rows.push(
+      [],
+      ["Plan performance"],
+      ["Plan", "Step", "Enrolled / done", "Replied", "Reply rate"],
+      ...r.plans.flatMap((p) => [
+        [p.name, "All", p.enrolled, p.replied, pct(p.replyRate)],
+        ...p.steps.map((s) => [p.name, s.order, s.done, s.replies, pct(s.rate)]),
+      ]),
+    );
+  }
+  if (r.details && on("details")) {
+    const d = r.details;
+    rows.push(
+      [],
+      ["What happened: companies added"],
+      ["When", "Company", "Added by"],
+      ...d.companies.map((c) => [c.at, c.name, c.by ?? ""]),
+      [],
+      ["What happened: people added"],
+      ["When", "Person", "Title", "Company", "Added by"],
+      ...d.people.map((p) => [p.at, p.name, p.title ?? "", p.company ?? "", p.by ?? ""]),
+      [],
+      ["What happened: contacts, replies and meetings"],
+      ["When", "Rep", "Person", "Company", "What", "Channel", "Message"],
+      ...d.actions.map((a) => [
+        a.at,
+        a.rep,
+        a.person ?? "",
+        a.company ?? "",
+        a.what,
+        a.channel ?? "",
+        a.text ?? "",
+      ]),
+    );
+  }
   return csvFile(rows);
 }
 
@@ -581,4 +812,124 @@ export async function saveEmailedTo(db: Db, id: string, title: string, to: strin
       after: { emailedTo: to },
     });
   });
+}
+
+// --- Shaping a report (D-057) ---------------------------------------------------------------
+
+type ShapeRun = { id: string; title: string; generatedBy: string | null; data: ReportData };
+
+/** The report's maker or an Admin may choose its sections and edit its numbers. */
+export function mayShape(actor: Actor, run: Pick<ShapeRun, "generatedBy">) {
+  return run.generatedBy === actor.id || can(actor, "reports.team");
+}
+
+async function loadForShape(db: DbOrTx, actor: Actor, id: string) {
+  const run = await getReport(db, actor, id);
+  if (!run) throw new LeadError("That report doesn't exist.");
+  if (!mayShape(actor, run)) {
+    throw new LeadError("Only the person who made this report, or an Admin, can change it.");
+  }
+  return run;
+}
+
+/** The report as shown and downloaded: edits laid over, and the sections left out. */
+export function shapeOf(run: {
+  data: unknown;
+  edits?: Record<string, number> | null;
+  hiddenSections?: string[] | null;
+}) {
+  return {
+    data: applyEdits(run.data as ReportData, run.edits ?? {}),
+    hidden: hiddenOf(run.hiddenSections),
+  };
+}
+
+/** Includes or leaves out one section in the downloads. Audited. */
+export async function setSectionIncluded(
+  db: Db,
+  actor: Actor,
+  id: string,
+  section: string,
+  included: boolean,
+) {
+  if (!(SECTION_KEYS as string[]).includes(section)) throw new LeadError("Unknown section.");
+  return db.transaction(async (tx) => {
+    const run = await loadForShape(tx, actor, id);
+    const before = hiddenOf(run.hiddenSections);
+    const after = included
+      ? before.filter((s) => s !== section)
+      : [...new Set([...before, section as ReportSection])];
+    await tx.update(reportRun).set({ hiddenSections: after }).where(eq(reportRun.id, id));
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Report",
+      recordId: id,
+      recordName: run.title,
+      action: "Updated",
+      before: { hiddenSections: before },
+      after: { hiddenSections: after },
+    });
+    return after;
+  });
+}
+
+/** Saves the edited numbers on this report only (the app's data never changes). Audited. */
+export async function saveReportEdits(
+  db: Db,
+  actor: Actor,
+  id: string,
+  edits: Record<string, unknown>,
+) {
+  return db.transaction(async (tx) => {
+    const run = await loadForShape(tx, actor, id);
+    let clean: ReportEdits;
+    try {
+      clean = cleanEdits(run.data, edits);
+    } catch (e) {
+      throw new LeadError(e instanceof Error ? e.message : "Those numbers can't be saved.");
+    }
+    // Only numbers that differ from the original are kept.
+    const original = run.data;
+    const base = applyEdits(original, {});
+    const kept: ReportEdits = {};
+    for (const [k, v] of Object.entries(clean)) {
+      if (valueAt(base, k) !== v) kept[k] = v;
+    }
+    const before = run.edits ?? {};
+    await tx.update(reportRun).set({ edits: kept }).where(eq(reportRun.id, id));
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Report",
+      recordId: id,
+      recordName: run.title,
+      action: "Updated",
+      before: { edits: before },
+      after: { edits: kept },
+    });
+    return kept;
+  });
+}
+
+/** The original value of an editable number. */
+export function valueAt(data: ReportData, key: string): number | undefined {
+  const [part, a, b] = key.split(".");
+  const row = <T extends { userId: string | null }>(rows: T[], total: T) =>
+    a === "total" ? total : rows.find((r) => r.userId === a);
+  if (part === "pipeline" && data.pipeline) {
+    const r = row(data.pipeline.people, data.pipeline.total);
+    return r ? (r[b as keyof PipelineRow] as number) : undefined;
+  }
+  if (part === "numbers") {
+    const r = row(data.people, data.total);
+    return r ? (r[b as keyof PersonNumbers] as number) : undefined;
+  }
+  if (part === "funnel") {
+    const c = data.funnel.conversions[Number(a)];
+    return c ? (b === "from" ? c.from : c.to) : undefined;
+  }
+  if (part === "plans") {
+    const p = data.plans.find((x) => x.planId === a);
+    return p ? (b === "enrolled" ? p.enrolled : p.replied) : undefined;
+  }
+  return undefined;
 }

@@ -125,7 +125,7 @@ test("exit check: an Admin makes a team report; the print layout and the CSV wor
   const file = await download;
   expect(file.suggestedFilename()).toBe(`lumor-report-${FROM}-to-${today}.csv`);
   const csv = await (await file.createReadStream()).toArray();
-  expect(Buffer.concat(csv).toString("utf8")).toContain("Activity, outcomes and plan adherence");
+  expect(Buffer.concat(csv).toString("utf8")).toContain("Activity\r\nPerson,Connection requests");
 });
 
 test("a rep can't open someone else's report", async () => {

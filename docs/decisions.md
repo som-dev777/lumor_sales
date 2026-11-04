@@ -1170,3 +1170,44 @@ replaces it.
   spec's fallback message where a browser can't record; the rep's title for sign-offs is asked
   once in the panel and saved on their user; the third mode is called "Ask AI" (the AI is
   OpenAI, not Claude).
+
+## D-057: Reports you can shape, a daily sales report, follow-ups on People, Today by day (owner, 2026-11-04)
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **Version 2.11.0** (MINOR)
+- **Report numbers now match the rest of the app** (the owner saw different numbers on Today and
+  People):
+  - **New outreach** uses Today's rule, shared by both (one function): each person the rep added
+    in the period, sent a connection request to, or first contacted in any way (message, InMail,
+    call), counted once. Today's "new people" bar uses the same rule, so a first message to
+    someone already connected now counts there too. Before, the report counted only first
+    contacts, so people added (and counted on Today) were missing.
+  - **Replied** counts each person who replied in the period, or whose stage was moved to Replied
+    in it, credited to the person's owner (it was whoever logged the reply).
+  - **Converted** counts each person marked converted in the period, or moved to Paid or Active
+    customer in the edit form (that logged a stage change but never counted). Deal value still
+    counts once per company.
+  - Saved reports keep their numbers (they're snapshots); make a new report to see the fix.
+- **Choose what goes in a report:** each section (AI summary, Pipeline, Activity, Replies and
+  outcomes, Plan adherence, Funnel, Plan performance, What happened) has **Include in report**.
+  A section switched off stays on the page, greyed and folded, and is left out of the PDF, CSV,
+  email and print. Saved on the report (`report_run.hidden_sections`).
+- **Edit a report's numbers:** **Edit numbers** turns every number in the Pipeline, Activity,
+  Replies and outcomes, Plan adherence, Funnel and Plan performance tables into a box. Changes are
+  saved on that report only (`report_run.edits`, the original kept), never in the app's data;
+  edited numbers are marked, rates are worked out again from edited counts, and **Undo all
+  edits** goes back to the original. Downloads use the edited numbers. Who may: the report's maker
+  or an Admin. Audited.
+- **What happened (a daily sales report):** a new section listing, for the period, the companies
+  added (by whom, when), the people added, and everything done with people: connection requests,
+  messages (with their text), InMails, emails, calls, replies (with their text) and meetings, each
+  with the rep, the person and their company. Up to 500 rows per list; the rest are counted.
+  Reports made before this don't have it.
+- **People:** the Activity filter gets **Active today**. The Next action column gets **Add
+  follow-up** when there's none and **Edit** when there is (what and when); it saves like Set next
+  follow-up on Today, so Today updates. Owner or Admin.
+- **Today by day:** **Previous day** and **Next day** buttons go up to 7 days back and 7 ahead.
+  A day ahead lists what's due that day (follow-ups, plan steps, trial check-ins, reply deadlines
+  ending) and that day's meetings, so reps can prepare. A day back lists what was due that day and
+  is still open, what the rep did that day, and that day's meetings. Today itself is unchanged.
+- **Migration 0023** adds `report_run.hidden_sections` and `report_run.edits` (empty by default);
+  nothing else changes.

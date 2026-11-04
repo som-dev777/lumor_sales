@@ -11,9 +11,20 @@ import { getDb } from "@/lib/db/client";
 import { appNow } from "@/lib/clock";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
-import { formatIstDate } from "@/lib/time";
+import { formatIstDate, todayIst } from "@/lib/time";
 import { aiMode } from "@/server/ai/client";
-import { buildTeam, buildToday, TEAM_DETAILS, teamDetail, type TeamDetail } from "@/server/today";
+import {
+  buildDay,
+  buildTeam,
+  buildToday,
+  DAY_RANGE,
+  pickDay,
+  TEAM_DETAILS,
+  teamDetail,
+  type TeamDetail,
+} from "@/server/today";
+import { DayNav } from "@/components/today/DayNav";
+import { DayView } from "@/components/today/DayView";
 import { meetingsToday } from "@/server/calendar";
 import { TodayMeetings } from "@/components/calendar/TodayMeetings";
 import { AutoRefresh } from "@/components/shell/AutoRefresh";
@@ -55,9 +66,12 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
       return null;
     }
   };
-  const [plan, meetings] = await Promise.all([
+  // Previous day / Next day (D-057): ?day=YYYY-MM-DD, up to 7 days either way.
+  const day = teamView ? null : pickDay(one(params.day), todayIst(now));
+  const [plan, meetings, dayView] = await Promise.all([
     buildToday(getDb(), viewer, now),
-    meetingsToday(getDb(), viewer.id, now),
+    meetingsToday(getDb(), viewer.id, day ? new Date(`${day}T06:30:00Z`) : now),
+    day ? buildDay(getDb(), viewer, day, now) : null,
   ]);
   return (
     <>
@@ -91,8 +105,18 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
       )}
       {teamView ? (
         <TeamTable rows={await buildTeam(getDb(), viewer, now)} detail={await detailOf()} />
+      ) : dayView ? (
+        <>
+          <DayNav today={plan.today} day={dayView.day} range={DAY_RANGE} />
+          <TodayMeetings
+            today={meetings}
+            title={`Meetings on ${formatIstDate(dayView.day, "EEEE d MMMM")}`}
+          />
+          <DayView view={dayView} />
+        </>
       ) : (
         <>
+          <DayNav today={plan.today} day={plan.today} range={DAY_RANGE} />
           {/* Only what's still to come (D-055): a meeting leaves once its end time passes. */}
           <TodayMeetings
             today={meetings.filter((m) => m.endsAt.getTime() > now.getTime())}

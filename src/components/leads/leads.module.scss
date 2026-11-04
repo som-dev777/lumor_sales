@@ -547,3 +547,16 @@
   align-items: flex-start;
   gap: var(--space-1);
 }
+
+// Add follow-up / Edit on the People list (D-057).
+.quickDates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.followUpButton {
+  margin-top: var(--space-1);
+  padding-inline: var(--space-1);
+  font-size: var(--text-xs);
+}

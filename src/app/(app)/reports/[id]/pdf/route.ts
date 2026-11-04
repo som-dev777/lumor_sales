@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db/client";
 import { can } from "@/lib/permissions";
 import { getViewer } from "@/lib/session";
 import { reportPdf } from "@/server/report-pdf";
-import { getReport } from "@/server/reports";
+import { getReport, shapeOf } from "@/server/reports";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const viewer = await getViewer();
@@ -17,11 +17,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const run = await getReport(getDb(), viewer, id);
   if (!run) return new Response("Not found", { status: 404 });
   const name = `lumor-report-${run.fromDate}-to-${run.toDate}.pdf`;
-  return new Response(new Uint8Array(reportPdf(run.data, run.aiSummary)), {
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${name}"`,
-      "Cache-Control": "no-store",
+  return new Response(
+    new Uint8Array(reportPdf(shapeOf(run).data, run.aiSummary, shapeOf(run).hidden)),
+    {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${name}"`,
+        "Cache-Control": "no-store",
+      },
     },
-  });
+  );
 }

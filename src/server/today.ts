@@ -26,6 +26,7 @@ import { loadPerson } from "./leads/people";
 import { getPlaybookSettings, quickLog, type QuickLog } from "./leads/quicklog";
 import { meetingsToday } from "./calendar";
 import { planState } from "./plans/enrolment";
+import { newOutreach } from "./outreach";
 
 export { SECTIONS, type SectionKey };
 
@@ -472,34 +473,15 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
         lte(activity.occurredAt, new Date(startOfDay.getTime() + 86_400_000)),
       ),
     );
-  // New outreach today (owner, 2026-10-30): each person the rep added today or sent a connection
-  // request to today, counted once.
-  const reached = new Set(
+  // New outreach today (owner, 2026-10-30; D-057): the same rule as the reports' New outreach.
+  const reached =
     (
-      await db
-        .select({ personId: activity.personId })
-        .from(activity)
-        .where(
-          and(
-            eq(activity.userId, viewer.id),
-            eq(activity.type, "Request sent"),
-            gte(activity.occurredAt, startOfDay),
-            lt(activity.occurredAt, new Date(startOfDay.getTime() + 86_400_000)),
-          ),
-        )
-    ).map((a) => a.personId),
-  );
-  const added = await db
-    .select({ id: person.id })
-    .from(person)
-    .where(
-      and(
-        eq(person.createdBy, viewer.id),
-        gte(person.createdAt, startOfDay),
-        lt(person.createdAt, new Date(startOfDay.getTime() + 86_400_000)),
-      ),
-    );
-  for (const p of added) reached.add(p.id);
+      await newOutreach(
+        db,
+        { start: startOfDay, end: new Date(startOfDay.getTime() + 86_400_000) },
+        [viewer.id],
+      )
+    ).get(viewer.id) ?? new Set<string>();
   const sent = reached.size;
   const [suggestedPersona] = await db
     .select({ name: persona.name })
@@ -536,6 +518,88 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
       dailyConnectionTarget: settings.dailyConnectionTarget,
       dailyMessageTarget: settings.dailyMessageTarget,
     },
+  };
+}
+
+// --- Today by day (D-057) --------------------------------------------------------------------
+
+/** How far Previous day and Next day go. */
+export const DAY_RANGE = 7;
+/** Sections with a date of their own: what a day ahead can show. */
+const DATED: SectionKey[] = ["meeting", "deadline", "due", "followup", "trial"];
+
+/** Noon IST on a plain date, so the day's rules run as if it were that day. */
+const noonIst = (day: string) => new Date(`${day}T06:30:00Z`);
+
+/** The day asked for, if it's within 7 days of today and not today; else null. */
+export function pickDay(param: string | undefined, today: string): string | null {
+  if (!param || !/^\d{4}-\d{2}-\d{2}$/.test(param) || param === today) return null;
+  if (param < addDaysIst(today, -DAY_RANGE) || param > addDaysIst(today, DAY_RANGE)) return null;
+  return param;
+}
+
+export type DayDone = { personId: string | null; name: string; what: string; when: string };
+export type DayView = {
+  day: string;
+  ahead: boolean;
+  /** Ahead: what's due that day. Back: what was due that day and is still open. */
+  tasks: Task[];
+  /** Back: what the rep logged that day. */
+  done: DayDone[];
+};
+
+/**
+ * Another day on Today (D-057). A day ahead lists what falls due that day (follow-ups, plan steps,
+ * trial check-ins, reply deadlines ending, meetings to hold), so reps can prepare. A day back
+ * lists what was due that day and is still open, and what the rep logged that day.
+ */
+export async function buildDay(
+  db: DbOrTx,
+  viewer: Actor,
+  day: string,
+  now = new Date(),
+): Promise<DayView> {
+  const today = todayIst(now);
+  if (day > today) {
+    const plan = await buildToday(db, viewer, noonIst(day));
+    return {
+      day,
+      ahead: true,
+      tasks: plan.tasks.filter((t) => DATED.includes(t.section) && t.dueDate === day),
+      done: [],
+    };
+  }
+  const plan = await buildToday(db, viewer, now);
+  const { start, end } = istDayRange(day);
+  const logged = await db
+    .select({
+      personId: activity.personId,
+      name: person.fullName,
+      type: activity.type,
+      channel: activity.channel,
+      at: activity.occurredAt,
+    })
+    .from(activity)
+    .leftJoin(person, eq(person.id, activity.personId))
+    .where(
+      and(
+        eq(activity.userId, viewer.id),
+        notInArray(activity.type, ["Plan change", "Stage change"]),
+        gte(activity.occurredAt, start),
+        lt(activity.occurredAt, end),
+      ),
+    )
+    .orderBy(asc(activity.occurredAt));
+  return {
+    day,
+    ahead: false,
+    tasks: plan.tasks.filter((t) => t.section === "backlog" && t.dueDate === day),
+    done: logged.map((a) => ({
+      personId: a.personId,
+      name: a.name ?? "—",
+      what: a.type === "Meeting note" ? "Note" : `${a.type} · ${a.channel}`,
+      when: formatIst(a.at, "h:mm aaa"),
+    })),
   };
 }
 

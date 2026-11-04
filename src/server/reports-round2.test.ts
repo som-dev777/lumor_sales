@@ -72,7 +72,7 @@ describe("the Pipeline section (D-043)", () => {
     await touch(asha, old.id, "Reply received", on("2026-10-10"));
 
     const r = await buildReport(t.db, { scope: "team" }, OCT);
-    expect(r.version).toBe(2);
+    expect(r.version).toBe(3);
     const row = r.pipeline!.people.find((x) => x.name === "Asha")!;
     expect(row).toMatchObject({
       peopleAdded: 2,
@@ -82,7 +82,8 @@ describe("the Pipeline section (D-043)", () => {
       noResponse: 1,
       stages: { Contacted: 3 },
     });
-    expect(r.pipeline!.total).toMatchObject({ peopleAdded: 3, newOutreach: 2 });
+    // Ravi added a person in October: that counts as new outreach, as on Today (D-057).
+    expect(r.pipeline!.total).toMatchObject({ peopleAdded: 3, newOutreach: 3, noResponse: 2 });
     expect(r.pipeline!.total.stages).toEqual({ Contacted: 3, Replied: 1 });
   });
 });

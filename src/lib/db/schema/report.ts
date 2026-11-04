@@ -59,6 +59,13 @@ export const reportRun = sqliteTable(
     emailedTo: jsonList("emailed_to"),
     // Teammates it was sent to (D-043): they can open it and see it under Shared with me.
     sharedWith: jsonList("shared_with"),
+    // D-057: sections left out of the downloads, and numbers edited on this report only
+    // ({ "pipeline.<userId|total>.<column>": 12, … }). The data above is never changed.
+    hiddenSections: jsonList("hidden_sections"),
+    edits: text("edits", { mode: "json" })
+      .$type<Record<string, number>>()
+      .notNull()
+      .default(sql`'{}'`),
   },
   (t) => [
     check("report_run_scope_check", oneOfOrNull("scope", ["team", "person"])),

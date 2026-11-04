@@ -44,7 +44,7 @@ All dates are stored in UTC and shown in IST. Weeks run Monday to Sunday.
 2. Add a CHANGELOG.md entry (under "Unreleased" until a release).
 3. Versioning: bump MINOR once per completed release (R1 = 1.0.0, R2 = 1.1.0…)
    and PATCH for fixes. Version 2 starts at R7 = 2.0.0, then MINOR again (AI Resources = 2.1.0,
-   R8 = 2.2.0, R9 = 2.3.0, QA round 1 = 2.4.0, Calendar + AI = 2.5.0, Calendar round 2 = 2.6.0, Owner's list 3 Nov = 2.7.0, Owner's list 4 Nov = 2.8.0, Owner's second list 4 Nov = 2.9.0, Outreach Desk = 2.10.0; D-028, D-037).
+   R8 = 2.2.0, R9 = 2.3.0, QA round 1 = 2.4.0, Calendar + AI = 2.5.0, Calendar round 2 = 2.6.0, Owner's list 3 Nov = 2.7.0, Owner's list 4 Nov = 2.8.0, Owner's second list 4 Nov = 2.9.0, Outreach Desk = 2.10.0, Reports + Today by day = 2.11.0; D-028, D-037).
    Do not bump the version on every commit.
 4. Update docs/README.md (feature index) if anything changed there.
 5. At a release or patch, add the AppRelease record (run `npm run releases:sync`).
@@ -79,11 +79,12 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-11-04): v2.10.0 (Outreach Desk in the AI assistant panel, D-056; spec docs/specs/outreach-desk.md),
+Done (2026-11-04): v2.11.0 (reports you can shape + What happened, People follow-ups and Active today,
+Today by day; D-057), v2.10.0 (Outreach Desk in the AI assistant panel, D-056; spec docs/specs/outreach-desk.md),
 v2.9.0 (owner's second list of 4 Nov: logging clears backlogs, Today only what's left,
 sort and filter bar on Companies/People, Follow-up in the conversation, LinkedIn first-message question,
 voice typing F29; D-055), v2.8.0 (owner's list of 4 Nov: offices F28, Today, Remove, Ask AI about a company, demo links; D-054), v2.7.10 (Meet open to anyone, checked and shown, D-053), v2.7.9 (open Meet, no iPhone zoom, D-052), v2.7.8 (meetings open, same-day booking, D-051), v2.7.7 (one Meet link, D-050), v2.7.6 (booker always emailed, D-049), v2.7.5 (no gaps, delete events, D-048), v2.7.4 (booking emails and page, D-047), v2.7.3 (Gmail email, D-046), v2.7.2 (D-045 plans/calendar fixes) and v2.7.1 (Today follow-ups, D-044) on top of v2.7.0, the owner's list of 3 November (D-043): events, reminders, booking sync,
 Calendly (F27), Schedule a meeting, Today backlogs, custom plan tasks, no approvals, reports you
-can send. The owner checks it on the live site (docs/qa-checklist.md sections 14 to 17). Work through the
+can send. The owner checks it on the live site (docs/qa-checklist.md sections 14 to 18). Work through the
 owner's lists without asking questions; report once at the end with a checklist. Each push to
 GitHub costs a Netlify deploy, so push once per release (D-043).

@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/Toast";
 import type { Stage } from "@/lib/db/enums";
 import { reassign } from "@/server/actions/leads";
 import { enrol } from "@/server/actions/plans";
+import { FollowUpButton } from "./FollowUpButton";
 import { StageBadge } from "./StageBadge";
 import styles from "./leads.module.scss";
 
@@ -26,6 +27,10 @@ export type PersonRow = {
   stage: Stage;
   nextAction: string | null;
   nextActionLabel: string | null;
+  /** The follow-up date (IST), for Edit (D-057). */
+  nextActionDate: string | null;
+  /** The viewer may set their follow-up (owner or Admin). */
+  canEdit: boolean;
   overdue: boolean;
   /** "Backlog · 2 days" when Today has late work for them (D-043). */
   backlog: string | null;
@@ -42,9 +47,11 @@ type Props = {
   owners: { id: string; label: string }[];
   /** Plans the viewer can enrol people in (F17); anyone can select rows to enrol. */
   plans: { id: string; label: string }[];
+  /** Today in IST (the app's clock), for the follow-up dialog. */
+  today: string;
 };
 
-export function PeopleTable({ rows, canReassign, owners, plans }: Props) {
+export function PeopleTable({ rows, canReassign, owners, plans, today }: Props) {
   const notify = useToast();
   const [newOwner, setNewOwner] = useState("");
   const [planId, setPlanId] = useState("");
@@ -111,6 +118,16 @@ export function PeopleTable({ rows, canReassign, owners, plans }: Props) {
               {c.row.original.overdue ? "Overdue · " : ""}
               {c.row.original.nextActionLabel}
             </div>
+          )}
+          {c.row.original.canEdit && (
+            <FollowUpButton
+              key={`${c.row.original.nextAction}-${c.row.original.nextActionDate}`}
+              personId={c.row.original.id}
+              name={c.row.original.fullName}
+              nextAction={c.row.original.nextAction}
+              nextActionDate={c.row.original.nextActionDate}
+              today={today}
+            />
           )}
         </>
       ),

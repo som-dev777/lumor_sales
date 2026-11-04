@@ -159,8 +159,12 @@ describe("the numbers (F19)", () => {
       "Good month.",
     );
     expect(csv.charCodeAt(0)).toBe(0xfeff);
-    expect(csv).toContain("Activity, outcomes and plan adherence");
-    expect(csv).toContain("Person,Connection requests,Messages,Emails,Calls");
+    // One table per section (D-057), each under its own heading.
+    expect(csv).toContain("Activity\r\nPerson,Connection requests,Messages,Emails,Calls");
+    expect(csv).toContain("Replies and outcomes\r\nPerson,Replies,Meetings booked");
+    expect(csv).toContain("Plan adherence\r\nPerson,Plan steps done");
+    expect(csv).toContain("Pipeline\r\nPerson,People added,Companies added,New outreach");
+    expect(csv).toContain("What happened: contacts, replies and meetings");
     expect(csv).toContain("'=HYPERLINK()");
     expect(csv).toContain("Contacted → Connected");
     expect(csv).toContain("AI summary\r\nGood month.");

@@ -12,7 +12,7 @@ import { emailConfigured, sendEmail, type Email } from "./email";
 import { LeadError } from "./leads/companies";
 import { addNotificationsTx } from "./notifications";
 import { reportPdf } from "./report-pdf";
-import { getReport, type ReportData } from "./reports";
+import { getReport, shapeOf, type ReportData } from "./reports";
 
 export const MAX_REPORT_RECIPIENTS = 20;
 
@@ -97,11 +97,14 @@ export async function emailReport(
     );
   const addresses = [...new Set([...mates.map((m) => m.email.toLowerCase()), ...extra])];
   const sent: string[] = [];
+  // What the maker chose to include, with their edited numbers (D-057).
+  const shaped = shapeOf(run as Run & { data: ReportData });
+  const summary = shaped.hidden.includes("summary") ? null : run.aiSummary;
   if (emailConfigured()) {
-    const pdf = reportPdf(run.data, run.aiSummary);
+    const pdf = reportPdf(shaped.data, run.aiSummary, shaped.hidden);
     const filename = `${run.title.replace(/[^\w\- ]+/g, "").trim() || "report"}.pdf`;
     for (const address of addresses) {
-      const mail = reportMail(address, run.id, run.data, run.aiSummary, actor?.name ?? null);
+      const mail = reportMail(address, run.id, shaped.data, summary, actor?.name ?? null);
       const ok = await send({
         ...mail,
         attachments: [{ filename, content: pdf, contentType: "application/pdf" }],

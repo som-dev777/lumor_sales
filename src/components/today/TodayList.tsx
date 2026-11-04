@@ -71,7 +71,7 @@ export function TodayList({ tasks, outreach, aiReady, today }: Props) {
         />
         <p className={styles.muted}>
           {outreach.left > 0
-            ? `${outreach.left} to go today. Adding a person or sending a connection request counts.`
+            ? `${outreach.left} to go today. Adding a person, a connection request or a first message counts.`
             : "Target reached for today. Nice work."}
           {outreach.left > 0 && (outreach.persona || outreach.accountFilter) && (
             <>

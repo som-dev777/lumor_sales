@@ -23,7 +23,13 @@ import {
   setScheduleActive,
   updateSchedule,
 } from "../report-schedules";
-import { createReport, writeAiSummary, type ReportTarget } from "../reports";
+import {
+  createReport,
+  saveReportEdits,
+  setSectionIncluded,
+  writeAiSummary,
+  type ReportTarget,
+} from "../reports";
 
 const id = z.uuid();
 
@@ -177,5 +183,48 @@ export async function emailReportAction(reportId: string, input: unknown): Promi
     });
     refresh();
     return { ok: true, message: sentMessage(r).replace("Report saved and emailed", "Emailed") };
+  });
+}
+
+// --- Shaping a saved report (D-057) ----------------------------------------------------------
+
+/** Includes or leaves out one section of a report in its downloads. */
+export async function includeReportSection(
+  reportId: string,
+  section: string,
+  included: boolean,
+): Promise<ActionResult> {
+  const viewer = await requireUser();
+  if (!id.safeParse(reportId).success || typeof section !== "string") {
+    return { ok: false, error: "Unknown report." };
+  }
+  return run(async () => {
+    await setSectionIncluded(getDb(), viewer, reportId, section, Boolean(included));
+    refresh();
+    return {
+      ok: true,
+      message: included ? "Included in the report." : "Left out of the report.",
+    };
+  });
+}
+
+/** Saves edited numbers on a report (the app's data never changes). Empty = undo all edits. */
+export async function saveReportNumbers(
+  reportId: string,
+  edits: Record<string, unknown>,
+): Promise<ActionResult> {
+  const viewer = await requireUser();
+  if (!id.safeParse(reportId).success || typeof edits !== "object" || edits === null) {
+    return { ok: false, error: "Unknown report." };
+  }
+  return run(async () => {
+    const kept = await saveReportEdits(getDb(), viewer, reportId, edits);
+    refresh();
+    return {
+      ok: true,
+      message: Object.keys(kept).length
+        ? "Numbers saved on this report."
+        : "Back to the original numbers.",
+    };
   });
 }

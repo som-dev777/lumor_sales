@@ -7,7 +7,18 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.10.0 (docs/qa-checklist.md section 17).
+Next: the owner's QA of v2.11.0 (docs/qa-checklist.md section 18).
+
+## [2.11.0] - 2026-11-04
+
+Reports you can shape, a daily sales report, follow-ups on People, Today by day (D-057).
+
+- **Report numbers match Today and People:** New outreach counts people added, sent a connection request or contacted for the first time, the same as Today's bar. Replied counts each person who replied (or was moved to Replied), credited to their owner. Converted now also counts people moved to Paid in the edit form. Make a new report to see the fix; saved reports keep their numbers.
+- **What happened (daily sales report):** every report lists the companies and people added, and everyone contacted, with the message, the reply or the meeting, the rep and the company.
+- **Include in report:** each section has a switch. A section switched off folds away and is left out of the PDF, CSV, email and print.
+- **Edit numbers:** fix any number in a report's tables, on that report only. Edited numbers are marked; rates follow; Undo all edits goes back. The app's data isn't changed.
+- **People:** the Activity filter has Active today. Each row's next action has Add follow-up or Edit, and Today follows.
+- **Today:** Previous day and Next day, 7 days back and 7 ahead. Ahead shows what falls due that day; back shows what's still open from that day and what you logged.
 
 ## [2.10.0] - 2026-11-04
 

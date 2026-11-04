@@ -40,7 +40,7 @@ import {
 import { normaliseLinkedInUrl } from "@/lib/linkedin";
 import { stopPlanTx } from "../plans/enrolment";
 import { assertCan, can, type Actor } from "@/lib/permissions";
-import { addDaysIst, istWeekRange, toIstDate, todayIst } from "@/lib/time";
+import { addDaysIst, istDayRange, istWeekRange, toIstDate, todayIst } from "@/lib/time";
 import type { PersonData } from "@/lib/validation/leads";
 import { assertActiveOwner, LeadError, resolveCompanyByName } from "./companies";
 
@@ -364,6 +364,7 @@ export type PeopleSort = (typeof PEOPLE_SORTS)[number]["value"];
 
 /** Activity filters on People (D-055). */
 export const PEOPLE_ACTIVITY = [
+  { value: "today", label: "Active today" },
   { value: "recent", label: "Active in the last 7 days" },
   { value: "quiet", label: "No activity in 30 days" },
   { value: "never", label: "Nothing logged yet" },
@@ -414,6 +415,10 @@ export function peopleWhere(f: PeopleFilters, now = new Date()): SQL | undefined
     );
   }
   if (f.activity === "never") parts.push(sql`${lastActivityAt} is null`);
+  // Something done with them today, IST (D-057).
+  if (f.activity === "today") {
+    parts.push(sql`${lastActivityAt} >= ${istDayRange(todayIst(now)).start.getTime()}`);
+  }
   if (f.activity === "quiet") {
     parts.push(sql`coalesce(${lastActivityAt}, 0) < ${now.getTime() - 30 * 86_400_000}`);
   }

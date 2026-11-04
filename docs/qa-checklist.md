@@ -536,6 +536,25 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
 - [ ] 17.9 **Summarise conversation** → **Summarise**: the summary appears; Save as note works.
 - [ ] 17.10 The Dashboard and Today still count the messages and replies you logged here.
 
+## 18. Reports you can shape, follow-ups on People, Today by day (v2.11.0)
+
+- [ ] 18.1 **Reports → Make a report → Period: Today → Generate.** Compare **New outreach** with
+      Today's "x of 20 new people today": they match. Replied and Converted match what you see on
+      People.
+- [ ] 18.2 The report's **What happened** section lists the companies and people added today and
+      everyone contacted, with the message text, the rep and the company.
+- [ ] 18.3 Switch **Include in report** off on **Funnel**: it folds away. **Download PDF** and
+      **Download CSV**: the Funnel isn't in them. Switch it back on.
+- [ ] 18.4 **Edit numbers**, change one number, **Save numbers**: it's marked as edited, and the
+      PDF and CSV show the new number. **Undo all edits** puts the original back. People and
+      Today are unchanged.
+- [ ] 18.5 **People → Filters → Activity → Active today**: only people with something done today.
+- [ ] 18.6 On a row with no next action, **Add follow-up** → Tomorrow → **Save follow-up**. On a
+      row with one, **Edit** changes the date. Today (Next day) shows it.
+- [ ] 18.7 **Today → Next day**: what falls due tomorrow, and tomorrow's meetings. Go up to 7 days
+      ahead. **Previous day**: what's still open from that day and what you logged. **Back to
+      today** returns.
+
 ---
 
 ## Before the team starts (only you can do these)

@@ -4,7 +4,8 @@
 // cleaned first ("₹" becomes "INR", arrows become "->").
 import { jsPDF } from "jspdf";
 import { formatIst } from "@/lib/time";
-import { PIPELINE_COLUMNS, REPORT_COLUMNS, type ReportData } from "./reports";
+import type { ReportSection } from "@/lib/report-shape";
+import { NUMBER_SECTIONS, PIPELINE_COLUMNS, REPORT_COLUMNS, type ReportData } from "./reports";
 
 const BLUE: [number, number, number] = [30, 58, 196];
 const GREY: [number, number, number] = [91, 100, 112];
@@ -186,7 +187,12 @@ class Doc {
 }
 
 /** The PDF for a saved report, as bytes. */
-export function reportPdf(r: ReportData, aiSummary: string | null): Buffer {
+export function reportPdf(
+  r: ReportData,
+  aiSummary: string | null,
+  hidden: readonly ReportSection[] = [],
+): Buffer {
+  const on = (k: ReportSection) => !hidden.includes(k);
   const d = new Doc();
   d.text("Lumor Sales Hub", 10, BLUE, true);
   d.text(r.title, 18, INK, true);
@@ -195,7 +201,7 @@ export function reportPdf(r: ReportData, aiSummary: string | null): Buffer {
     9,
     GREY,
   );
-  if (aiSummary) {
+  if (aiSummary && on("summary")) {
     d.y += 2;
     d.text(`Summary: ${aiSummary}`, 10);
   }
@@ -243,7 +249,7 @@ export function reportPdf(r: ReportData, aiSummary: string | null): Buffer {
         ],
   );
 
-  if (p) {
+  if (p && on("pipeline")) {
     d.heading("Pipeline");
     d.table(
       ["Person", ...PIPELINE_COLUMNS.map((c) => c.label)],
@@ -258,9 +264,10 @@ export function reportPdf(r: ReportData, aiSummary: string | null): Buffer {
     }
   }
 
-  d.heading("Activity, outcomes and plan adherence");
-  const half = Math.ceil(REPORT_COLUMNS.length / 2);
-  for (const cols of [REPORT_COLUMNS.slice(0, half), REPORT_COLUMNS.slice(half)]) {
+  for (const sec of NUMBER_SECTIONS) {
+    if (!on(sec.key)) continue;
+    d.heading(sec.title);
+    const cols = sec.keys.map((k) => REPORT_COLUMNS.find((c) => c.key === k)!);
     d.table(
       ["Person", ...cols.map((c) => c.label)],
       [...r.people, r.total].map((x) => [
@@ -272,17 +279,18 @@ export function reportPdf(r: ReportData, aiSummary: string | null): Buffer {
     );
   }
 
-  d.heading("Funnel");
-  d.hBars(
-    "Conversion rates (benchmark in brackets)",
-    r.funnel.conversions.map((c) => ({
-      label: c.label,
-      value: c.rate ?? 0,
-      text: `${pct(c.rate)} (${pct(c.benchmark)}) · ${c.to} of ${c.from}`,
-    })),
-  );
+  if (on("funnel")) d.heading("Funnel");
+  if (on("funnel"))
+    d.hBars(
+      "Conversion rates (benchmark in brackets)",
+      r.funnel.conversions.map((c) => ({
+        label: c.label,
+        value: c.rate ?? 0,
+        text: `${pct(c.rate)} (${pct(c.benchmark)}) · ${c.to} of ${c.from}`,
+      })),
+    );
 
-  if (r.plans.length > 0) {
+  if (r.plans.length > 0 && on("plans")) {
     d.heading("Plan performance");
     d.table(
       ["Plan / step", "Enrolled or done", "Replied", "Reply rate"],
@@ -292,6 +300,48 @@ export function reportPdf(r: ReportData, aiSummary: string | null): Buffer {
       ]),
       90,
     );
+  }
+
+  if (r.details && on("details")) {
+    const det = r.details;
+    const when = (iso: string) => formatIst(new Date(iso), "d MMM, h:mm aaa");
+    d.heading("What happened");
+    d.text(
+      `${det.companies.length + det.more.companies} companies added · ${det.people.length + det.more.people} people added · ${det.actions.length + det.more.actions} contacts, replies and meetings`,
+      9,
+      GREY,
+    );
+    if (det.companies.length > 0) {
+      d.text("Companies added", 10, INK, true);
+      d.table(
+        ["Company", "Added by", "When"],
+        det.companies.map((c) => [c.name, c.by ?? "-", when(c.at)]),
+        90,
+      );
+    }
+    if (det.people.length > 0) {
+      d.text("People added", 10, INK, true);
+      d.table(
+        ["Person", "Title", "Company", "Added by", "When"],
+        det.people.map((x) => [x.name, x.title ?? "-", x.company ?? "-", x.by ?? "-", when(x.at)]),
+        60,
+      );
+    }
+    if (det.actions.length > 0) {
+      d.text("Contacts, replies and meetings", 10, INK, true);
+      for (const a of det.actions) {
+        d.text(
+          `${when(a.at)} · ${a.rep} · ${a.what} · ${a.person ?? "Someone"}${a.company ? ` (${a.company})` : ""}`,
+          8.5,
+          INK,
+          true,
+        );
+        if (a.text) d.text(a.text, 8.5, GREY, false, M + 4);
+      }
+    }
+    const more = det.more.companies + det.more.people + det.more.actions;
+    if (more > 0)
+      d.text(`${more} more rows aren't listed (the first ${500} of each list are).`, 8, GREY);
   }
 
   return Buffer.from(d.pdf.output("arraybuffer"));

@@ -147,3 +147,103 @@
   gap: var(--space-4);
   margin-bottom: var(--space-3);
 }
+
+// D-057: Include in report, Edit numbers, and What happened.
+.sectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+  }
+}
+
+.excluded {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.editBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.numInput {
+  width: 80px;
+  min-height: 32px;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  text-align: right;
+}
+
+.edited {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--color-warning-soft);
+  color: var(--color-warning-text);
+  font-weight: var(--weight-medium);
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.subTitle {
+  margin-top: var(--space-2);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+}
+
+.actionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.action {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.actionHead {
+  font-size: var(--text-sm);
+}
+
+.actionText {
+  margin-top: var(--space-1);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
