@@ -105,10 +105,19 @@ async function Booking({
       </div>
 
       {!cancelled && location && /^https?:\/\//.test(location) && (
-        <a className={styles.joinButton} href={location} target="_blank" rel="noopener noreferrer">
-          <Video size={18} aria-hidden />
-          {b.meetLink ? "Join with Google Meet" : "Join the meeting"}
-        </a>
+        <div className={styles.joinBlock}>
+          <a
+            className={styles.joinButton}
+            href={location}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Video size={18} aria-hidden />
+            {b.meetLink ? "Join with Google Meet" : "Join the meeting"}
+          </a>
+          {/* The same link everyone has, as text (D-053). */}
+          <p className={styles.linkText}>{location.replace(/^https?:\/\//, "")}</p>
+        </div>
       )}
       {upcoming && <ManageBooking code={code} slots={slots.map((s) => s.toISOString())} />}
     </div>

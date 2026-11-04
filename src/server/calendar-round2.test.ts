@@ -35,11 +35,13 @@ import {
   meetingsToday,
   removeTeammate,
   rescheduleByHost,
+  checkMeetSetup,
+  MEET_NOT_OPEN,
   saveMeetingType,
   teamOf,
 } from "./calendar";
 import { decryptSecret, encryptSecret } from "./google/crypto";
-import { saveConnection } from "./google/google";
+import { MEET_PROBLEMS, saveConnection } from "./google/google";
 import { listNotifications, markRead, unreadCount } from "./notifications";
 
 let t: Awaited<ReturnType<typeof createTestDb>>;
@@ -352,6 +354,10 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
     busy?: { start: string; end: string }[];
     /** Google makes the Meet link a moment later (D-050). */
     lateMeet?: boolean;
+    /** The Google Meet REST API is switched off in Google Cloud (D-053). */
+    meetApiOff?: boolean;
+    /** Google accepts the change but the Meet stays closed (D-053). */
+    meetNotKept?: boolean;
   }) {
     process.env.GOOGLE_CLIENT_ID = "client";
     process.env.GOOGLE_CLIENT_SECRET = "secret";
@@ -386,10 +392,31 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
           return json({ id: "evt-1", hangoutLink: "https://meet.google.com/abc-defg-hij" });
         }
         if (url === "https://meet.googleapis.com/v2/spaces/abc-defg-hij") {
-          return json({ name: "spaces/space-1", meetingCode: "abc-defg-hij" });
+          if (opts.meetApiOff) {
+            return json(
+              {
+                error: {
+                  code: 403,
+                  message:
+                    "Google Meet REST API has not been used in project 123 before or it is disabled.",
+                  status: "PERMISSION_DENIED",
+                  details: [{ reason: "SERVICE_DISABLED" }],
+                },
+              },
+              403,
+            );
+          }
+          return json({
+            name: "spaces/space-1",
+            meetingCode: "abc-defg-hij",
+            config: { accessType: "TRUSTED" },
+          });
         }
         if (url.startsWith("https://meet.googleapis.com/v2/spaces/space-1?")) {
-          return json({ name: "spaces/space-1", config: { accessType: "OPEN" } });
+          return json({
+            name: "spaces/space-1",
+            config: { accessType: opts.meetNotKept ? "TRUSTED" : "OPEN" },
+          });
         }
         if (method === "PATCH") return json({ id: "evt-1" });
         if (method === "DELETE") return new Response(null, { status: 204 });
@@ -502,6 +529,101 @@ describe("Google Calendar and Meet (F26, Google faked)", () => {
       "https://meet.googleapis.com/v2/spaces/space-1?updateMask=config.accessType",
     );
     expect(patch.body).toEqual({ config: { accessType: "OPEN" } });
+  });
+
+  const MEET_SCOPE =
+    "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/meetings.space.settings";
+  const connectWithMeet = (actor = rep) =>
+    saveConnection(t.db, actor, {
+      email: "asha@lumor.tech",
+      refreshToken: "refresh-secret",
+      scope: MEET_SCOPE,
+    });
+  const notOpenNotes = async () =>
+    (await t.db.select().from(notification)).filter((n) => n.title === MEET_NOT_OPEN);
+
+  it("a new booking's Meet is opened, confirmed and saved as open (D-053)", async () => {
+    fakeGoogle({});
+    await demo();
+    await connectWithMeet();
+    const { booking: b } = await book();
+    expect(b.meetLink).toBe("https://meet.google.com/abc-defg-hij");
+    expect(b.meetOpen).toBe(true);
+    expect(await notOpenNotes()).toHaveLength(0);
+  });
+
+  it("a Meet that can't be opened is saved as not open, with the reason, notified once (D-053)", async () => {
+    fakeGoogle({ meetApiOff: true });
+    await demo();
+    await connectWithMeet();
+    const { booking: b } = await book();
+    // The booking and its one link stand; only the open setting is missing.
+    expect(b.meetLink).toBe("https://meet.google.com/abc-defg-hij");
+    expect(b.meetOpen).toBe(false);
+    const [note] = await notOpenNotes();
+    expect(note.body).toContain("Google Meet REST API is switched off");
+    expect(note.body).toContain("Check Google Meet");
+    // A second booking doesn't add a second unread note.
+    await book({ email: "second@acme.example", startsAt: at("2026-11-03T12:00") });
+    expect(await notOpenNotes()).toHaveLength(1);
+    // Check Google Meet names the same fix.
+    expect(await checkMeetSetup(t.db, rep, NOW)).toEqual({
+      ok: false,
+      problem: MEET_PROBLEMS.apiOff,
+    });
+  });
+
+  it("Google accepting the change but not keeping it open counts as not open (D-053)", async () => {
+    fakeGoogle({ meetNotKept: true });
+    await demo();
+    await connectWithMeet();
+    const { booking: b } = await book();
+    expect(b.meetOpen).toBe(false);
+    expect((await notOpenNotes())[0].body).toContain("didn't keep the meeting open");
+  });
+
+  it("Check Google Meet: says what's missing, then tests a meeting and opens earlier ones (D-053)", async () => {
+    fakeGoogle({});
+    await demo();
+    expect(await checkMeetSetup(t.db, rep, NOW)).toEqual({
+      ok: false,
+      problem: "Connect Google Calendar first (the button on this page).",
+    });
+    // Connected before 2.7.9: no Meet permission, so the booking's Meet isn't open.
+    await connect();
+    const { booking: early } = await book();
+    expect(early.meetOpen).toBe(false);
+    expect((await notOpenNotes())[0].body).toContain("Reconnect Google");
+    expect(await checkMeetSetup(t.db, rep, NOW)).toEqual({
+      ok: false,
+      problem: MEET_PROBLEMS.permission,
+    });
+    // Reconnected with it: the check makes, opens and deletes a test meeting (no guests), then
+    // opens the earlier booking.
+    await connectWithMeet();
+    calls = [];
+    const r = await checkMeetSetup(t.db, rep, NOW);
+    expect(r).toEqual({
+      ok: true,
+      message:
+        "Google Meet works: new meetings are open to anyone with the link, at any time, and nobody has to ask to join. 1 upcoming meeting was opened too.",
+    });
+    const test = calls.find((c) => c.method === "POST" && c.url.includes("/events"))!;
+    const body = test.body as { summary: string; attendees: unknown[] };
+    expect(body.summary).toContain("Lumor test");
+    expect(body.attendees).toEqual([]);
+    expect(calls.some((c) => c.method === "DELETE" && c.url.includes("/events/evt-1"))).toBe(true);
+    expect(
+      calls.filter((c) => c.method === "PATCH" && c.url.includes("meet.googleapis.com")),
+    ).toHaveLength(2);
+    const [saved] = await t.db.select().from(booking).where(eq(booking.id, early.id));
+    expect(saved.meetOpen).toBe(true);
+    // Run again: nothing left to open.
+    expect((await checkMeetSetup(t.db, rep, NOW)).ok).toBe(true);
+    const audit = await t.db.select().from(auditLog).where(eq(auditLog.recordId, early.id));
+    expect(
+      audit.some((a) => a.changes.meetOpen?.before === false && a.changes.meetOpen?.after === true),
+    ).toBe(true);
   });
 
   it("adding a teammate updates the Google guests", async () => {

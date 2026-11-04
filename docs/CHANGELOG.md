@@ -7,7 +7,16 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.7.9, the Google Meet permission and the Gmail setup.
+Next: the owner's QA of v2.7.10 (Google steps, then Check Google Meet).
+
+## [2.7.10] - 2026-11-04
+
+Meet links open to anyone, checked and shown (D-053).
+
+- Each Meet is set to Open and the app checks that Google kept it. Anyone with the link joins at any time, before or after the start, without asking and without a host.
+- **Check Google Meet** on Calendar → Availability proves it works with a test meeting, then opens your upcoming meetings, including ones booked earlier. Reconnecting Google opens them too.
+- The meeting window shows the link as text under Join (the same on the "You're booked" page), says whether the meeting is open, and names the Google account that owns it.
+- When a Meet can't be opened, the rep gets one notification with the reason in plain words.
 
 ## [2.7.9] - 2026-11-03
 

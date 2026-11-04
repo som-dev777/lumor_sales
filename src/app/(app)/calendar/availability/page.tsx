@@ -16,6 +16,7 @@ import { formatIst, formatIstDate, todayIst } from "@/lib/time";
 import { appUrl } from "@/lib/tokens";
 import { listMeetingTypes, previewSlots, profileView, slotReport } from "@/server/calendar";
 import { emailSetup } from "@/server/email";
+import { CheckMeetButton } from "@/components/calendar/CheckMeetButton";
 import { connectionView, googleConfigured } from "@/server/google/google";
 
 export const metadata: Metadata = { title: "Availability" };
@@ -78,13 +79,15 @@ async function Availability({
             {!connected.opensMeet && (
               <Alert tone="warning">
                 Reconnect Google once so people can join your Google Meet straight away, without
-                waiting for you to let them in.
+                waiting for you to let them in. Then click Check Google Meet.
               </Alert>
             )}
             <p className={styles.muted}>
-              Each booking gets its own Google Meet link, which anyone with the link can join, and
-              an event in your Google Calendar.
+              Each booking gets one Google Meet link and an event in your Google Calendar. The link
+              is open: anyone who has it can join at any time, before or after the start, without
+              asking. Your Google account ({connected.email}) owns the meetings.
             </p>
+            <CheckMeetButton />
             <div className={styles.row}>
               {(connected.lastError || !connected.opensMeet) && (
                 <a className={styles.buttonLink} href="/api/google/connect">

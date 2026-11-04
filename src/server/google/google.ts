@@ -281,7 +281,17 @@ function meetLinkOf(body: Record<string, unknown>): string | null {
   return points?.find((p) => p.entryPointType === "video")?.uri ?? null;
 }
 
-export type GoogleResult = { ok: true; eventId: string; meetLink: string | null } | { ok: false };
+export type GoogleResult =
+  | {
+      ok: true;
+      eventId: string;
+      meetLink: string | null;
+      /** Whether the Meet is open to anyone (D-053); null when there's no Meet. */
+      meetOpen: boolean | null;
+      /** Why it couldn't be opened, in plain words. */
+      meetProblem: string | null;
+    }
+  | { ok: false };
 
 /** Creates the event (Google emails the invite). Null result when not connected. */
 /**
@@ -323,8 +333,14 @@ export async function createGoogleEvent(
       if (again.ok) body = again.body;
     }
     const meetLink = meetLinkOf(body);
-    if (meetLink) await openMeet(db, hostId, token, meetLink);
-    return { ok: true, eventId: String(body.id), meetLink };
+    const open = meetLink ? await openMeet(db, hostId, token, meetLink) : null;
+    return {
+      ok: true,
+      eventId: String(body.id),
+      meetLink,
+      meetOpen: open ? open.ok : null,
+      meetProblem: open && !open.ok ? open.problem : null,
+    };
   } catch (err) {
     console.error("Google event create failed:", err instanceof Error ? err.message : err);
     return { ok: false };
@@ -333,40 +349,155 @@ export async function createGoogleEvent(
 
 const MEET_API = "https://meet.googleapis.com/v2";
 
+/** What to do when a Meet can't be opened, in plain words (D-053). */
+export const MEET_PROBLEMS = {
+  permission:
+    "Lumor doesn't have Google's Meet permission yet. On Calendar → Availability, click Reconnect Google and allow everything Google asks.",
+  apiOff:
+    "The Google Meet REST API is switched off in your Google Cloud project. Go to console.cloud.google.com → APIs & Services → Library → Google Meet REST API → Enable, wait 2 minutes, then click Check Google Meet again.",
+  notConnected: "Google isn't connected, or needs reconnecting (Calendar → Availability).",
+  notKept:
+    "Google accepted the change but didn't keep the meeting open. The host can open it by hand: Google Calendar → the event → Video call options (the gear) → Host controls → Meeting access → Open.",
+  unreachable: "Google Meet couldn't be reached. Try Check Google Meet again in a minute.",
+};
+
+export type MeetOpenResult = { ok: true; note?: string } | { ok: false; problem: string };
+
+/** Google's error, in plain words. */
+function meetProblemOf(status: number, body: Record<string, unknown>): string {
+  const err = (body.error ?? {}) as {
+    message?: string;
+    details?: { reason?: string }[];
+  };
+  const reasons = (err.details ?? []).map((d) => d.reason ?? "");
+  const message = String(err.message ?? "").slice(0, 300);
+  if (
+    reasons.includes("SERVICE_DISABLED") ||
+    /has not been used|is disabled|accessNotConfigured/i.test(message)
+  ) {
+    return MEET_PROBLEMS.apiOff;
+  }
+  if (
+    reasons.includes("ACCESS_TOKEN_SCOPE_INSUFFICIENT") ||
+    /insufficient authentication scopes/i.test(message)
+  ) {
+    return MEET_PROBLEMS.permission;
+  }
+  if (status === 404) return "Google couldn't find this meeting's Meet room.";
+  if (status === 403) {
+    return `Google didn't allow it: only the meeting's owner (the Google account connected in Lumor) can open it.${message ? ` Google said: ${message}` : ""}`;
+  }
+  return `Google refused the change (error ${status})${message ? `: ${message}` : ""}.`;
+}
+
+const accessOf = (body: Record<string, unknown>) =>
+  (body.config as { accessType?: string } | undefined)?.accessType;
+
 /**
- * Makes the meeting open (D-052): anyone with the link joins straight away, instead of waiting
- * for the host to let them in. Google only lets people in without asking when they're signed in
- * with the exact invited address, so the person who booked often sat in the lobby (and thought
- * it was a different meeting). Needs the Meet permission from a connection made after D-052 and
- * the Google Meet REST API switched on; if either is missing, the meeting still works as before.
+ * Makes the meeting open (D-052, D-053): anyone with the link joins straight away, at any time,
+ * without asking and without a host. Otherwise Google only lets in people signed in with the
+ * exact invited address; everyone else knocks and only the owner can let them in. Needs the Meet
+ * permission (a connection made after 2.7.9) and the Google Meet REST API switched on. Reads the
+ * setting back, so "open" is only reported when Google kept it.
  */
-async function openMeet(db: Db, hostId: string, token: string, link: string): Promise<boolean> {
+async function openMeet(
+  db: Db,
+  hostId: string,
+  token: string,
+  link: string,
+): Promise<MeetOpenResult> {
   const [row] = await db
     .select({ scope: googleConnection.scope })
     .from(googleConnection)
     .where(eq(googleConnection.userId, hostId));
-  if (!canOpenMeet(row?.scope)) return false;
-  const code = link.match(/meet\.google\.com\/([a-z]+-[a-z]+-[a-z]+)/)?.[1];
-  if (!code) return false;
+  if (!canOpenMeet(row?.scope)) return { ok: false, problem: MEET_PROBLEMS.permission };
+  const code = link.match(/meet\.google\.com\/([a-z]+-[a-z]+-[a-z]+)/i)?.[1];
+  if (!code) return { ok: false, problem: "That isn't a Google Meet link." };
+  const auth = { Authorization: `Bearer ${token}` };
   try {
-    const space = await fetchJson(`${MEET_API}/spaces/${code}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    let space = await fetchJson(`${MEET_API}/spaces/${code}`, { headers: auth });
+    // A brand-new Meet can take a moment to reach the Meet API.
+    for (let i = 0; i < 2 && space.status === 404; i++) {
+      await new Promise((ok) => setTimeout(ok, 1500));
+      space = await fetchJson(`${MEET_API}/spaces/${code}`, { headers: auth });
+    }
     if (!space.ok || typeof space.body.name !== "string") {
       console.error(`Google Meet space lookup failed: ${space.status}`);
-      return false;
+      return { ok: false, problem: meetProblemOf(space.status, space.body) };
     }
+    if (accessOf(space.body) === "OPEN") return { ok: true };
     const r = await fetchJson(`${MEET_API}/${space.body.name}?updateMask=config.accessType`, {
       method: "PATCH",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify({ config: { accessType: "OPEN" } }),
     });
-    if (!r.ok) console.error(`Opening the Google Meet failed: ${r.status}`);
-    return r.ok;
+    if (!r.ok) {
+      console.error(`Opening the Google Meet failed: ${r.status}`);
+      return { ok: false, problem: meetProblemOf(r.status, r.body) };
+    }
+    return accessOf(r.body) === "OPEN"
+      ? { ok: true }
+      : { ok: false, problem: MEET_PROBLEMS.notKept };
   } catch (err) {
     console.error("Opening the Google Meet failed:", err instanceof Error ? err.message : err);
-    return false;
+    return { ok: false, problem: MEET_PROBLEMS.unreachable };
   }
+}
+
+/** Opens an existing meeting's Meet (for meetings booked earlier, D-053). */
+export async function openMeetSpace(db: Db, hostId: string, link: string): Promise<MeetOpenResult> {
+  const token = await accessToken(db, hostId);
+  if (!token) return { ok: false, problem: MEET_PROBLEMS.notConnected };
+  return openMeet(db, hostId, token, link);
+}
+
+/**
+ * Check Google Meet (D-053): makes a test event with a Meet in the rep's Google Calendar (no
+ * guests, so nobody is emailed), opens the Meet, checks it, and deletes the event.
+ */
+export async function testMeetSetup(
+  db: Db,
+  hostId: string,
+  now = new Date(),
+): Promise<MeetOpenResult> {
+  const start = new Date(now.getTime() + 24 * 3600_000);
+  const made = await createGoogleEvent(
+    db,
+    hostId,
+    {
+      title: "Lumor test: checking Google Meet (deleted straight away)",
+      description:
+        "Made by the Lumor Sales Hub to check that Google Meet links open for everyone. It's deleted straight away; if you can still see it, delete it.",
+      start,
+      end: new Date(start.getTime() + 30 * 60_000),
+      location: null,
+      attendees: [],
+      meet: true,
+    },
+    `lumor-check-${now.getTime()}`,
+  );
+  if (made === null) return { ok: false, problem: MEET_PROBLEMS.notConnected };
+  if (!made.ok) {
+    return {
+      ok: false,
+      problem:
+        "Google didn't create the test meeting. Click Reconnect Google on this page, then check again.",
+    };
+  }
+  const deleted = await deleteGoogleEvent(db, hostId, made.eventId);
+  const leftover = deleted
+    ? ""
+    : ' The test event couldn\'t be deleted: delete "Lumor test" from your Google Calendar.';
+  if (!made.meetLink) {
+    return {
+      ok: false,
+      problem: `Google made the test event but no Meet link. Check that Google Meet works on this Google account.${leftover}`,
+    };
+  }
+  if (!made.meetOpen) {
+    return { ok: false, problem: `${made.meetProblem ?? MEET_PROBLEMS.notKept}${leftover}` };
+  }
+  return { ok: true, note: leftover.trim() || undefined };
 }
 
 /** Changes an event (new time or attendees). Google emails the update. */

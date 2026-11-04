@@ -1036,3 +1036,26 @@ replaces it.
   page, so the "You're booked" page looked cut off. Form boxes now use 16px text on phones,
   across the app.
 - **Version 2.7.9** (PATCH).
+
+## D-053: Meet links open to anyone, checked and shown (owner, 2026-11-04)
+
+- **Date:** 2026-11-04 · **Status:** Accepted
+- **What the owner saw (again):** the rep's laptop showed "Ask to join" and the person who booked
+  was alone in the call, so it looked like two meetings. Both screenshots show the same meeting
+  code (tsg-nbyh-xum). That meeting was booked before 2.7.9, so it was never set to open: the
+  booker (invited with that exact Google account) went straight in, the laptop (signed in as
+  another account, not the meeting's owner) had to knock, and nobody inside could let it in.
+- **Owner's rule:** every meeting link must let anyone in, at any time (before or after the
+  start), without asking and without a host.
+- **What Google allows:** a personal Google account's meeting can be set to Open (Calendar's host
+  controls), and apps can set it with the Google Meet REST API (`spaces.patch`,
+  `config.accessType = OPEN`, permission `meetings.space.settings`, non-sensitive). Google
+  Calendar's own API has no such setting, so the Meet REST API must be switched on in Google
+  Cloud and each rep must reconnect once. This can't be done without those two steps.
+- **What changes:** the app reads the setting back to confirm it's Open; saves it per meeting
+  (`booking.meet_open`); shows it in the meeting window with the link as text and the host's
+  Google account; notifies the rep (once, with the reason) when a Meet can't be opened; adds
+  **Check Google Meet** on Availability (test meeting made, opened, checked and deleted; then
+  upcoming meetings opened); and opens upcoming meetings when a rep reconnects Google. Meetings
+  booked before this (like tsg-nbyh-xum) are opened by the check or the reconnect.
+- **Version 2.7.10** (PATCH).

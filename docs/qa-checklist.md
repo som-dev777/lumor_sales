@@ -447,6 +447,13 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
       same call straight away, nobody waits.
 - [ ] 14.47 On an iPhone, book a meeting: the page doesn't zoom in when you tap a box, and "You're
       booked" fits the screen with the Lumor logo fully visible.
+- [ ] 14.48 Calendar → Availability → **Check Google Meet**: green "Google Meet works…" (or a red
+      message saying exactly what to fix; fix it and check again).
+- [ ] 14.49 Open a meeting on the Calendar: the link is shown as text under **Join Google Meet**,
+      with "Open: anyone with this link can join at any time, without asking."
+- [ ] 14.50 Book a new online meeting. Open the link from the booker's email on a phone and from
+      Lumor on your laptop (any Google account, or signed out): both land in the same call, with
+      no "Ask to join", even an hour before the start.
 
 **Calendly (only if you still use it)**
 

@@ -223,6 +223,11 @@ works as before.
 clicks **Reconnect Google** on Calendar → Availability (a yellow note asks them to) and allows
 the new permission. From then on, anyone with the meeting's link joins straight away.
 
+7. **Check it (each rep, once):** Calendar → Availability → **Check Google Meet**. It makes a test
+   meeting in your Google Calendar (no guests, nobody is emailed), opens it to anyone, checks
+   Google kept that, deletes it, and opens your upcoming meetings too. Green = done. Red = the
+   message says exactly what's missing (usually step 2 or the reconnect).
+
 The token Google returns is stored encrypted with `BETTER_AUTH_SECRET`; if you ever change that
 secret, reps simply click Connect again.
 

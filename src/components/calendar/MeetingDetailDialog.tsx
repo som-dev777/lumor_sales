@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, Mail, Phone, UserMinus, Video } from "lucide-react";
+import { CalendarClock, CheckCircle2, Mail, Phone, UserMinus, Video } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -34,6 +34,10 @@ export type DetailData = {
   durationMin: number;
   where: string | null;
   isMeet: boolean;
+  /** The Meet is open to anyone with the link (D-053): true, false, or not known. */
+  meetOpen: boolean | null;
+  /** The Google account that owns the Meet (the host's connected account). */
+  meetHost: string | null;
   upcoming: boolean;
   invitee: {
     name: string;
@@ -121,15 +125,34 @@ export function MeetingDetailDialog({
         </div>
         {data.where &&
           (/^https?:\/\//.test(data.where) ? (
-            <a
-              className={styles.joinButton}
-              href={data.where}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Video size={18} aria-hidden />{" "}
-              {data.isMeet ? "Join Google Meet" : "Join the meeting"}
-            </a>
+            <div className={styles.joinBlock}>
+              <a
+                className={styles.joinButton}
+                href={data.where}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Video size={18} aria-hidden />{" "}
+                {data.isMeet ? "Join Google Meet" : "Join the meeting"}
+              </a>
+              {/* The link as text, so everyone can see it's the same one (D-053). */}
+              <p className={styles.linkText}>{data.where.replace(/^https?:\/\//, "")}</p>
+              {data.isMeet &&
+                open &&
+                (data.meetOpen ? (
+                  <p className={styles.meetOpen}>
+                    <CheckCircle2 size={16} aria-hidden /> Open: anyone with this link can join at
+                    any time, without asking.
+                  </p>
+                ) : (
+                  <Alert tone="warning">
+                    Not open yet: people who weren&rsquo;t invited with that exact Google account
+                    have to ask to join, and only the meeting&rsquo;s owner
+                    {data.meetHost ? ` (${data.meetHost})` : ""} can let them in. Fix it once on
+                    Calendar → Availability → Check Google Meet.
+                  </Alert>
+                ))}
+            </div>
           ) : (
             <p>Where: {data.where}</p>
           ))}

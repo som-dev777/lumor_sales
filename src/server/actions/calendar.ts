@@ -24,6 +24,7 @@ import {
   BookingFieldsError,
   cancelByHost,
   cancelByToken,
+  checkMeetSetup,
   createBooking,
   deleteMeetingType,
   removeGuest,
@@ -342,4 +343,17 @@ export async function sendTestEmail(): Promise<ActionResult> {
   return r.ok
     ? { ok: true, message: `Sent to ${to}. Check your inbox (and spam) in a minute.` }
     : { ok: false, error: r.error ?? "It couldn't be sent." };
+}
+
+/**
+ * Check Google Meet (D-053): proves a new Meet opens for anyone (test meeting made, opened,
+ * checked, deleted), then opens the rep's upcoming meetings. Says exactly what to fix otherwise.
+ */
+export async function checkGoogleMeet(): Promise<ActionResult> {
+  const viewer = await requireUser();
+  return run(async () => {
+    const r = await checkMeetSetup(getDb(), viewer, await appNow());
+    refresh();
+    return r.ok ? { ok: true, message: r.message } : { ok: false, error: r.problem };
+  });
 }

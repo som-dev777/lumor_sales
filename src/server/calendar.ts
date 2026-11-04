@@ -11,6 +11,7 @@ import {
   bookingParticipant,
   calendarProfile,
   meetingType,
+  notification,
   person,
   user,
 } from "@/lib/db/schema";
@@ -63,10 +64,14 @@ import { renderMail } from "./calendar-mail";
 import { decryptSecret, encryptSecret } from "./google/crypto";
 import { emailConfigured, sendEmail } from "./email";
 import {
+  connectionView,
   createGoogleEvent,
   deleteGoogleEvent,
   googleBusy,
   googleBusyCheck,
+  MEET_PROBLEMS,
+  openMeetSpace,
+  testMeetSetup,
   updateGoogleEvent,
 } from "./google/google";
 import { LeadError } from "./leads/companies";
@@ -964,6 +969,7 @@ async function insertBooking(
       rescheduledFromId: replacing ? rootOf(replacing) : null,
       googleEventId: replacing?.googleEventId ?? null,
       meetLink: replacing?.meetLink ?? null,
+      meetOpen: replacing?.meetOpen ?? null,
       // A meeting the rep scheduled keeps its title, recipients and message when it moves.
       title: replacing?.title ?? null,
       toEmails: replacing?.toEmails ?? [],
@@ -1646,10 +1652,10 @@ async function makeGoogleEvent(db: Db, b: BookingRow, page: BookingPage): Promis
     await googleProblem(db, b, page, "create the Google Calendar event and Meet link");
     return b;
   }
-  return db.transaction(async (tx) => {
+  const saved = await db.transaction(async (tx) => {
     const [row] = await tx
       .update(booking)
-      .set({ googleEventId: result.eventId, meetLink: result.meetLink })
+      .set({ googleEventId: result.eventId, meetLink: result.meetLink, meetOpen: result.meetOpen })
       .where(eq(booking.id, b.id))
       .returning();
     await writeAudit(tx, {
@@ -1659,10 +1665,126 @@ async function makeGoogleEvent(db: Db, b: BookingRow, page: BookingPage): Promis
       recordName: `${page.type.name} with ${b.inviteeName}`,
       action: "Updated",
       before: { meetLink: null },
-      after: { meetLink: result.meetLink, via: "Google" },
+      after: { meetLink: result.meetLink, meetOpen: result.meetOpen, via: "Google" },
     });
     return row;
   });
+  if (result.meetOpen === false) await meetNotOpen(db, saved, page, result.meetProblem);
+  return saved;
+}
+
+export const MEET_NOT_OPEN = "Google Meet not open: people may have to ask to join";
+
+/** Tells the host, once until they read it, that a Meet couldn't be opened and why (D-053). */
+async function meetNotOpen(db: Db, b: BookingRow, page: BookingPage, problem: string | null) {
+  await db.transaction(async (tx) => {
+    const [unread] = await tx
+      .select({ id: notification.id })
+      .from(notification)
+      .where(
+        and(
+          eq(notification.userId, b.hostId),
+          eq(notification.title, MEET_NOT_OPEN),
+          isNull(notification.readAt),
+        ),
+      )
+      .limit(1);
+    if (unread) return;
+    await addNotificationsTx(tx, null, [
+      {
+        userId: b.hostId,
+        kind: "google",
+        title: MEET_NOT_OPEN,
+        body: `${page.type.name} with ${b.inviteeName}, ${whenIst(b.startsAt)}. ${problem ?? MEET_PROBLEMS.notKept} When that's done, click Check Google Meet on Calendar → Availability: it opens this meeting and your other upcoming ones.`,
+        link: meetingLink(b.id),
+        bookingId: b.id,
+      },
+    ]);
+  });
+}
+
+/** Setup problems that stop every meeting from opening alike (no point trying the rest). */
+const setupProblem = (problem: string) =>
+  problem === MEET_PROBLEMS.permission ||
+  problem === MEET_PROBLEMS.apiOff ||
+  problem === MEET_PROBLEMS.notConnected;
+
+/**
+ * Opens the rep's upcoming Meets that aren't open yet (D-053): meetings booked before 2.7.10, or
+ * while Google Meet wasn't set up. Run by Check Google Meet and after reconnecting Google.
+ */
+export async function openUpcomingMeets(db: Db, actor: Actor, now = new Date()) {
+  assertCan(actor, "calendar.manage", { ownerId: actor.id });
+  const rows = await db
+    .select()
+    .from(booking)
+    .where(
+      and(
+        eq(booking.hostId, actor.id),
+        eq(booking.status, "Confirmed"),
+        gt(booking.endsAt, now),
+        sql`${booking.meetLink} is not null`,
+        or(isNull(booking.meetOpen), eq(booking.meetOpen, false)),
+      ),
+    )
+    .orderBy(asc(booking.startsAt))
+    .limit(50);
+  let opened = 0;
+  let failed = 0;
+  let problem: string | null = null;
+  for (const b of rows) {
+    const r = await openMeetSpace(db, actor.id, b.meetLink!);
+    if (r.ok) opened += 1;
+    else {
+      failed += 1;
+      problem ??= r.problem;
+    }
+    if (b.meetOpen !== r.ok) {
+      await db.transaction(async (tx) => {
+        await tx.update(booking).set({ meetOpen: r.ok }).where(eq(booking.id, b.id));
+        await writeAudit(tx, {
+          userId: actor.id,
+          entityType: "Booking",
+          recordId: b.id,
+          recordName: `${b.title ?? "Meeting"} with ${b.inviteeName}`,
+          action: "Updated",
+          before: { meetOpen: b.meetOpen },
+          after: { meetOpen: r.ok, via: "Google" },
+        });
+      });
+    }
+    if (!r.ok && setupProblem(r.problem)) break;
+  }
+  return { opened, failed, total: rows.length, problem };
+}
+
+/**
+ * Check Google Meet on Availability (D-053): a test meeting is made, opened, checked and deleted;
+ * then the rep's upcoming meetings are opened. Says exactly what to fix when something's missing.
+ */
+export async function checkMeetSetup(
+  db: Db,
+  actor: Actor,
+  now = new Date(),
+): Promise<{ ok: true; message: string } | { ok: false; problem: string }> {
+  assertCan(actor, "calendar.manage", { ownerId: actor.id });
+  const connection = await connectionView(db, actor.id);
+  if (!connection) {
+    return { ok: false, problem: "Connect Google Calendar first (the button on this page)." };
+  }
+  if (!connection.opensMeet) return { ok: false, problem: MEET_PROBLEMS.permission };
+  const test = await testMeetSetup(db, actor.id, now);
+  if (!test.ok) return { ok: false, problem: test.problem };
+  const up = await openUpcomingMeets(db, actor, now);
+  const parts = [
+    "Google Meet works: new meetings are open to anyone with the link, at any time, and nobody has to ask to join.",
+  ];
+  if (up.opened > 0) {
+    parts.push(`${up.opened} upcoming meeting${up.opened === 1 ? " was" : "s were"} opened too.`);
+  }
+  if (up.failed > 0) parts.push(`${up.failed} couldn't be opened: ${up.problem}`);
+  if (test.note) parts.push(test.note);
+  return { ok: true, message: parts.join(" ") };
 }
 
 async function syncAttendees(db: Db, b: BookingRow, page: BookingPage, team: TeamMember[]) {

@@ -103,6 +103,8 @@ test("exit check: a signed-out visitor books a slot and sees the confirmation", 
   await expect(visitor.getByRole("button", { name: "Reschedule" })).toBeVisible();
   await expect(visitor.getByRole("button", { name: "Cancel booking" })).toBeVisible();
   await expect(visitor.getByRole("link", { name: "Add to Google Calendar" })).toHaveCount(0);
+  // v2.7.10 (D-053): the meeting's link is also shown as text, the same one the rep sees.
+  await expect(visitor.getByText("meet.google.com/abc-defg-hij", { exact: true })).toBeVisible();
   manageUrl = new URL(visitor.url()).pathname;
   await visitor.screenshot({ path: "test-results/v25-booked.png", fullPage: true });
 
@@ -132,6 +134,11 @@ test("exit check: the booking is on the rep's calendar and their new person", as
     .first()
     .click();
   await expect(rep.getByRole("dialog")).toContainText("Shopper habits");
+  // v2.7.10 (D-053): the same link as text under Join, so both sides can compare it.
+  await expect(
+    rep.getByRole("dialog").getByText("meet.google.com/abc-defg-hij", { exact: true }),
+  ).toBeVisible();
+  await rep.screenshot({ path: "test-results/v25-meeting-window.png" });
   await rep.keyboard.press("Escape");
   await table.getByRole("link", { name: "Vera Visitor" }).click();
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);

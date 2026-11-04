@@ -128,6 +128,9 @@ export const booking = sqliteTable(
     // The event in the host's Google Calendar and its Meet link (F26). Kept across reschedules.
     googleEventId: text("google_event_id"),
     meetLink: text("meet_link"),
+    // Whether the Meet is open to anyone with the link (D-053): true = confirmed open, false =
+    // couldn't be opened, empty = not tried (no Meet, or booked before 2.7.10).
+    meetOpen: flag("meet_open"),
     // Round 3 (D-043).
     mode: text("mode", { enum: MEETING_MODES }).notNull().default("online"),
     // The private manage code, encrypted (for reminder links). Older bookings have none.

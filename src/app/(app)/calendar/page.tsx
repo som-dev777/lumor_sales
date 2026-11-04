@@ -36,6 +36,7 @@ import {
   type BookingListRow,
   type MeetingFilter,
 } from "@/server/calendar";
+import { connectionView } from "@/server/google/google";
 import { leadFormOptions } from "@/server/leads/options";
 
 export const metadata: Metadata = { title: "Calendar" };
@@ -311,6 +312,8 @@ async function Detail({ id, viewer, now }: { id: string; viewer: Viewer; now: Da
     durationMin: Math.round((m.endsAt.getTime() - m.startsAt.getTime()) / 60_000),
     where,
     isMeet: Boolean(m.meetLink),
+    meetOpen: m.meetOpen ?? null,
+    meetHost: m.meetLink ? ((await connectionView(db, m.hostId))?.email ?? null) : null,
     upcoming: m.endsAt > now,
     invitee: {
       name: m.inviteeName,

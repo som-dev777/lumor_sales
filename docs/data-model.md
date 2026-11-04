@@ -369,7 +369,8 @@ manage_token_hash (unique; hash of the visitor's private code), person_id (→ p
 the person is deleted), cancelled_at, cancelled_by (`invitee` or `host`), cancel_reason,
 rescheduled_from_id (the first booking in a reschedule chain, so calendar invites update one
 event), google_event_id and meet_link (the host's Google Calendar event and its Meet link, F26;
-carried across reschedules), mode (`online` or `in_person`, D-043), manage_token_enc (the private
+carried across reschedules), meet_open (the Meet is open to anyone with the link: 1 confirmed
+open, 0 couldn't be opened, empty when not tried; D-053, carried across reschedules), mode (`online` or `in_person`, D-043), manage_token_enc (the private
 code encrypted for reminder links, from 2.7.0), reminder_24_at and reminder_1_at (when each
 reminder was sent), and for meetings a rep scheduled: title, to_emails, cc_emails (JSON lists),
 message and location. invitee_note is only filled by v2.5.0 bookings (the note field was
@@ -472,4 +473,4 @@ columns `calendar_profile.notify_email`, `meeting_type.google_meet`, `booking.go
 and `booking.meet_link`. 0014 (v2.7.0, D-043) makes `person.linkedin_url` optional (with the
 LinkedIn-or-email check) and adds `person.review_note`; adds `calendly_booking`; the round 3
 calendar columns on `calendar_profile`, `meeting_type` and `booking`; `plan_step.custom_purpose`;
-`report_run.shared_with`; and the `report` and `calendly` notification kinds. 0015 (v2.7.2, D-045) turns the seeded draft plans into ordinary Official plans and drops "(draft)" from their names. From 2.7.2 a meeting's `cc_emails` also holds guests added by email. 0016 (v2.7.4, D-047) adds `calendar_profile.use_google_busy` (default on). 0017 (v2.7.5, D-048) adds `meeting_type.deleted_at` and sets every `buffer_min` to 0 (gaps are gone). 0018 (v2.7.8, D-051) sets every `min_notice_hours` to 0 (same-day booking) and every `use_google_busy` to off; the app now uses 0 and off as the defaults.
+`report_run.shared_with`; and the `report` and `calendly` notification kinds. 0015 (v2.7.2, D-045) turns the seeded draft plans into ordinary Official plans and drops "(draft)" from their names. From 2.7.2 a meeting's `cc_emails` also holds guests added by email. 0016 (v2.7.4, D-047) adds `calendar_profile.use_google_busy` (default on). 0017 (v2.7.5, D-048) adds `meeting_type.deleted_at` and sets every `buffer_min` to 0 (gaps are gone). 0018 (v2.7.8, D-051) sets every `min_notice_hours` to 0 (same-day booking) and every `use_google_busy` to off; the app now uses 0 and off as the defaults. 0019 (v2.7.10, D-053) adds `booking.meet_open`.
