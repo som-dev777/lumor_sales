@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
+import { DictateButton } from "@/components/ai/DictateButton";
 import { askCompanyAi } from "@/server/actions/ai";
 import type { CompanyInput } from "@/lib/validation/leads";
 import styles from "./leads.module.scss";
@@ -119,6 +120,10 @@ export function CompanyAiChat({
               ask();
             }
           }}
+        />
+        <DictateButton
+          disabled={busy}
+          onText={(t) => setQuestion((v) => (v.trim() ? `${v.trimEnd()} ${t}` : t))}
         />
         <Button variant="secondary" loading={busy} disabled={!question.trim()} onClick={ask}>
           Ask

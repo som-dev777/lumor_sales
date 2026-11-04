@@ -49,3 +49,21 @@ export const pastedRowsSchema = z
   )
   .min(1, "Tick at least one message to save.")
   .max(100, "Save at most 100 messages at a time.");
+
+/** Follow-up from the conversation (D-055): what's next, when, and an optional note. */
+export const followUpSchema = z.object({
+  nextAction: z
+    .string()
+    .trim()
+    .max(200, "Keep the next action under 200 characters.")
+    .nullish()
+    .transform((v) => v || null),
+  date: z.string().refine((v) => isIstDate(v), "Pick the follow-up date."),
+  note: z
+    .string()
+    .trim()
+    .max(5000, "That note is too long (5,000 characters).")
+    .nullish()
+    .transform((v) => v || null),
+  channel: z.enum(THREAD_CHANNELS).catch("LinkedIn"),
+});

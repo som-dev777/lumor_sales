@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { PeopleFilters } from "@/components/leads/PeopleFilters";
+import { Download } from "lucide-react";
+import { FilterBar } from "@/components/leads/FilterBar";
+import { AutoRefresh } from "@/components/shell/AutoRefresh";
+import { LEVELS, STAGES } from "@/lib/db/enums";
 import { PeopleTable } from "@/components/leads/PeopleTable";
 import { PersonDialogButton } from "@/components/leads/PersonDialogButton";
 import styles from "@/components/leads/leads.module.scss";
@@ -12,7 +15,7 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { getDb } from "@/lib/db/client";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
-import { formatIstDate, todayIst } from "@/lib/time";
+import { formatIstDate } from "@/lib/time";
 import { appNow } from "@/lib/clock";
 import { usablePlans } from "@/server/plans/plans";
 import { backlogByPerson } from "@/server/today";
@@ -20,6 +23,8 @@ import { leadFormOptions } from "@/server/leads/options";
 import {
   listPeople,
   marketChoices,
+  PEOPLE_ACTIVITY,
+  PEOPLE_SORTS,
   parsePeopleFilters,
   peopleQueryString,
 } from "@/server/leads/people";
@@ -51,7 +56,11 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
   const db = getDb();
   // Backlogs (D-043): the same rules as Today, for the badge and the "Backlog only" filter.
   const backlog = await backlogByPerson(db, await appNow());
-  if (filters.next === "backlog") filters.backlogIds = [...backlog.keys()];
+  // "Overdue" from older links means the same as Backlog now (D-055).
+  if (filters.next === "overdue") filters.next = "backlog";
+  if (filters.next === "backlog" || filters.sort === "backlog") {
+    filters.backlogIds = [...backlog.keys()];
+  }
   const [{ rows, total }, options, markets, plans] = await Promise.all([
     listPeople(db, filters, { limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
     leadFormOptions(db),
@@ -59,9 +68,11 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
     usablePlans(db, viewer),
   ]);
   const isAdmin = can(viewer, "lead.reassign");
-  const today = todayIst();
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const viewHref = (view: "mine" | "all") => `/people?view=${view}`;
+  const plain = (v: readonly string[]) => v.map((x) => ({ value: x, label: x }));
+  const choices = (c: { id: string; label: string }[]) =>
+    c.map((x) => ({ value: x.id, label: x.label }));
   const filtered = Boolean(
     filters.q ||
     filters.personaId ||
@@ -70,11 +81,14 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
     filters.stage ||
     filters.market ||
     filters.next ||
+    filters.activity ||
+    filters.plan ||
     filters.ownerId,
   );
 
   return (
     <>
+      <AutoRefresh everyMs={0} />
       <div className={styles.topRow}>
         <nav className={styles.toggle} aria-label="My leads or all leads">
           <Link
@@ -98,11 +112,97 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
           <PersonDialogButton options={options} canChooseOwner={isAdmin} />
         </div>
       </div>
-      <PeopleFilters
-        filters={filters}
-        options={options}
-        markets={markets}
-        exportHref={`/people/export${peopleQueryString(filters)}`}
+      <FilterBar
+        action="/people"
+        hidden={{ view: filters.mine ? "mine" : "all" }}
+        search={{ value: filters.q, placeholder: "Name, title or company" }}
+        sort={{ value: filters.sort ?? "name", defaultValue: "name", options: [...PEOPLE_SORTS] }}
+        filters={[
+          {
+            name: "next",
+            label: "Next action",
+            value: filters.next,
+            options: [
+              { value: "backlog", label: "Backlog (late work)" },
+              { value: "today", label: "Due today" },
+              { value: "week", label: "Due this week" },
+            ],
+            all: "Any date",
+          },
+          {
+            name: "activity",
+            label: "Activity",
+            value: filters.activity,
+            options: [...PEOPLE_ACTIVITY],
+            all: "Any activity",
+          },
+          {
+            name: "stage",
+            label: "Stage",
+            value: filters.stage,
+            options: plain(STAGES),
+            all: "All stages",
+          },
+          {
+            name: "plan",
+            label: "Plan",
+            value: filters.plan,
+            options: [
+              { value: "on", label: "On a plan" },
+              { value: "off", label: "Not on a plan" },
+            ],
+            all: "On a plan or not",
+          },
+          ...(filters.mine
+            ? []
+            : [
+                {
+                  name: "owner",
+                  label: "Owner",
+                  value: filters.ownerId,
+                  options: choices(options.owners),
+                  all: "Everyone",
+                },
+              ]),
+          {
+            name: "persona",
+            label: "Persona",
+            value: filters.personaId,
+            options: choices(options.personas),
+            all: "All personas",
+          },
+          {
+            name: "level",
+            label: "Level",
+            value: filters.level,
+            options: plain(LEVELS),
+            all: "Any level",
+          },
+          {
+            name: "filter",
+            label: "Account filter",
+            value: filters.accountFilterId,
+            options: choices(options.accountFilters),
+            all: "All filters",
+          },
+          {
+            name: "market",
+            label: "Market",
+            value: filters.market,
+            options: plain(markets),
+            all: "All markets",
+          },
+        ]}
+        extra={
+          <a
+            href={`/people/export${peopleQueryString(filters)}`}
+            className={styles.linkButton}
+            download
+          >
+            <Download size={16} aria-hidden />
+            Export CSV
+          </a>
+        }
       />
       {total === 0 ? (
         <StatusMessage
@@ -140,12 +240,8 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
               stage: r.stage,
               nextAction: r.nextAction,
               nextActionLabel: r.nextActionDate ? formatIstDate(r.nextActionDate) : null,
-              overdue: Boolean(
-                r.nextActionDate &&
-                r.nextActionDate < today &&
-                r.stage !== "Paid" &&
-                r.stage !== "Lost",
-              ),
+              // Late only while it's still a backlog: anything logged since clears it (D-055).
+              overdue: backlog.has(r.id),
               ownerName: r.ownerName,
               backlog: backlog.has(r.id)
                 ? `Backlog · ${backlog.get(r.id)!.daysLate} day${backlog.get(r.id)!.daysLate === 1 ? "" : "s"}`

@@ -437,7 +437,13 @@ export async function applyNextStep(
     const stage = step.stage as Stage;
     const [after] = await tx
       .update(person)
-      .set({ stage, nextAction, nextActionDate: step.nextActionDate, lostReason: null })
+      .set({
+        stage,
+        nextAction,
+        nextActionDate: step.nextActionDate,
+        nextActionSetAt: new Date(),
+        lostReason: null,
+      })
       .where(eq(person.id, personId))
       .returning();
     if (before.stage !== stage) {

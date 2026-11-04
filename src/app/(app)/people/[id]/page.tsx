@@ -35,6 +35,7 @@ import { usablePlans } from "@/server/plans/plans";
 import { appNow } from "@/lib/clock";
 import { knowledgeFor } from "@/server/knowledge";
 import { backlogOf } from "@/server/today";
+import { AutoRefresh } from "@/components/shell/AutoRefresh";
 
 export const metadata: Metadata = { title: "Person" };
 
@@ -117,6 +118,8 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
 
   return (
     <>
+      {/* Coming back after working on Today shows the latest (D-055). */}
+      <AutoRefresh everyMs={0} />
       <p className={styles.muted}>
         <Link href="/people">← People</Link>
       </p>

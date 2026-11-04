@@ -210,9 +210,11 @@ describe("Today v2 sections (F08)", () => {
     expect(await sections()).toEqual([]);
     expect((await buildToday(t.db, rep, on("2026-10-31"))).tasks[0]?.name).toBe("Reply Lead");
     await completeTask(t.db, rep, `reply:${r.id}`, on("2026-10-31"));
-    // Answered, but Replied with no next date: Today asks for one (D-044).
+    // Answered today: off Today (D-055). Replied with no next date, so the next day Today asks
+    // for one (D-044).
+    expect((await buildToday(t.db, rep, on("2026-10-31"))).tasks).toEqual([]);
     expect(
-      (await buildToday(t.db, rep, on("2026-10-31"))).tasks.map((x) => [x.name, x.section]),
+      (await buildToday(t.db, rep, on("2026-11-01"))).tasks.map((x) => [x.name, x.section]),
     ).toEqual([["Reply Lead", "nodate"]]);
   });
 

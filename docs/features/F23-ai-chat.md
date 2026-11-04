@@ -32,6 +32,10 @@ It replaces the **Suggest next message** tab on the person page. Today keeps its
   channel, confirm the reply-by date, **Mark as sent**. That logs the message with "AI
   suggestion used", the approach and the edit level, and sets the reply-by date and nudge
   count as Suggest next message did.
+- **One-click questions:** Suggest my next message; **They accepted my LinkedIn request: first
+  message?** (asks the AI to look at their role, seniority, company, industry and persona and
+  write a short, personal first LinkedIn message, not a hard pitch; D-055); How should I handle
+  their objection?; Write a short follow-up. The mic (F29) types a question you say.
 - **Reply type:** when the prospect wrote last and their message has no reply type, the AI's
   choice is saved on it (as before).
 - **Starters:** with an empty chat, one-click starters: "Suggest my next message", "How should
@@ -63,3 +67,4 @@ It replaces the **Suggest next message** tab on the person page. Today keeps its
 | 2026-11-02 | 2.5.0   | Built: chat tables (migration 0011), P07, the Chat tab, reply-type picker kept; tests.                      |
 | 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                         |
 | 2026-11-04 | 2.8.0   | P07 v1.1: demo invitations give the rep's booking link, or ask for a date and time that suits them (D-054). |
+| 2026-11-04 | 2.9.0   | New one-click question "They accepted my LinkedIn request: first message?"; mic next to Send (F29) (D-055). |

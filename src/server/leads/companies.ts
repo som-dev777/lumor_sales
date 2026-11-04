@@ -351,14 +351,66 @@ export async function mergeCompanies(db: Db, actor: Actor, sourceId: string, tar
 
 // --- Reading -------------------------------------------------------------------------------
 
+export const COMPANY_SORTS = [
+  { value: "name", label: "Name A–Z" },
+  { value: "name_desc", label: "Name Z–A" },
+  { value: "activity", label: "Recent activity first" },
+  { value: "activity_old", label: "Oldest activity first" },
+  { value: "created", label: "Newest added first" },
+  { value: "created_old", label: "Oldest added first" },
+  { value: "backlog", label: "Most backlog first" },
+  { value: "people", label: "Most people first" },
+] as const;
+export type CompanySort = (typeof COMPANY_SORTS)[number]["value"];
+
+/** "Needs action" filters on Companies (D-055). */
+export const COMPANY_SHOWS = [
+  { value: "backlog", label: "Has a backlog" },
+  { value: "quiet", label: "No activity in 30 days" },
+  { value: "recent", label: "Active in the last 7 days" },
+  { value: "nopeople", label: "No people yet" },
+] as const;
+export type CompanyShow = (typeof COMPANY_SHOWS)[number]["value"];
+
 export type CompanyFilters = {
   q?: string;
   status?: string;
   ownerId?: string;
   accountFilterId?: string;
+  show?: CompanyShow;
+  sort?: CompanySort;
 };
 
-export async function listCompanies(db: DbOrTx, f: CompanyFilters) {
+/** Reads the Companies filters from the page address; unknown values are ignored. */
+export function parseCompanyFilters(
+  params: Record<string, string | string[] | undefined>,
+): CompanyFilters {
+  const one = (k: string) => {
+    const v = params[k];
+    const s = (Array.isArray(v) ? v[0] : v)?.trim();
+    return s ? s.slice(0, 200) : undefined;
+  };
+  const sort = one("sort");
+  const show = one("show");
+  return {
+    q: one("q"),
+    status: one("status"),
+    ownerId: one("owner"),
+    accountFilterId: one("filter"),
+    show: COMPANY_SHOWS.some((x) => x.value === show) ? (show as CompanyShow) : undefined,
+    sort: COMPANY_SORTS.some((x) => x.value === sort) ? (sort as CompanySort) : undefined,
+  };
+}
+
+/** Days for "No activity in 30 days" and "Active in the last 7 days". */
+const QUIET_DAYS = 30;
+const RECENT_DAYS = 7;
+
+export async function listCompanies(
+  db: DbOrTx,
+  f: CompanyFilters,
+  { backlog = new Map<string, number>(), now = new Date() } = {},
+) {
   const parts: SQL[] = [];
   if (f.q)
     parts.push(like(sql`lower(${company.name})`, `%${f.q.toLowerCase().replace(/[%_]/g, "")}%`));
@@ -376,6 +428,7 @@ export async function listCompanies(db: DbOrTx, f: CompanyFilters) {
       ownerName: user.name,
       accountFilterCode: accountFilter.code,
       dealValueInr: company.dealValueInr,
+      createdAt: company.createdAt,
     })
     .from(company)
     .leftJoin(user, eq(user.id, company.ownerId))
@@ -392,8 +445,79 @@ export async function listCompanies(db: DbOrTx, f: CompanyFilters) {
         .where(inArray(person.companyId, ids))
         .groupBy(person.companyId)
     : [];
+  // The latest real activity with anyone there (plan and stage events don't count).
+  const latest = ids.length
+    ? await db
+        .select({
+          companyId: person.companyId,
+          at: sql<number>`max(${activity.occurredAt})`.mapWith(Number),
+        })
+        .from(activity)
+        .innerJoin(person, eq(person.id, activity.personId))
+        .where(
+          and(
+            inArray(person.companyId, ids),
+            sql`${activity.type} not in ('Plan change', 'Stage change')`,
+          ),
+        )
+        .groupBy(person.companyId)
+    : [];
   const byCompany = new Map(counts.map((c) => [c.companyId, c.n]));
-  return rows.map((r) => ({ ...r, people: byCompany.get(r.id) ?? 0 }));
+  const lastOf = new Map(latest.map((l) => [l.companyId, new Date(l.at)]));
+  let list = rows.map((r) => ({
+    ...r,
+    people: byCompany.get(r.id) ?? 0,
+    lastActivityAt: lastOf.get(r.id) ?? null,
+    backlog: backlog.get(r.id) ?? 0,
+  }));
+
+  const daysAgo = (n: number) => now.getTime() - n * 86_400_000;
+  if (f.show === "backlog") list = list.filter((c) => c.backlog > 0);
+  if (f.show === "nopeople") list = list.filter((c) => c.people === 0);
+  if (f.show === "quiet") {
+    list = list.filter(
+      (c) => !c.lastActivityAt || c.lastActivityAt.getTime() < daysAgo(QUIET_DAYS),
+    );
+  }
+  if (f.show === "recent") {
+    list = list.filter(
+      (c) => c.lastActivityAt !== null && c.lastActivityAt.getTime() >= daysAgo(RECENT_DAYS),
+    );
+  }
+  return sortCompanies(list, f.sort ?? "name");
+}
+
+type Sortable = {
+  name: string;
+  createdAt: Date;
+  lastActivityAt: Date | null;
+  backlog: number;
+  people: number;
+};
+
+/** Sorts the Companies list; ties fall back to the name, A–Z. Never-active ones go last. */
+export function sortCompanies<T extends Sortable>(list: T[], sort: CompanySort): T[] {
+  const byName = (a: T, b: T) => a.name.localeCompare(b.name, "en", { sensitivity: "base" });
+  const time = (d: Date | null) => d?.getTime() ?? null;
+  const activity = (dir: 1 | -1) => (a: T, b: T) => {
+    const x = time(a.lastActivityAt);
+    const y = time(b.lastActivityAt);
+    if (x === y) return byName(a, b);
+    if (x === null) return 1;
+    if (y === null) return -1;
+    return (x - y) * dir;
+  };
+  const compare: Record<CompanySort, (a: T, b: T) => number> = {
+    name: byName,
+    name_desc: (a, b) => byName(b, a),
+    activity: activity(-1),
+    activity_old: activity(1),
+    created: (a, b) => b.createdAt.getTime() - a.createdAt.getTime() || byName(a, b),
+    created_old: (a, b) => a.createdAt.getTime() - b.createdAt.getTime() || byName(a, b),
+    backlog: (a, b) => b.backlog - a.backlog || byName(a, b),
+    people: (a, b) => b.people - a.people || byName(a, b),
+  };
+  return [...list].sort(compare[sort]);
 }
 
 export async function getCompany(db: DbOrTx, id: string) {

@@ -1,6 +1,7 @@
 // Booking sync (D-043): what a booked, cancelled or moved meeting does to the person, for the
 // Lumor booking page (F22) and Calendly (F27) alike. Every function runs inside the caller's
 // transaction, so each change and its audit entry land together.
+import { stampFollowUp } from "./leads/follow-up";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit";
 import type { DbOrTx } from "@/lib/db/client";
@@ -252,7 +253,12 @@ export async function syncCancelled(
     const today = todayIst(now);
     const [after] = await tx
       .update(person)
-      .set({ stage: "Replied", nextAction: "Respond", nextActionDate: today })
+      .set({
+        stage: "Replied",
+        nextAction: "Respond",
+        nextActionDate: today,
+        nextActionSetAt: new Date(),
+      })
       .where(eq(person.id, p.id))
       .returning();
     await tx.insert(activity).values({
@@ -309,7 +315,10 @@ export async function syncMoved(
   );
   if (p.nextAction === "Hold meeting") {
     const date = toIstDate(m.to);
-    await tx.update(person).set({ nextActionDate: date }).where(eq(person.id, p.id));
+    await tx
+      .update(person)
+      .set({ nextActionDate: date, ...stampFollowUp(p, { nextActionDate: date }) })
+      .where(eq(person.id, p.id));
     await writeAudit(tx, {
       userId: actor.id,
       entityType: "Person",

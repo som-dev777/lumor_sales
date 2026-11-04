@@ -39,6 +39,9 @@ export const person = sqliteTable(
     nextAction: text("next_action"),
     // Plain IST date, YYYY-MM-DD.
     nextActionDate: text("next_action_date"),
+    // When the rep last set or changed the next action or its date (D-055). Anything logged
+    // after this, on or after the date, counts as doing it: it leaves Today and the backlog.
+    nextActionSetAt: timestamp("next_action_set_at"),
     // Hidden from Today until this IST date (F08 "Snooze to tomorrow").
     snoozedUntil: text("snoozed_until"),
     // Remove on Today (D-054): when the rep removed the follow-up. Keeps them off the

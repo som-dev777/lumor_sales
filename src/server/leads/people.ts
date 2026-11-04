@@ -1,5 +1,6 @@
 // People (F02): the shared, de-duplicated lead list. Every change checks the shared permission
 // rules and is audited in the same transaction.
+import { stampFollowUp } from "./follow-up";
 import {
   and,
   asc,
@@ -209,6 +210,7 @@ export async function updatePerson(db: Db, actor: Actor, id: string, data: Perso
       .update(person)
       .set({
         ...columnsFrom(data, before),
+        ...stampFollowUp(before, columnsFrom(data, before)),
         linkedinUrlNormalised: norm,
         companyId,
         officeId,
@@ -347,6 +349,27 @@ export async function reassignPeople(db: Db, actor: Actor, ids: string[], ownerI
 // --- Reading -------------------------------------------------------------------------------
 
 export type NextActionBucket = "overdue" | "today" | "week" | "backlog";
+
+export const PEOPLE_SORTS = [
+  { value: "name", label: "Name A–Z" },
+  { value: "name_desc", label: "Name Z–A" },
+  { value: "next", label: "Next action date" },
+  { value: "activity", label: "Recent activity first" },
+  { value: "activity_old", label: "Oldest activity first" },
+  { value: "created", label: "Newest added first" },
+  { value: "created_old", label: "Oldest added first" },
+  { value: "backlog", label: "Backlog first" },
+] as const;
+export type PeopleSort = (typeof PEOPLE_SORTS)[number]["value"];
+
+/** Activity filters on People (D-055). */
+export const PEOPLE_ACTIVITY = [
+  { value: "recent", label: "Active in the last 7 days" },
+  { value: "quiet", label: "No activity in 30 days" },
+  { value: "never", label: "Nothing logged yet" },
+] as const;
+export type PeopleActivity = (typeof PEOPLE_ACTIVITY)[number]["value"];
+
 export type PeopleFilters = {
   mine?: boolean;
   viewerId?: string;
@@ -358,9 +381,16 @@ export type PeopleFilters = {
   stage?: string;
   market?: string;
   next?: NextActionBucket;
-  /** For "Backlog only" (D-043): the people with a backlog, worked out by the page. */
+  activity?: PeopleActivity;
+  /** On a plan (Active or Paused) or not. */
+  plan?: "on" | "off";
+  sort?: PeopleSort;
+  /** For "Backlog only" (D-043) and "Backlog first": the people with a backlog, from the page. */
   backlogIds?: string[];
 };
+
+/** When the person's latest real activity happened (plan and stage events don't count). */
+const lastActivityAt = sql`(select max(a.occurred_at) from activity a where a.person_id = ${person.id} and a.type not in ('Plan change', 'Stage change'))`;
 
 const CLOSED: Stage[] = ["Paid", "Lost"];
 
@@ -382,6 +412,17 @@ export function peopleWhere(f: PeopleFilters, now = new Date()): SQL | undefined
         sql`lower(coalesce(${company.name}, '')) like ${pattern}`,
       )!,
     );
+  }
+  if (f.activity === "never") parts.push(sql`${lastActivityAt} is null`);
+  if (f.activity === "quiet") {
+    parts.push(sql`coalesce(${lastActivityAt}, 0) < ${now.getTime() - 30 * 86_400_000}`);
+  }
+  if (f.activity === "recent") {
+    parts.push(sql`${lastActivityAt} >= ${now.getTime() - 7 * 86_400_000}`);
+  }
+  if (f.plan) {
+    const live = sql`exists (select 1 from plan_enrolment e where e.person_id = ${person.id} and e.status in ('Active', 'Paused'))`;
+    parts.push(f.plan === "on" ? live : sql`not ${live}`);
   }
   if (f.next) {
     const today = todayIst(now);
@@ -462,11 +503,7 @@ export async function listPeople(
   const [rows, [{ n }]] = await Promise.all([
     peopleQuery(db)
       .where(where)
-      .orderBy(
-        sql`${person.nextActionDate} is null`,
-        asc(person.nextActionDate),
-        desc(person.updatedAt),
-      )
+      .orderBy(...peopleOrder(f))
       .limit(limit)
       .offset(offset),
     db
@@ -476,6 +513,34 @@ export async function listPeople(
       .where(where),
   ]);
   return { rows, total: n };
+}
+
+/** The People list order (D-055): A–Z by default; ties fall back to the name. */
+function peopleOrder(f: PeopleFilters): SQL[] {
+  const name = sql`lower(${person.fullName})`;
+  switch (f.sort ?? "name") {
+    case "name_desc":
+      return [desc(name)];
+    case "next":
+      return [sql`${person.nextActionDate} is null`, asc(person.nextActionDate), asc(name)];
+    case "activity":
+      return [sql`${lastActivityAt} is null`, sql`${lastActivityAt} desc`, asc(name)];
+    case "activity_old":
+      return [sql`${lastActivityAt} is null`, sql`${lastActivityAt} asc`, asc(name)];
+    case "created":
+      return [desc(person.createdAt), asc(name)];
+    case "created_old":
+      return [asc(person.createdAt), asc(name)];
+    case "backlog":
+      return [
+        f.backlogIds?.length ? sql`${inArray(person.id, f.backlogIds)} desc` : sql`0`,
+        sql`${person.nextActionDate} is null`,
+        asc(person.nextActionDate),
+        asc(name),
+      ];
+    default:
+      return [asc(name)];
+  }
 }
 
 export async function getPerson(db: DbOrTx, id: string) {
@@ -574,6 +639,9 @@ export function parsePeopleFilters(
   };
   const view = one("view") ?? (viewer.role === "Admin" ? "all" : "mine");
   const next = one("next");
+  const sort = one("sort");
+  const activity = one("activity");
+  const planned = one("plan");
   return {
     mine: view === "mine",
     viewerId: viewer.id,
@@ -588,6 +656,11 @@ export function parsePeopleFilters(
       next === "overdue" || next === "today" || next === "week" || next === "backlog"
         ? next
         : undefined,
+    activity: PEOPLE_ACTIVITY.some((a) => a.value === activity)
+      ? (activity as PeopleActivity)
+      : undefined,
+    plan: planned === "on" || planned === "off" ? planned : undefined,
+    sort: PEOPLE_SORTS.some((x) => x.value === sort) ? (sort as PeopleSort) : undefined,
   };
 }
 
@@ -604,6 +677,9 @@ export function peopleQueryString(f: PeopleFilters, extra: Record<string, string
   set("stage", f.stage);
   set("market", f.market);
   set("next", f.next);
+  set("activity", f.activity);
+  set("plan", f.plan);
+  set("sort", f.sort);
   for (const [k, v] of Object.entries(extra)) p.set(k, v);
   return `?${p.toString()}`;
 }

@@ -93,7 +93,11 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
         <TeamTable rows={await buildTeam(getDb(), viewer, now)} detail={await detailOf()} />
       ) : (
         <>
-          <TodayMeetings today={meetings} />
+          {/* Only what's still to come (D-055): a meeting leaves once its end time passes. */}
+          <TodayMeetings
+            today={meetings.filter((m) => m.endsAt.getTime() > now.getTime())}
+            finished={meetings.filter((m) => m.endsAt.getTime() <= now.getTime()).length}
+          />
           <TodayList
             tasks={plan.tasks}
             outreach={plan.outreach}

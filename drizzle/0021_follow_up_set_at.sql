@@ -1,0 +1,1 @@
+ALTER TABLE `person` ADD `next_action_set_at` integer;

@@ -9,7 +9,7 @@ import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { REPLY_TYPES, THREAD_CHANNELS } from "@/lib/db/enums";
-import { addThreadEntry } from "@/server/actions/conversation";
+import { addFollowUpEntry, addThreadEntry } from "@/server/actions/conversation";
 import { PasteConversation } from "./PasteConversation";
 import styles from "./conversation.module.scss";
 
@@ -40,7 +40,7 @@ type Props = {
   defaultChannel: string;
 };
 
-type From = "me" | "them" | "note";
+type From = "me" | "them" | "note" | "follow";
 type Warning = { rule: number; message: string };
 
 const channelOptions = THREAD_CHANNELS.map((c) => ({ value: c, label: c }));
@@ -119,6 +119,10 @@ function Composer({
   const [text, setText] = useState("");
   const [replyType, setReplyType] = useState("");
   const [replyBy, setReplyBy] = useState("");
+  // Follow-up (D-055): what's next and when; the note is optional.
+  const today = now.slice(0, 10);
+  const [nextAction, setNextAction] = useState("");
+  const [followDate, setFollowDate] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [askStep, setAskStep] = useState(false);
   const [warnings, setWarnings] = useState<{ list: Warning[]; asStep: boolean } | null>(null);
@@ -158,10 +162,28 @@ function Composer({
       (currentStep.action === "messageSent" &&
         ["LinkedIn", "InMail", "Email", "WhatsApp"].includes(channel)));
 
+  const saveFollowUp = () =>
+    start(async () => {
+      const r = await addFollowUpEntry(personId, {
+        nextAction,
+        date: followDate,
+        note: text,
+        channel,
+      });
+      if (r.ok) {
+        notify("success", r.message ?? "Follow-up set.");
+        setText("");
+        setNextAction("");
+        setFollowDate("");
+        setError(null);
+      } else setError(r.error);
+    });
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (matchesStep) setAskStep(true);
+    if (from === "follow") saveFollowUp();
+    else if (matchesStep) setAskStep(true);
     else send();
   };
 
@@ -175,6 +197,7 @@ function Composer({
               ["me", "From me"],
               ["them", `From ${firstName}`],
               ["note", "Note"],
+              ["follow", "Follow-up"],
             ] as const
           ).map(([value, label]) => (
             <label key={value} className={styles.check}>
@@ -193,7 +216,32 @@ function Composer({
           ))}
         </div>
       )}
-      <div className={styles.fields}>
+      {from === "follow" && (
+        <div className={styles.fields}>
+          <TextField
+            label="Next action"
+            placeholder="e.g. Call to fix a demo slot"
+            maxLength={200}
+            value={nextAction}
+            onChange={(e) => setNextAction(e.target.value)}
+          />
+          <TextField
+            label="Follow-up date"
+            type="date"
+            min={today}
+            required
+            value={followDate}
+            onChange={(e) => setFollowDate(e.target.value)}
+          />
+          <SelectField
+            label="How (channel)"
+            value={channel}
+            onChange={(e) => setChannel(e.target.value)}
+            options={channelOptions}
+          />
+        </div>
+      )}
+      <div className={styles.fields} hidden={from === "follow"}>
         <SelectField
           label={from === "note" ? "About (channel)" : "Channel"}
           value={channel}
@@ -229,11 +277,13 @@ function Composer({
       </div>
       <TextArea
         label={
-          from === "note"
-            ? "Add a note"
-            : from === "me"
-              ? "What you sent or said"
-              : `What ${firstName} sent or said`
+          from === "follow"
+            ? "Note (optional)"
+            : from === "note"
+              ? "Add a note"
+              : from === "me"
+                ? "What you sent or said"
+                : `What ${firstName} sent or said`
         }
         rows={3}
         value={text}
@@ -278,8 +328,16 @@ function Composer({
       )}
       {!askStep && !warnings && (
         <div className={styles.actions}>
-          <Button type="submit" loading={busy} disabled={!text.trim()}>
-            {from === "note" ? "Add note" : "Add to conversation"}
+          <Button
+            type="submit"
+            loading={busy}
+            disabled={from === "follow" ? !followDate : !text.trim()}
+          >
+            {from === "follow"
+              ? "Set follow-up"
+              : from === "note"
+                ? "Add note"
+                : "Add to conversation"}
           </Button>
           {canLog && (
             <PasteConversation

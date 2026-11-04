@@ -3,7 +3,7 @@
 Lumor Sales Hub is the internal web app where Lumor's sales team manages LinkedIn
 prospecting, from finding a lead in Sales Navigator to a paying customer.
 
-**Current version:** 2.8.0 (released 4 Nov 2026: the owner's list of 4 November, D-054). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
+**Current version:** 2.9.0 (released 4 Nov 2026: the owner's second list of 4 November, D-055). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
 
 ## Documents
 
@@ -19,7 +19,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | [email-templates/](email-templates/)         | The owner's email wording for bookings, word for word.           |
 | [deploy.md](deploy.md)                       | Putting the app online (Turso + Netlify), step by step.          |
 | [qa-checklist.md](qa-checklist.md)           | The manual check of the whole app before the team uses it.       |
-| [features/](features/)                       | One file per feature (F01–F28): requirements, tests, change log. |
+| [features/](features/)                       | One file per feature (F01–F29): requirements, tests, change log. |
 | [../CLAUDE.md](../CLAUDE.md)                 | Standing rules every Claude Code session follows.                |
 
 ## Feature index
@@ -54,26 +54,28 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F26 | [Google Calendar and Meet links](features/F26-google-meet.md)        | P1       | 2.6.0   | Done (2.6.0)     |
 | F27 | [Calendly integration](features/F27-calendly.md)                     | P1       | 2.7.0   | Done (2.7.0)     |
 | F28 | [Company offices](features/F28-company-offices.md)                   | P1       | 2.8.0   | Done (2.8.0)     |
+| F29 | [Voice typing](features/F29-voice-typing.md)                         | P1       | 2.9.0   | Done (2.9.0)     |
 
 ## Releases
 
-| Release            | Version | Features                                    | Status              |
-| ------------------ | ------- | ------------------------------------------- | ------------------- |
-| R1 Foundation      | 1.0.0   | F01, F14, F16                               | Released 2026-10-16 |
-| R2 Library         | 1.1.0   | F04, F05, F06, F07                          | Released 2026-10-17 |
-| R3 Leads           | 1.2.0   | F02, F03                                    | Released 2026-10-17 |
-| R4 Daily work      | 1.3.0   | F15, F11                                    | Released 2026-10-17 |
-| R5 Settings        | 1.4.0   | F12, F13                                    | Released 2026-10-17 |
-| R6 AI              | 1.5.0   | F08, F09, F10                               | Released 2026-10-17 |
-| R7 Plans           | 2.0.0   | F17, F08 (v2)                               | Released 2026-10-18 |
-| AI Resources       | 2.1.0   | F20                                         | Released 2026-10-22 |
-| R8 Conversations   | 2.2.0   | F18, F08, F09, F10                          | Released 2026-10-22 |
-| R9 Reports         | 2.3.0   | F19                                         | Released 2026-10-30 |
-| QA round 1         | 2.4.0   | F02, F03, F21, F08, F01                     | Released 2026-10-30 |
-| Calendar + AI      | 2.5.0   | F22, F23, F24                               | Released 2026-11-02 |
-| Calendar round 2   | 2.6.0   | F22, F25, F26                               | Released 2026-11-02 |
-| Owner's list 3 Nov | 2.7.0   | F22, F27, F08, F17, F07, F19, F02, F03, F25 | Released 2026-11-03 |
-| Owner's list 4 Nov | 2.8.0   | F28, F08, F03, F02, F24, F25, F18, F23      | Released 2026-11-04 |
+| Release                | Version | Features                                    | Status              |
+| ---------------------- | ------- | ------------------------------------------- | ------------------- |
+| R1 Foundation          | 1.0.0   | F01, F14, F16                               | Released 2026-10-16 |
+| R2 Library             | 1.1.0   | F04, F05, F06, F07                          | Released 2026-10-17 |
+| R3 Leads               | 1.2.0   | F02, F03                                    | Released 2026-10-17 |
+| R4 Daily work          | 1.3.0   | F15, F11                                    | Released 2026-10-17 |
+| R5 Settings            | 1.4.0   | F12, F13                                    | Released 2026-10-17 |
+| R6 AI                  | 1.5.0   | F08, F09, F10                               | Released 2026-10-17 |
+| R7 Plans               | 2.0.0   | F17, F08 (v2)                               | Released 2026-10-18 |
+| AI Resources           | 2.1.0   | F20                                         | Released 2026-10-22 |
+| R8 Conversations       | 2.2.0   | F18, F08, F09, F10                          | Released 2026-10-22 |
+| R9 Reports             | 2.3.0   | F19                                         | Released 2026-10-30 |
+| QA round 1             | 2.4.0   | F02, F03, F21, F08, F01                     | Released 2026-10-30 |
+| Calendar + AI          | 2.5.0   | F22, F23, F24                               | Released 2026-11-02 |
+| Calendar round 2       | 2.6.0   | F22, F25, F26                               | Released 2026-11-02 |
+| Owner's list 3 Nov     | 2.7.0   | F22, F27, F08, F17, F07, F19, F02, F03, F25 | Released 2026-11-03 |
+| Owner's list 4 Nov     | 2.8.0   | F28, F08, F03, F02, F24, F25, F18, F23      | Released 2026-11-04 |
+| Owner's list 4 Nov (2) | 2.9.0   | F08, F02, F03, F18, F23, F24, F29           | Released 2026-11-04 |
 
 ## Running the app locally
 

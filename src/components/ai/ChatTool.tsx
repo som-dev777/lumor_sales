@@ -11,13 +11,19 @@ import { useToast } from "@/components/ui/Toast";
 import { REPLY_TYPES } from "@/lib/db/enums";
 import { changeReplyType, chatDelete, chatOpen, chatSend } from "@/server/actions/ai";
 import type { ChatSummary, ChatView, SavedReply } from "@/server/ai/chat";
+import { DictateButton } from "./DictateButton";
 import { SuggestionCard, type SituationKind } from "./SuggestionCard";
 import styles from "./ai.module.scss";
 
-const STARTERS = [
-  "Suggest my next message",
-  "How should I handle their objection?",
-  "Write a short follow-up",
+/** One-click questions; `ask` is what's sent when it says more than the button (D-055). */
+const STARTERS: { label: string; ask?: string }[] = [
+  { label: "Suggest my next message" },
+  {
+    label: "They accepted my LinkedIn request: first message?",
+    ask: "They just accepted my LinkedIn connection request. Look closely at who they are (their role, seniority, company, industry and persona) and write my first LinkedIn message to them. Make it personal and relevant to their work, short, and not a hard pitch.",
+  },
+  { label: "How should I handle their objection?" },
+  { label: "Write a short follow-up" },
 ];
 
 /**
@@ -146,13 +152,13 @@ export function ChatTool({
             <div className={styles.row}>
               {STARTERS.map((s) => (
                 <button
-                  key={s}
+                  key={s.label}
                   type="button"
                   className={styles.starter}
                   disabled={busy}
-                  onClick={() => send(s)}
+                  onClick={() => send(s.ask ?? s.label)}
                 >
-                  {s}
+                  {s.label}
                 </button>
               ))}
             </div>
@@ -268,11 +274,19 @@ export function ChatTool({
             }
           }}
         />
-        <Button type="submit" loading={busy && pending !== null} disabled={!text.trim() || busy}>
-          <Send size={16} aria-hidden /> Send
-        </Button>
+        <div className={styles.micRow}>
+          <DictateButton
+            disabled={busy}
+            onText={(t) => setText((v) => (v.trim() ? `${v.trimEnd()} ${t}` : t))}
+          />
+          <Button type="submit" loading={busy && pending !== null} disabled={!text.trim() || busy}>
+            <Send size={16} aria-hidden /> Send
+          </Button>
+        </div>
       </form>
-      <p className={styles.muted}>Enter sends · Shift+Enter starts a new line.</p>
+      <p className={styles.muted}>
+        Enter sends · Shift+Enter starts a new line · the mic types what you say.
+      </p>
 
       <ConfirmDialog
         open={deleting}

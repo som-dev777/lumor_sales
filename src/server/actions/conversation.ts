@@ -7,14 +7,16 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { errorMessage } from "@/lib/action-result";
 import { appNow } from "@/lib/clock";
+import { formatIstDate } from "@/lib/time";
 import { getDb } from "@/lib/db/client";
 import { PermissionError } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
-import { entrySchema, pastedRowsSchema } from "@/lib/validation/conversation";
+import { entrySchema, followUpSchema, pastedRowsSchema } from "@/lib/validation/conversation";
 import { addEntries, addEntry } from "../conversation";
 import { LeadError } from "../leads/companies";
 import { GuardrailWarning } from "../plans/enrolment";
 import { PlanError } from "../plans/plans";
+import { addFollowUp } from "../today";
 import type { LogResult } from "./leads";
 
 const id = z.uuid();
@@ -75,6 +77,24 @@ export async function savePastedRows(personId: string, rows: unknown): Promise<L
     const n = await addEntries(getDb(), viewer, personId, parsed.data, await appNow());
     refresh();
     return { ok: true, message: `${n} ${n === 1 ? "message" : "messages"} added.` };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+/** Follow-up from the conversation (D-055): next action, date and an optional note. */
+export async function addFollowUpEntry(personId: string, input: unknown): Promise<LogResult> {
+  const viewer = await requireUser();
+  if (!id.safeParse(personId).success) return { ok: false, error: "Unknown person." };
+  const parsed = followUpSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  try {
+    const after = await addFollowUp(getDb(), viewer, personId, parsed.data, await appNow());
+    refresh();
+    return {
+      ok: true,
+      message: `Follow-up set: ${after.nextAction} on ${formatIstDate(after.nextActionDate!)}.`,
+    };
   } catch (e) {
     return failure(e);
   }

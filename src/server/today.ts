@@ -15,6 +15,7 @@ import {
   planStep,
   user,
 } from "@/lib/db/schema";
+import type { Channel } from "@/lib/db/enums";
 import { assertCan, type Actor } from "@/lib/permissions";
 import { addDaysIst, formatIst, formatIstDate, istDayRange, toIstDate, todayIst } from "@/lib/time";
 import { ORIGIN_LABEL, SECTIONS, type SectionKey } from "@/lib/today-sections";
@@ -114,6 +115,8 @@ export type LeadFacts = {
   snoozedUntil: string | null;
   /** Remove on Today (D-054). */
   followUpRemovedAt?: Date | null;
+  /** When the next action or its date was set (D-055). */
+  nextActionSetAt?: Date | null;
   nextAction: string | null;
   nextActionDate: string | null;
   awaitingReplyUntil: string | null;
@@ -153,9 +156,20 @@ const later = (a: string | null, b: string | null) => (a && b ? (a > b ? a : b) 
  * in the first section that matches. Anything due before today goes to Backlog; a snoozed task
  * is due on its snooze date. Shared by Today, the Team tab and the backlog badges.
  */
+/**
+ * The latest real activity on a lead (by when it happened), and the one logged most recently
+ * (`logged`: when it happened and when it was logged; D-055).
+ */
+export type LastActivity = {
+  type: string;
+  at: Date;
+  recordedAt?: Date;
+  logged?: { at: Date; recordedAt: Date };
+};
+
 export function classifyLead(
   p: LeadFacts,
-  last: { type: string; at: Date } | undefined,
+  last: LastActivity | undefined,
   plan: PlanFacts | null,
   today: string,
   staleBefore: string,
@@ -167,6 +181,18 @@ export function classifyLead(
   const due = (d: string | null) => d !== null && d <= today;
   // A task snoozed to a date is due that day (not late).
   const withSnooze = (d: string | null) => later(d, p.snoozedUntil);
+  // Acted on (D-055): something was logged on or after the date, after the follow-up was set.
+  // Any call, message, meeting or note counts, from Today or from their page.
+  const lastDay = last ? toIstDate(last.at) : null;
+  const actedSince = (date: string) => {
+    if (!last) return false;
+    if (!p.nextActionSetAt) return lastDay! >= date;
+    // The latest thing logged: after the follow-up was set, and dated on or after its day.
+    const logged = last.logged ?? { at: last.at, recordedAt: last.recordedAt ?? last.at };
+    return (
+      logged.recordedAt.getTime() > p.nextActionSetAt.getTime() && toIstDate(logged.at) >= date
+    );
+  };
 
   // 1. Replies waiting.
   if (last?.type === "Reply received" && !snoozed) {
@@ -196,7 +222,14 @@ export function classifyLead(
     };
   }
   // 3. Expired reply deadlines (F18): nudge, at most twice, then close the loop.
-  if (!snoozed && !removed && p.awaitingReplyUntil && p.awaitingReplyUntil < today) {
+  if (
+    !snoozed &&
+    !removed &&
+    p.awaitingReplyUntil &&
+    p.awaitingReplyUntil < today &&
+    // Followed up after the reply-by date (D-055): the nudge is done.
+    !(lastDay !== null && lastDay > p.awaitingReplyUntil)
+  ) {
     const by = formatIstDate(p.awaitingReplyUntil);
     return {
       section: "deadline",
@@ -248,7 +281,13 @@ export function classifyLead(
   }
   const closed = (CLOSED as readonly string[]).includes(p.stage) || p.converted;
   // Any next action due today or earlier, whatever it says (D-044). Overdue ones become Backlog.
-  if (!closed && !snoozed && due(p.nextActionDate) && !(p.nurtureUntil && p.nurtureUntil > today)) {
+  if (
+    !closed &&
+    !snoozed &&
+    due(p.nextActionDate) &&
+    !(p.nurtureUntil && p.nurtureUntil > today) &&
+    !actedSince(p.nextActionDate!)
+  ) {
     return {
       section: "followup",
       kind: "followup",
@@ -269,7 +308,15 @@ export function classifyLead(
     return null;
   }
   // Someone being worked on with no follow-up date at all (D-044).
-  if (!closed && !snoozed && !removed && !p.nextActionDate && ACTIVE_STAGES.includes(p.stage)) {
+  if (
+    !closed &&
+    !snoozed &&
+    !removed &&
+    !p.nextActionDate &&
+    ACTIVE_STAGES.includes(p.stage) &&
+    // Just worked on today (D-055): not asked for a date until tomorrow.
+    lastDay !== today
+  ) {
     return {
       section: "nodate",
       kind: "setdate",
@@ -279,12 +326,12 @@ export function classifyLead(
   }
   // 9. Stale leads not on any plan.
   if (!snoozed && !removed && !(CLOSED as readonly string[]).includes(p.stage)) {
-    const lastDay = toIstDate(last?.at ?? p.createdAt);
-    if (lastDay < staleBefore) {
+    const quietSince = toIstDate(last?.at ?? p.createdAt);
+    if (quietSince < staleBefore) {
       return {
         section: "stale",
         kind: "open",
-        detail: last ? `No activity since ${formatIstDate(lastDay)}` : "Nothing logged yet",
+        detail: last ? `No activity since ${formatIstDate(quietSince)}` : "Nothing logged yet",
         due: null,
       };
     }
@@ -298,10 +345,15 @@ const daysLate = (due: string, today: string) =>
 
 /** The latest real activity per lead: system events (plan and stage changes) don't count. */
 async function latestActivity(db: DbOrTx, ids: string[]) {
-  const latest = new Map<string, { type: string; at: Date }>();
+  const latest = new Map<string, LastActivity>();
   for (let i = 0; i < ids.length; i += 400) {
     const events = await db
-      .select({ personId: activity.personId, type: activity.type, at: activity.occurredAt })
+      .select({
+        personId: activity.personId,
+        type: activity.type,
+        at: activity.occurredAt,
+        recordedAt: activity.createdAt,
+      })
       .from(activity)
       .where(
         and(
@@ -311,7 +363,12 @@ async function latestActivity(db: DbOrTx, ids: string[]) {
       )
       .orderBy(desc(activity.occurredAt));
     for (const e of events) {
-      if (e.personId && !latest.has(e.personId)) latest.set(e.personId, e);
+      if (!e.personId) continue;
+      const seen = latest.get(e.personId);
+      if (!seen) latest.set(e.personId, { ...e, logged: { at: e.at, recordedAt: e.recordedAt } });
+      else if (e.recordedAt.getTime() > seen.logged!.recordedAt.getTime()) {
+        seen.logged = { at: e.at, recordedAt: e.recordedAt };
+      }
     }
   }
   return latest;
@@ -750,43 +807,98 @@ export async function setFollowUp(
   input: { nextAction: string | null; date: string },
   now = new Date(),
 ) {
+  return db.transaction((tx) => setFollowUpTx(tx, actor, personId, input, now));
+}
+
+/** Set next follow-up inside an open transaction (also the conversation's Follow-up, D-055). */
+export async function setFollowUpTx(
+  tx: DbOrTx,
+  actor: Actor,
+  personId: string,
+  input: { nextAction: string | null; date: string },
+  now = new Date(),
+) {
   const today = todayIst(now);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date) || input.date < today) {
     throw new LeadError("Pick today or a later date.");
   }
   if (input.date > addDaysIst(today, 366)) throw new LeadError("Pick a date within a year.");
   const text = input.nextAction?.trim().slice(0, 200) || null;
+  const before = await loadPerson(tx, personId);
+  assertCan(actor, "lead.edit", before);
+  const [after] = await tx
+    .update(person)
+    .set({
+      nextAction: text ?? before.nextAction ?? "Follow up",
+      nextActionDate: input.date,
+      // A follow-up set again counts from now, even on the same date (D-055).
+      nextActionSetAt: new Date(),
+      snoozedUntil: null,
+      followUpRemovedAt: null,
+    })
+    .where(eq(person.id, personId))
+    .returning();
+  await writeAudit(tx, {
+    userId: actor.id,
+    entityType: "Person",
+    recordId: personId,
+    recordName: after.fullName,
+    action: "Updated",
+    before: {
+      nextAction: before.nextAction,
+      nextActionDate: before.nextActionDate,
+      snoozedUntil: before.snoozedUntil,
+    },
+    after: {
+      nextAction: after.nextAction,
+      nextActionDate: after.nextActionDate,
+      snoozedUntil: null,
+    },
+  });
+  return after;
+}
+
+/**
+ * Follow-up from the conversation (D-055): sets the next action and date, like Set next follow-up
+ * on Today, with an optional note in the conversation. One transaction; both audited.
+ */
+export async function addFollowUp(
+  db: Db,
+  actor: Actor,
+  personId: string,
+  input: { nextAction: string | null; date: string; note: string | null; channel: Channel },
+  now = new Date(),
+) {
   return db.transaction(async (tx) => {
-    const before = await loadPerson(tx, personId);
-    assertCan(actor, "lead.edit", before);
-    const [after] = await tx
-      .update(person)
-      .set({
-        nextAction: text ?? before.nextAction ?? "Follow up",
-        nextActionDate: input.date,
-        snoozedUntil: null,
-        followUpRemovedAt: null,
-      })
-      .where(eq(person.id, personId))
-      .returning();
-    await writeAudit(tx, {
-      userId: actor.id,
-      entityType: "Person",
-      recordId: personId,
-      recordName: after.fullName,
-      action: "Updated",
-      before: {
-        nextAction: before.nextAction,
-        nextActionDate: before.nextActionDate,
-        snoozedUntil: before.snoozedUntil,
-      },
-      after: {
-        nextAction: after.nextAction,
-        nextActionDate: after.nextActionDate,
-        snoozedUntil: null,
-      },
-    });
-    return after;
+    const p = await loadPerson(tx, personId);
+    assertCan(actor, "lead.edit", p);
+    const what = input.nextAction?.trim() || "Follow up";
+    const note = input.note?.trim();
+    if (note) {
+      // The note goes first, so it isn't counted as doing the follow-up it describes.
+      const [row] = await tx
+        .insert(activity)
+        .values({
+          personId,
+          companyId: p.companyId,
+          userId: actor.id,
+          createdBy: actor.id,
+          occurredAt: now,
+          type: "Meeting note",
+          channel: input.channel,
+          content: `Follow-up on ${formatIstDate(input.date)}: ${what}. ${note}`,
+        })
+        .returning();
+      await writeAudit(tx, {
+        userId: actor.id,
+        entityType: "Activity",
+        recordId: row.id,
+        recordName: `Note on ${p.fullName}`,
+        action: "Created",
+        after: { type: row.type, channel: row.channel, content: row.content, person: p.fullName },
+      });
+    }
+    return setFollowUpTx(tx, actor, personId, { nextAction: what, date: input.date }, now);
   });
 }
 

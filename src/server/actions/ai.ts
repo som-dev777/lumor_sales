@@ -40,6 +40,7 @@ import {
   type FillResult,
 } from "../ai/autofill";
 import { AiError } from "../ai/client";
+import { recordingProblem, transcribe } from "../ai/transcribe";
 import { LeadError } from "../leads/companies";
 import {
   completeTask,
@@ -284,4 +285,15 @@ export async function fillPersonWithAi(form: unknown): Promise<AiResult<FillResu
   const viewer = await requireUser();
   const now = await appNow();
   return run(() => fillPerson(getDb(), viewer, form, now));
+}
+
+// --- Voice typing (D-055) ----------------------------------------------------------------------
+
+/** Turns a short recording into text for an AI text box. Nothing is saved. */
+export async function dictate(form: FormData): Promise<AiResult<string>> {
+  await requireUser();
+  const file = form.get("audio");
+  const problem = recordingProblem(file);
+  if (problem) return bad(problem);
+  return run(() => transcribe(file as Blob));
 }

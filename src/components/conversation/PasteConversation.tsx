@@ -10,6 +10,7 @@ import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { THREAD_CHANNELS } from "@/lib/db/enums";
+import { DictateButton } from "@/components/ai/DictateButton";
 import { splitPasted } from "@/server/actions/ai";
 import { savePastedRows } from "@/server/actions/conversation";
 import styles from "./conversation.module.scss";
@@ -131,6 +132,10 @@ export function PasteConversation({
                 options={channelOptions}
               />
               <div className={styles.actions}>
+                <DictateButton
+                  disabled={busy}
+                  onText={(t) => setPasted((v) => (v.trim() ? `${v.trimEnd()}\n${t}` : t))}
+                />
                 <Button onClick={split} loading={busy} disabled={!pasted.trim()}>
                   Split into messages
                 </Button>

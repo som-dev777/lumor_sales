@@ -488,6 +488,32 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
       message gives your booking link (Calendar → Events, your first event that's online) and
       says they can also reply with a date and time that suits them. No other links.
 
+## 16. The owner's second list of 4 November (v2.9.0)
+
+- [ ] 16.1 On a person with a follow-up or backlog on Today, open their page and log anything (for
+      example **From me → Channel: Call**, "Called, no answer", **Add to conversation**). Go back
+      to **Today**: they're gone from the list straight away. On **People**, their red Backlog
+      badge is gone too.
+- [ ] 16.2 On Today, use **Done · set next follow-up** or **Snooze** on an item: it disappears at
+      once. Open someone from Today, log something, press the browser's Back button: Today is
+      already up to date.
+- [ ] 16.3 A meeting today that has ended (its end time has passed) is no longer under
+      **Today's meetings**; meetings still to come are.
+- [ ] 16.4 **Companies**: listed A–Z. **Sort by → Recent activity first**, then **Newest added
+      first**: the order changes. **Filters → Needs action → Has a backlog**: only those
+      companies, with a chip "Needs action: Has a backlog"; click the chip's × to clear it. The
+      **Last activity** column shows a date or "Never".
+- [ ] 16.5 **People**: listed A–Z; try **Sort by → Backlog first** and **Filters → Activity →
+      No activity in 30 days**. The filters stay folded away until you click **Filters**.
+- [ ] 16.6 On a person, the conversation box has **Follow-up**: type a next action, pick a date
+      (today), add a note, **Set follow-up**. The note shows in the conversation, the Next action
+      at the top changes, and they're on **Today** under Follow-ups due.
+- [ ] 16.7 On a person's AI chat, click **They accepted my LinkedIn request: first message?**:
+      the AI writes a short first message based on their role and company.
+- [ ] 16.8 Click the **mic** next to Send in the AI chat. Allow the microphone, say a question,
+      click **Stop**: the words appear in the box. Try the mic in **Ask AI about this company**
+      (Add company → Fill with AI) and in **Paste a whole conversation**, and once on your phone.
+
 ---
 
 ## Before the team starts (only you can do these)

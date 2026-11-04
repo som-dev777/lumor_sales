@@ -146,10 +146,14 @@ test("Lost needs a reason; a manual stage change appears in the conversation", a
   await expect(rep.getByRole("dialog")).toBeHidden();
 });
 
-test("filters: My leads by default for Users; Overdue finds the old next action", async () => {
+test("filters: My leads by default for Users; a note after the old next action clears its backlog", async () => {
   await rep.goto("/people");
   await expect(rep.getByRole("link", { name: "My leads" })).toHaveAttribute("aria-current", "page");
+  // Priya's next action is from an earlier day, but a note was logged on her since (D-055):
+  // that counts as acting on it, so she isn't a backlog ("Overdue" from older links = Backlog).
   await rep.goto("/people?view=mine&next=overdue");
+  await expect(shown(rep.getByText("No leads match these filters"))).toBeVisible();
+  await rep.goto("/people?view=mine");
   await expect(rep.getByRole("link", { name: "Priya Sharma" })).toBeVisible();
   await other.goto("/people?view=mine");
   await expect(shown(other.getByText("You don't have any leads yet"))).toBeVisible();

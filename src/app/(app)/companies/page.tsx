@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Search } from "lucide-react";
 import { Suspense } from "react";
 import { CompanyDialogButton } from "@/components/leads/CompanyDialogButton";
 import styles from "@/components/leads/leads.module.scss";
@@ -13,7 +12,16 @@ import { formatInr } from "@/lib/money";
 import { can } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { appNow } from "@/lib/clock";
-import { listCompanies } from "@/server/leads/companies";
+import {
+  COMPANY_SHOWS,
+  COMPANY_SORTS,
+  listCompanies,
+  parseCompanyFilters,
+} from "@/server/leads/companies";
+import { connection } from "next/server";
+import { FilterBar } from "@/components/leads/FilterBar";
+import { AutoRefresh } from "@/components/shell/AutoRefresh";
+import { formatIst } from "@/lib/time";
 import { backlogByCompany, backlogByPerson } from "@/server/today";
 import { leadFormOptions } from "@/server/leads/options";
 
@@ -42,92 +50,65 @@ export default function CompaniesPage({ searchParams }: PageProps<"/companies">)
 
 async function Companies({ searchParams }: Pick<PageProps<"/companies">, "searchParams">) {
   const viewer = await requireUser();
-  const params = await searchParams;
-  const one = (k: string) => {
-    const v = params[k];
-    const s = (Array.isArray(v) ? v[0] : v)?.trim();
-    return s ? s.slice(0, 200) : undefined;
-  };
-  const filters = {
-    q: one("q"),
-    status: one("status"),
-    ownerId: one("owner"),
-    accountFilterId: one("filter"),
-  };
+  await connection(); // "No activity in 30 days" and backlogs depend on the current date
+  const filters = parseCompanyFilters(await searchParams);
   const db = getDb();
-  const [rows, options, backlog] = await Promise.all([
-    listCompanies(db, filters),
+  const now = await appNow();
+  const backlog = backlogByCompany(await backlogByPerson(db, now));
+  const [rows, options] = await Promise.all([
+    listCompanies(db, filters, { backlog, now }),
     leadFormOptions(db),
-    backlogByPerson(db, await appNow()).then(backlogByCompany),
   ]);
-  const filtered = Object.values(filters).some(Boolean);
+  const { sort: _sort, ...narrowing } = filters;
+  const filtered = Object.values(narrowing).some(Boolean);
+  const plain = (v: readonly string[]) => v.map((x) => ({ value: x, label: x }));
+  const choices = (c: { id: string; label: string }[]) =>
+    c.map((x) => ({ value: x.id, label: x.label }));
 
   return (
     <>
+      <AutoRefresh everyMs={0} />
       <div className={styles.topRow}>
         <span />
         <div className={styles.topActions}>
           <CompanyDialogButton options={options} canChooseOwner={can(viewer, "lead.reassign")} />
         </div>
       </div>
-      <form className={styles.filters} method="get" action="/companies">
-        <label className={`${styles.filter} ${styles.search}`}>
-          <span>Search</span>
-          <input
-            type="search"
-            name="q"
-            defaultValue={filters.q}
-            placeholder="Company name"
-            className={styles.control}
-          />
-        </label>
-        <label className={styles.filter}>
-          <span>Status</span>
-          <select name="status" defaultValue={filters.status ?? ""} className={styles.control}>
-            <option value="">All statuses</option>
-            {COMPANY_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={styles.filter}>
-          <span>Owner</span>
-          <select name="owner" defaultValue={filters.ownerId ?? ""} className={styles.control}>
-            <option value="">Everyone</option>
-            {options.owners.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className={styles.filter}>
-          <span>Account filter</span>
-          <select
-            name="filter"
-            defaultValue={filters.accountFilterId ?? ""}
-            className={styles.control}
-          >
-            <option value="">All filters</option>
-            {options.accountFilters.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className={styles.filterButtons}>
-          <button type="submit" className={styles.apply}>
-            <Search size={16} aria-hidden />
-            Apply
-          </button>
-          <Link href="/companies" className={styles.linkButton}>
-            Clear
-          </Link>
-        </div>
-      </form>
+      <FilterBar
+        action="/companies"
+        search={{ value: filters.q, placeholder: "Search companies" }}
+        sort={{ value: filters.sort ?? "name", defaultValue: "name", options: [...COMPANY_SORTS] }}
+        filters={[
+          {
+            name: "show",
+            label: "Needs action",
+            value: filters.show,
+            options: [...COMPANY_SHOWS],
+            all: "All companies",
+          },
+          {
+            name: "status",
+            label: "Status",
+            value: filters.status,
+            options: plain(COMPANY_STATUSES),
+            all: "All statuses",
+          },
+          {
+            name: "owner",
+            label: "Owner",
+            value: filters.ownerId,
+            options: choices(options.owners),
+            all: "Everyone",
+          },
+          {
+            name: "filter",
+            label: "Account filter",
+            value: filters.accountFilterId,
+            options: choices(options.accountFilters),
+            all: "All filters",
+          },
+        ]}
+      />
       {rows.length === 0 ? (
         <StatusMessage title={filtered ? "No companies match these filters" : "No companies yet"}>
           <p>
@@ -149,6 +130,7 @@ async function Companies({ searchParams }: Pick<PageProps<"/companies">, "search
                   <th scope="col">Status</th>
                   <th scope="col">People</th>
                   <th scope="col">Backlog</th>
+                  <th scope="col">Last activity</th>
                   <th scope="col">Account filter</th>
                   <th scope="col">Owner</th>
                   <th scope="col">Deal</th>
@@ -168,16 +150,19 @@ async function Companies({ searchParams }: Pick<PageProps<"/companies">, "search
                     </td>
                     <td>{c.people}</td>
                     <td>
-                      {backlog.get(c.id) ? (
+                      {c.backlog ? (
                         <span
                           className={styles.backlogBadge}
                           title="People here with work from earlier days on Today"
                         >
-                          {backlog.get(c.id)} {backlog.get(c.id) === 1 ? "person" : "people"}
+                          {c.backlog} {c.backlog === 1 ? "person" : "people"}
                         </span>
                       ) : (
                         "—"
                       )}
+                    </td>
+                    <td className={styles.nowrap}>
+                      {c.lastActivityAt ? formatIst(c.lastActivityAt, "d MMM yyyy") : "Never"}
                     </td>
                     <td>{c.accountFilterCode ?? "—"}</td>
                     <td>{c.ownerName ?? "—"}</td>

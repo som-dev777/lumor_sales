@@ -1,6 +1,7 @@
 // Quick-log actions (F15, v2): each button logs an activity and moves the lead's stage and
 // next action, in one transaction with its audit entry. From v2, follow-up dates come from
 // plans (F17, D-032), not from a fixed sequence.
+import { stampFollowUp } from "./follow-up";
 import { eq } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
@@ -269,6 +270,7 @@ export async function quickLogTx(
       stage: plan.stage,
       nextAction: plan.nextAction,
       nextActionDate: plan.nextActionDate,
+      ...stampFollowUp(before, plan),
       lostReason:
         plan.stage === "Lost" ? (plan.personExtra?.lostReason ?? before.lostReason) : null,
       ...plan.personExtra,

@@ -5,6 +5,8 @@ import { can } from "@/lib/permissions";
 import { getViewer } from "@/lib/session";
 import { todayIst } from "@/lib/time";
 import { parsePeopleFilters, peopleForExport } from "@/server/leads/people";
+import { backlogByPerson } from "@/server/today";
+import { appNow } from "@/lib/clock";
 
 export async function GET(request: Request) {
   const viewer = await getViewer();
@@ -13,6 +15,11 @@ export async function GET(request: Request) {
     return new Response("Not allowed", { status: 403 });
   }
   const filters = parsePeopleFilters(Object.fromEntries(new URL(request.url).searchParams), viewer);
+  // Backlog (D-043, D-055): the same rules as Today; "Overdue" from older links means Backlog.
+  if (filters.next === "overdue") filters.next = "backlog";
+  if (filters.next === "backlog") {
+    filters.backlogIds = [...(await backlogByPerson(getDb(), await appNow())).keys()];
+  }
   const rows = await peopleForExport(getDb(), filters);
   const csv = toCsv(
     [

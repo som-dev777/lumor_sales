@@ -1087,3 +1087,41 @@ replaces it.
   link) and offers the alternative: reply with a date and time that suits them and the rep will
   set it up. No other links, and no invented time slots. The guardrails change, so P01–P04 and P07
   get new versions.
+
+## D-055: The owner's second list of 4 November (owner, 2026-11-04)
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **Version 2.9.0** (MINOR: new features, F29)
+- **Anything logged clears a follow-up and its backlog:** a follow-up (and the backlog it becomes
+  when it's late) counts as done once anything is logged on that person **on or after its date**,
+  from Today or from their page: a call, a message, a reply, a meeting or a note. It leaves Today
+  and the People and Companies backlog badges at once. Before this, logging a call kept the old
+  date, so the backlog stayed. To tell "logged after the follow-up was set" from "logged before
+  it", the person now records when the next action or its date last changed
+  (`person.next_action_set_at`, migration 0021); a follow-up set again after a call counts from
+  then. The same goes for an expired reply-by date (a follow-up after it clears the nudge). Someone
+  worked on today with no next date isn't asked for one until the next day. Plan steps still move
+  only when the step itself is done ("Is this step N?"), so the plan stays right.
+- **Today shows only what's left:** a meeting leaves Today once its end time passes (the page
+  refreshes every minute). Next.js keeps a page alive when you leave it and shows it again as it
+  was; Today, People, Companies and the person page now fetch themselves again the moment you come
+  back, so a follow-up set, a snooze or anything logged elsewhere shows straight away.
+- **Companies and People lists:** A–Z by default. **Sort by**: name A–Z or Z–A, recent or oldest
+  activity first, newest or oldest added first, backlog first (and most people first on
+  Companies; next action date on People). New filters: on Companies **Needs action** (has a
+  backlog, no activity in 30 days, active in the last 7 days, no people yet); on People
+  **Activity** (active in the last 7 days, no activity in 30 days, nothing logged yet) and
+  **Plan** (on a plan or not). Companies gain a **Last activity** column. The filter boxes moved
+  into a slim bar (search, Sort by, a **Filters** button that opens them, and chips for what's
+  on); every change applies at once. People's "Overdue" filter is now **Backlog (late work)**, the
+  same rule as Today.
+- **First message after a LinkedIn acceptance:** a one-click question in the AI chat on a person
+  (F23): "They accepted my LinkedIn request: first message?" asks the AI to look at who they are
+  and write a short, personal first message. It's a question the rep sends, so no prompt changes.
+- **Voice typing (F29):** a mic button on the AI text boxes (the AI chat, Ask AI about this
+  company, and Paste a whole conversation). The browser records; the server turns it into text
+  with OpenAI's speech-to-text (gpt-4o-mini-transcribe, falling back to whisper-1), like other AI
+  apps. Nothing is stored. It works in Chrome, Edge and Safari (iPhone too); the browser asks for
+  the microphone once.
+- **Follow-up in the conversation:** next to From me, From them and Note, a **Follow-up** choice
+  sets the next action and its date (shown on Today that day, and as a backlog if it's missed),
+  with an optional note added to the conversation. Owner or Admin, audited.

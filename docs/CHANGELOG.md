@@ -7,7 +7,18 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.8.0 (docs/qa-checklist.md section 15).
+Next: the owner's QA of v2.9.0 (docs/qa-checklist.md section 16).
+
+## [2.9.0] - 2026-11-04
+
+The owner's second list of 4 November (D-055).
+
+- **Backlogs clear when you act:** log anything on a person (a call, a message, a reply, a meeting or a note), on Today or on their page, on or after their follow-up date, and the follow-up and its backlog leave Today and the People and Companies lists at once.
+- **Today shows only what's left:** a meeting leaves once its end time passes. Today, People, Companies and a person's page fetch themselves again the moment you come back to them, so a follow-up you set, a snooze or anything you logged shows straight away.
+- **Companies and People:** listed A–Z, with **Sort by** (name, recent or oldest activity, newest or oldest added, backlog first, and more), new filters (Needs action on Companies; Activity and Plan on People) and a **Last activity** column on Companies. The filters now sit in a slim bar: a **Filters** button opens them, and chips show what's on.
+- **Follow-up in the conversation:** next to From me, From them and Note, **Follow-up** sets the next action and its date, with an optional note. It shows on Today that day.
+- **AI chat:** a new one-click question, "They accepted my LinkedIn request: first message?", which writes a first message from who they are.
+- **Voice typing (F29):** a mic on the AI text boxes (the AI chat, Ask AI about this company, Paste a whole conversation). Speak, press Stop, and the text appears.
 
 ## [2.8.0] - 2026-11-04
 

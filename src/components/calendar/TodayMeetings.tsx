@@ -17,17 +17,19 @@ type Meeting = {
 };
 
 /**
- * Today's meetings at the top of Today (F22; D-054: today only, the rest is on the Calendar),
- * each with Join (when there's a link) and Details.
+ * Today's meetings at the top of Today (F22; D-054: today only, the rest is on the Calendar;
+ * D-055: only those still to come), each with Join (when there's a link) and Details.
  */
-export function TodayMeetings({ today }: { today: Meeting[] }) {
+export function TodayMeetings({ today, finished = 0 }: { today: Meeting[]; finished?: number }) {
   return (
     <section className={`${styles.card} ${styles.todayCard}`} aria-label="Today's meetings">
       <h2 className={styles.cardTitle}>
         <CalendarDays size={18} aria-hidden /> Today&rsquo;s meetings
       </h2>
       {today.length === 0 ? (
-        <p className={styles.muted}>No meetings today.</p>
+        <p className={styles.muted}>
+          {finished > 0 ? "No more meetings today." : "No meetings today."}
+        </p>
       ) : (
         <MeetingList meetings={today} />
       )}

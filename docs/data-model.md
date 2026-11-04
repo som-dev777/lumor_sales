@@ -157,41 +157,42 @@ deleted; offices move with a company merge and go with a deleted company.
 
 ### person
 
-| Column                  | Rules                                                                             |
-| ----------------------- | --------------------------------------------------------------------------------- |
-| full_name               | required                                                                          |
-| title                   | text                                                                              |
-| linkedin_url            | optional, must contain `linkedin.com/in/` (D-043)                                 |
-| linkedin_url_normalised | **unique** when set, set by the server (see F02)                                  |
-| sales_nav_url           | optional                                                                          |
-| company_id              | → company                                                                         |
-| office_id               | → company_office, one of the company's offices (F28)                              |
-| persona_id              | → persona                                                                         |
-| level                   | Leader or Practitioner                                                            |
-| account_filter_id       | → account_filter                                                                  |
-| market                  | text (market/country)                                                             |
-| owner_id                | → user, required                                                                  |
-| stage                   | Stage, default Prospect                                                           |
-| opener_template_id      | → template                                                                        |
-| opener_template_version | A, B or C                                                                         |
-| next_action             | text                                                                              |
-| next_action_date        | plain date                                                                        |
-| snoozed_until           | plain date; hidden from Today until then (F08)                                    |
-| follow_up_removed_at    | when Remove was used on Today (D-054); off the follow-up lists until new activity |
-| lost_reason             | Lost reason. **Required when stage is Lost** (CHECK)                              |
-| converted               | 0/1, default 0                                                                    |
-| converted_date          | plain date                                                                        |
-| notes                   | text                                                                              |
-| phone                   | optional (v2)                                                                     |
-| email                   | optional (v2)                                                                     |
-| seniority               | Seniority, optional; Vice President/CXO get 45 days (D-033)                       |
-| do_not_contact          | 0/1, default 0; stops plans and blocks outreach                                   |
-| dnc_reason              | required when do_not_contact is on (form rule)                                    |
-| dnc_date                | plain date it was set                                                             |
-| nurture_until           | plain date; no touches until then (F17)                                           |
-| awaiting_reply_until    | plain date; the reply-by date the rep confirmed (F18)                             |
-| nudge_count             | nudges sent since the last reply, default 0 (F18: at most 2)                      |
-| review_note             | "From the booking page / Calendly: check details" (D-043)                         |
+| Column                  | Rules                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| full_name               | required                                                                                                                    |
+| title                   | text                                                                                                                        |
+| linkedin_url            | optional, must contain `linkedin.com/in/` (D-043)                                                                           |
+| linkedin_url_normalised | **unique** when set, set by the server (see F02)                                                                            |
+| sales_nav_url           | optional                                                                                                                    |
+| company_id              | → company                                                                                                                   |
+| office_id               | → company_office, one of the company's offices (F28)                                                                        |
+| persona_id              | → persona                                                                                                                   |
+| level                   | Leader or Practitioner                                                                                                      |
+| account_filter_id       | → account_filter                                                                                                            |
+| market                  | text (market/country)                                                                                                       |
+| owner_id                | → user, required                                                                                                            |
+| stage                   | Stage, default Prospect                                                                                                     |
+| opener_template_id      | → template                                                                                                                  |
+| opener_template_version | A, B or C                                                                                                                   |
+| next_action             | text                                                                                                                        |
+| next_action_date        | plain date                                                                                                                  |
+| next_action_set_at      | when the next action or its date last changed (D-055); anything logged after it, on or after the date, clears the follow-up |
+| snoozed_until           | plain date; hidden from Today until then (F08)                                                                              |
+| follow_up_removed_at    | when Remove was used on Today (D-054); off the follow-up lists until new activity                                           |
+| lost_reason             | Lost reason. **Required when stage is Lost** (CHECK)                                                                        |
+| converted               | 0/1, default 0                                                                                                              |
+| converted_date          | plain date                                                                                                                  |
+| notes                   | text                                                                                                                        |
+| phone                   | optional (v2)                                                                                                               |
+| email                   | optional (v2)                                                                                                               |
+| seniority               | Seniority, optional; Vice President/CXO get 45 days (D-033)                                                                 |
+| do_not_contact          | 0/1, default 0; stops plans and blocks outreach                                                                             |
+| dnc_reason              | required when do_not_contact is on (form rule)                                                                              |
+| dnc_date                | plain date it was set                                                                                                       |
+| nurture_until           | plain date; no touches until then (F17)                                                                                     |
+| awaiting_reply_until    | plain date; the reply-by date the rep confirmed (F18)                                                                       |
+| nudge_count             | nudges sent since the last reply, default 0 (F18: at most 2)                                                                |
+| review_note             | "From the booking page / Calendly: check details" (D-043)                                                                   |
 
 CHECK `person_contact_check`: a LinkedIn profile **or** an email (D-043).
 `sequence_step` was removed in v2 (D-032); a plan's current step replaces it.
@@ -491,4 +492,4 @@ columns `calendar_profile.notify_email`, `meeting_type.google_meet`, `booking.go
 and `booking.meet_link`. 0014 (v2.7.0, D-043) makes `person.linkedin_url` optional (with the
 LinkedIn-or-email check) and adds `person.review_note`; adds `calendly_booking`; the round 3
 calendar columns on `calendar_profile`, `meeting_type` and `booking`; `plan_step.custom_purpose`;
-`report_run.shared_with`; and the `report` and `calendly` notification kinds. 0015 (v2.7.2, D-045) turns the seeded draft plans into ordinary Official plans and drops "(draft)" from their names. From 2.7.2 a meeting's `cc_emails` also holds guests added by email. 0016 (v2.7.4, D-047) adds `calendar_profile.use_google_busy` (default on). 0017 (v2.7.5, D-048) adds `meeting_type.deleted_at` and sets every `buffer_min` to 0 (gaps are gone). 0018 (v2.7.8, D-051) sets every `min_notice_hours` to 0 (same-day booking) and every `use_google_busy` to off; the app now uses 0 and off as the defaults. 0019 (v2.7.10, D-053) adds `booking.meet_open`. 0020 (v2.8.0, D-054) adds the `company_office` table, `person.office_id` and `person.follow_up_removed_at`.
+`report_run.shared_with`; and the `report` and `calendly` notification kinds. 0015 (v2.7.2, D-045) turns the seeded draft plans into ordinary Official plans and drops "(draft)" from their names. From 2.7.2 a meeting's `cc_emails` also holds guests added by email. 0016 (v2.7.4, D-047) adds `calendar_profile.use_google_busy` (default on). 0017 (v2.7.5, D-048) adds `meeting_type.deleted_at` and sets every `buffer_min` to 0 (gaps are gone). 0018 (v2.7.8, D-051) sets every `min_notice_hours` to 0 (same-day booking) and every `use_google_busy` to off; the app now uses 0 and off as the defaults. 0019 (v2.7.10, D-053) adds `booking.meet_open`. 0020 (v2.8.0, D-054) adds the `company_office` table, `person.office_id` and `person.follow_up_removed_at`. 0021 (v2.9.0, D-055) adds `person.next_action_set_at` (empty for existing people: any activity on or after their follow-up date clears it).
