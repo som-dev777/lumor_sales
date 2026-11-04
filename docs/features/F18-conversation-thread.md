@@ -139,3 +139,4 @@ One button. It reads the whole thread and works out the situation first:
 | 2026-10-22 | 2.2.0   | Released in v2.2.0 (R8 Conversations).                                                                                                                      |
 | 2026-11-02 | 2.5.0   | On the person page, the AI chat (F23) replaces the Suggest next message tab; Today keeps its one-click suggestion.                                          |
 | 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                                                                         |
+| 2026-11-04 | 2.8.0   | P02 v2.1: demo invitations give the rep's booking link, or ask for a date and time that suits them (D-054).                                                 |

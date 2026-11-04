@@ -141,6 +141,13 @@
       "when": 1793779218783,
       "tag": "0019_meet_open",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1793783755426,
+      "tag": "0020_offices_remove_followup",
+      "breakpoints": true
     }
   ]
 }

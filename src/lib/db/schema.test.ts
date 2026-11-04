@@ -70,6 +70,7 @@ describe("migrations", () => {
       "calendar_profile",
       "calendly_booking",
       "company",
+      "company_office",
       "google_connection",
       "industry",
       "invite",

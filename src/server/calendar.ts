@@ -1946,17 +1946,6 @@ export async function meetingsToday(db: DbOrTx, userId: string, now = new Date()
   return myMeetings(db, userId, start, end);
 }
 
-/** The rep's confirmed meetings from tomorrow for `days` days (D-045: on Today too). */
-export async function upcomingMeetings(db: DbOrTx, userId: string, now = new Date(), days = 7) {
-  const tomorrow = addDaysIst(todayIst(now), 1);
-  return myMeetings(
-    db,
-    userId,
-    istDayRange(tomorrow).start,
-    istDayRange(addDaysIst(tomorrow, days - 1)).end,
-  );
-}
-
 async function myMeetings(db: DbOrTx, userId: string, start: Date, end: Date) {
   return db
     .select({

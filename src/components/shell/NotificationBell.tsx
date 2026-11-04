@@ -115,7 +115,8 @@ export function NotificationBell({
             <p className={styles.empty}>Loading…</p>
           ) : items.length === 0 ? (
             <p className={styles.empty}>
-              Nothing yet. New bookings, cancellations and meetings you&rsquo;re added to show here.
+              Nothing yet. New bookings, cancellations, meetings you&rsquo;re added to and owner
+              changes show here.
             </p>
           ) : (
             <div className={styles.list}>

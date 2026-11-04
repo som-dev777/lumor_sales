@@ -15,6 +15,7 @@ import {
   noteSchema,
   personSchema,
   quickLogSchema,
+  officeSchema,
 } from "@/lib/validation/leads";
 import {
   createCompany,
@@ -34,6 +35,7 @@ import {
   updatePerson,
 } from "../leads/people";
 import { linkBookingsByEmail } from "../calendar";
+import { createOffice, deleteOffice, updateOffice } from "../leads/offices";
 import { GuardrailWarning, logWithPlan } from "../plans/enrolment";
 import { PlanError } from "../plans/plans";
 
@@ -232,5 +234,37 @@ export async function doneChecking(personId: string): Promise<ActionResult> {
     await clearReviewNote(getDb(), viewer, personId);
     refresh();
     return { ok: true, message: "Marked as checked." };
+  });
+}
+
+/** F28: adds (officeId null) or edits a company office. */
+export async function saveOffice(
+  companyId: string,
+  officeId: string | null,
+  input: unknown,
+): Promise<ActionResult> {
+  const viewer = await requireUser();
+  const parsed = officeSchema.safeParse(input);
+  if (!parsed.success) return invalid(parsed.error.issues);
+  if (!idSchema.safeParse(companyId).success) return { ok: false, error: "Unknown company." };
+  if (officeId !== null && !idSchema.safeParse(officeId).success)
+    return { ok: false, error: "Unknown office." };
+  return run(async () => {
+    const row = officeId
+      ? await updateOffice(getDb(), viewer, officeId, parsed.data)
+      : await createOffice(getDb(), viewer, companyId, parsed.data);
+    refresh();
+    return { ok: true, message: `${row.name} ${officeId ? "saved" : "added"}.` };
+  });
+}
+
+/** F28: deletes an office with no people linked. */
+export async function removeOffice(officeId: string): Promise<ActionResult> {
+  const viewer = await requireUser();
+  if (!idSchema.safeParse(officeId).success) return { ok: false, error: "Unknown office." };
+  return run(async () => {
+    const row = await deleteOffice(getDb(), viewer, officeId);
+    refresh();
+    return { ok: true, message: `${row.name} deleted.` };
   });
 }

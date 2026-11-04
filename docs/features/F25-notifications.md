@@ -50,12 +50,13 @@ address (set on Calendar → Availability).
 
 ## Change history
 
-| Date       | Version | Change                                                                                          |
-| ---------- | ------- | ----------------------------------------------------------------------------------------------- |
-| 2026-11-02 | 2.6.0   | Feature doc written (before code), D-042.                                                       |
-| 2026-11-02 | 2.6.0   | Built: notification table, bell with count, mark read (audited), emails; tests.                 |
-| 2026-11-02 | 2.6.0   | Released in v2.6.0.                                                                             |
-| 2026-11-03 | 2.7.0   | Report shared and Calendly notifications written (D-043), before code.                          |
-| 2026-11-03 | 2.7.0   | Built: Report shared and Calendly notifications.                                                |
-| 2026-11-03 | 2.7.0   | Released in v2.7.0 (D-043).                                                                     |
-| 2026-11-03 | 2.7.2   | The Calendar sidebar number shows today's meetings; notifications are on the bell only (D-045). |
+| Date       | Version | Change                                                                                                                          |
+| ---------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-02 | 2.6.0   | Feature doc written (before code), D-042.                                                                                       |
+| 2026-11-02 | 2.6.0   | Built: notification table, bell with count, mark read (audited), emails; tests.                                                 |
+| 2026-11-02 | 2.6.0   | Released in v2.6.0.                                                                                                             |
+| 2026-11-03 | 2.7.0   | Report shared and Calendly notifications written (D-043), before code.                                                          |
+| 2026-11-03 | 2.7.0   | Built: Report shared and Calendly notifications.                                                                                |
+| 2026-11-03 | 2.7.0   | Released in v2.7.0 (D-043).                                                                                                     |
+| 2026-11-03 | 2.7.2   | The Calendar sidebar number shows today's meetings; notifications are on the bell only (D-045).                                 |
+| 2026-11-04 | 2.8.0   | Owner changes: the previous and new owner of an office, person or company are told who changed it (kinds added/removed, D-054). |

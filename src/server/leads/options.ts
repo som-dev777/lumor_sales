@@ -4,6 +4,7 @@ import type { DbOrTx } from "@/lib/db/client";
 import { accountFilter, company, persona, template } from "@/lib/db/schema";
 import { industryNames } from "../industries";
 import { activeOwners } from "./companies";
+import { officeChoices } from "./offices";
 
 export type Choice = { id: string; label: string };
 export type LeadFormOptions = {
@@ -13,10 +14,12 @@ export type LeadFormOptions = {
   owners: Choice[];
   companies: string[];
   industries: string[];
+  /** F28: every office, with its company's name (the person form shows the chosen company's). */
+  offices: { id: string; companyName: string; label: string }[];
 };
 
 export async function leadFormOptions(db: DbOrTx): Promise<LeadFormOptions> {
-  const [personas, filters, templates, owners, companies, industries] = await Promise.all([
+  const [personas, filters, templates, owners, companies, industries, offices] = await Promise.all([
     db
       .select({ id: persona.id, name: persona.name, type: persona.type })
       .from(persona)
@@ -45,6 +48,7 @@ export async function leadFormOptions(db: DbOrTx): Promise<LeadFormOptions> {
     activeOwners(db),
     db.select({ name: company.name }).from(company).orderBy(asc(company.name)),
     industryNames(db),
+    officeChoices(db),
   ]);
   const personal = (type: string) => (type === "Personal" ? " (Personal)" : "");
   return {
@@ -58,6 +62,11 @@ export async function leadFormOptions(db: DbOrTx): Promise<LeadFormOptions> {
       label: `${t.name} (${t.version})${personal(t.type)}`,
     })),
     owners: owners.map((o) => ({ id: o.id, label: o.name })),
+    offices: offices.map((o) => ({
+      id: o.id,
+      companyName: o.companyName,
+      label: `${o.name}${o.city && !o.name.toLowerCase().includes(o.city.toLowerCase()) ? `, ${o.city}` : ""}${o.isMain ? " (main office)" : ""}`,
+    })),
     companies: companies.map((c) => c.name),
     industries,
   };

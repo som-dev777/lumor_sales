@@ -3,7 +3,7 @@
 Lumor Sales Hub is the internal web app where Lumor's sales team manages LinkedIn
 prospecting, from finding a lead in Sales Navigator to a paying customer.
 
-**Current version:** 2.7.10 (released 4 Nov 2026: the owner's lists of 3–4 November, D-043 to D-053). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
+**Current version:** 2.8.0 (released 4 Nov 2026: the owner's list of 4 November, D-054). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
 
 ## Documents
 
@@ -19,7 +19,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | [email-templates/](email-templates/)         | The owner's email wording for bookings, word for word.           |
 | [deploy.md](deploy.md)                       | Putting the app online (Turso + Netlify), step by step.          |
 | [qa-checklist.md](qa-checklist.md)           | The manual check of the whole app before the team uses it.       |
-| [features/](features/)                       | One file per feature (F01–F27): requirements, tests, change log. |
+| [features/](features/)                       | One file per feature (F01–F28): requirements, tests, change log. |
 | [../CLAUDE.md](../CLAUDE.md)                 | Standing rules every Claude Code session follows.                |
 
 ## Feature index
@@ -53,6 +53,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F25 | [Notifications](features/F25-notifications.md)                       | P1       | 2.6.0   | Done (2.6.0)     |
 | F26 | [Google Calendar and Meet links](features/F26-google-meet.md)        | P1       | 2.6.0   | Done (2.6.0)     |
 | F27 | [Calendly integration](features/F27-calendly.md)                     | P1       | 2.7.0   | Done (2.7.0)     |
+| F28 | [Company offices](features/F28-company-offices.md)                   | P1       | 2.8.0   | Done (2.8.0)     |
 
 ## Releases
 
@@ -72,6 +73,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | Calendar + AI      | 2.5.0   | F22, F23, F24                               | Released 2026-11-02 |
 | Calendar round 2   | 2.6.0   | F22, F25, F26                               | Released 2026-11-02 |
 | Owner's list 3 Nov | 2.7.0   | F22, F27, F08, F17, F07, F19, F02, F03, F25 | Released 2026-11-03 |
+| Owner's list 4 Nov | 2.8.0   | F28, F08, F03, F02, F24, F25, F18, F23      | Released 2026-11-04 |
 
 ## Running the app locally
 

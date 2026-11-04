@@ -17,6 +17,8 @@ import {
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { writeAudit } from "@/lib/audit";
+import { officeForPerson } from "./offices";
+import { notifyOwnerChange } from "./ownership";
 import type { Db, DbOrTx } from "@/lib/db/client";
 import type { Stage } from "@/lib/db/enums";
 import {
@@ -32,6 +34,7 @@ import {
   planEnrolment,
   template,
   user,
+  companyOffice,
 } from "@/lib/db/schema";
 import { normaliseLinkedInUrl } from "@/lib/linkedin";
 import { stopPlanTx } from "../plans/enrolment";
@@ -151,6 +154,8 @@ export async function createPersonTx(
   const companyId = data.companyName
     ? (await resolveCompanyByName(tx, actor, data.companyName, ownerId)).id
     : null;
+  // F28: the office must be one of the company's offices.
+  const officeId = await officeForPerson(tx, data.officeId, companyId);
 
   const [row] = await tx
     .insert(person)
@@ -158,6 +163,7 @@ export async function createPersonTx(
       ...columnsFrom(data),
       linkedinUrlNormalised: norm,
       companyId,
+      officeId,
       ownerId,
       openerTemplateVersion: await openerVersion(tx, data.openerTemplateId),
       createdBy: actor.id,
@@ -196,6 +202,8 @@ export async function updatePerson(db: Db, actor: Actor, id: string, data: Perso
     const companyId = data.companyName
       ? (await resolveCompanyByName(tx, actor, data.companyName, ownerId)).id
       : null;
+    // F28: an office from another company is refused; a new company clears the old office.
+    const officeId = await officeForPerson(tx, data.officeId, companyId, before.officeId);
 
     const [after] = await tx
       .update(person)
@@ -203,6 +211,7 @@ export async function updatePerson(db: Db, actor: Actor, id: string, data: Perso
         ...columnsFrom(data, before),
         linkedinUrlNormalised: norm,
         companyId,
+        officeId,
         ownerId,
         openerTemplateVersion:
           data.openerTemplateId === before.openerTemplateId
@@ -228,6 +237,14 @@ export async function updatePerson(db: Db, actor: Actor, id: string, data: Perso
       before: personAudit(before),
       after: personAudit(after),
     });
+    // F28 (D-054): the previous and the new owner are told.
+    await notifyOwnerChange(
+      tx,
+      actor,
+      { kind: "person", name: after.fullName, link: `/people/${id}` },
+      before.ownerId,
+      ownerId,
+    );
     return after;
   });
 }
@@ -314,6 +331,13 @@ export async function reassignPeople(db: Db, actor: Actor, ids: string[], ownerI
         before: { ownerId: row.ownerId },
         after: { ownerId },
       });
+      await notifyOwnerChange(
+        tx,
+        actor,
+        { kind: "person", name: row.fullName, link: `/people/${row.id}` },
+        row.ownerId,
+        ownerId,
+      );
       changed += 1;
     }
     return changed;
@@ -458,12 +482,21 @@ export async function getPerson(db: DbOrTx, id: string) {
   const [row] = await peopleQuery(db).where(eq(person.id, id));
   if (!row) return null;
   const [full] = await db.select().from(person).where(eq(person.id, id));
+  // F28: their office, and who added them.
+  const [extra] = await db
+    .select({ officeName: companyOffice.name, addedByName: user.name })
+    .from(person)
+    .leftJoin(companyOffice, eq(companyOffice.id, person.officeId))
+    .leftJoin(user, eq(user.id, person.createdBy))
+    .where(eq(person.id, id));
   return {
     ...row,
     ...full,
     companyName: row.companyName,
     personaName: row.personaName,
     ownerName: row.ownerName,
+    officeName: extra?.officeName ?? null,
+    addedByName: extra?.addedByName ?? null,
   };
 }
 

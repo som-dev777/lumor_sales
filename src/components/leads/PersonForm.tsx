@@ -1,12 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useServerResult } from "@/components/auth/useServerResult";
-import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
@@ -17,6 +15,7 @@ import { personSchema, type PersonData, type PersonInput } from "@/lib/validatio
 import { fillPersonWithAi } from "@/server/actions/ai";
 import { savePerson } from "@/server/actions/leads";
 import type { LeadFormOptions } from "@/server/leads/options";
+import { FormProblems } from "./FormProblems";
 import styles from "./leads.module.scss";
 import { useAiFill } from "./useAiFill";
 
@@ -26,6 +25,7 @@ export const EMPTY_PERSON: PersonInput = {
   linkedinUrl: "",
   salesNavUrl: "",
   companyName: "",
+  officeId: "",
   personaId: "",
   level: "",
   accountFilterId: "",
@@ -45,6 +45,30 @@ export const EMPTY_PERSON: PersonInput = {
 };
 
 const NEW_COMPANY = "__new__";
+
+const PERSON_LABELS: Record<string, string> = {
+  fullName: "Full name",
+  title: "Title",
+  linkedinUrl: "LinkedIn profile link",
+  salesNavUrl: "Sales Navigator link",
+  companyName: "Company",
+  officeId: "Office",
+  personaId: "Persona",
+  level: "Level",
+  accountFilterId: "Account filter",
+  market: "Market / country",
+  ownerId: "Owner",
+  stage: "Stage",
+  lostReason: "Lost reason",
+  openerTemplateId: "Opener template",
+  nextAction: "Next action",
+  nextActionDate: "Next action date",
+  notes: "Notes",
+  phone: "Phone",
+  email: "Email",
+  seniority: "Seniority",
+  dncReason: "Why not contact them",
+};
 
 const choices = (items: { id: string; label: string }[], none: string) => [
   { value: "", label: none },
@@ -102,6 +126,9 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
   });
   const stage = useWatch({ control, name: "stage" });
   const companyName = useWatch({ control, name: "companyName" });
+  const companyOffices = options.offices.filter(
+    (o) => o.companyName.toLowerCase() === (companyName ?? "").trim().toLowerCase(),
+  );
   const dnc = useWatch({ control, name: "doNotContact" });
 
   const onSubmit = handleSubmit(async (values) => {
@@ -118,17 +145,6 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
 
   return (
     <form className={styles.form} onSubmit={onSubmit} noValidate>
-      {formError && (
-        <Alert tone="error">
-          {formError}
-          {duplicateLink && (
-            <>
-              {" "}
-              <Link href={duplicateLink}>Open the existing person</Link>
-            </>
-          )}
-        </Alert>
-      )}
       <div className={styles.row2}>
         <TextField
           label="Full name"
@@ -168,6 +184,8 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
             setValue("companyName", v === NEW_COMPANY ? "" : v, {
               shouldValidate: v !== NEW_COMPANY,
             });
+            // A different company has different offices (F28).
+            setValue("officeId", "");
           }}
           options={[
             { value: "", label: "Choose a company…" },
@@ -175,12 +193,28 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
             { value: NEW_COMPANY, label: "+ Add a new company" },
           ]}
         />
-        {newCompany && (
+        {newCompany ? (
           <TextField
             label="New company name"
             autoFocus
             error={errors.companyName?.message}
             {...register("companyName")}
+          />
+        ) : (
+          // F28: one of the chosen company's offices (optional).
+          <SelectField
+            label="Office (optional)"
+            hint={
+              companyName && companyOffices.length === 0
+                ? "No offices yet: add them on the company's page."
+                : undefined
+            }
+            error={errors.officeId?.message}
+            options={[
+              { value: "", label: companyOffices.length ? "Not set" : "No offices" },
+              ...companyOffices.map((o) => ({ value: o.id, label: o.label })),
+            ]}
+            {...register("officeId")}
           />
         )}
       </div>
@@ -274,6 +308,12 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
         />
       )}
       {ai.panel}
+      <FormProblems
+        formError={formError}
+        errors={errors}
+        labels={PERSON_LABELS}
+        link={duplicateLink ? { href: duplicateLink, label: "Open the existing person" } : null}
+      />
       <div className={styles.formActions}>
         {ai.button}
         <Button variant="secondary" onClick={onDone} disabled={isSubmitting}>

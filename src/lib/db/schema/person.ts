@@ -1,10 +1,10 @@
 import { sql } from "drizzle-orm";
 import { check, index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { LEVELS, LOST_REASONS, SENIORITIES, STAGES, TEMPLATE_VERSIONS } from "../enums";
-import { baseColumns, flag, oneOf, oneOfOrNull } from "./_shared";
+import { baseColumns, flag, oneOf, oneOfOrNull, timestamp } from "./_shared";
 import { accountFilter } from "./account-filter";
 import { user } from "./auth";
-import { company } from "./company";
+import { company, companyOffice } from "./company";
 import { persona } from "./persona";
 import { template } from "./template";
 
@@ -20,6 +20,8 @@ export const person = sqliteTable(
     linkedinUrlNormalised: text("linkedin_url_normalised").unique(),
     salesNavUrl: text("sales_nav_url"),
     companyId: text("company_id").references(() => company.id, { onDelete: "restrict" }),
+    // F28 (D-054): the office they work from, one of their company's offices.
+    officeId: text("office_id").references(() => companyOffice.id, { onDelete: "restrict" }),
     personaId: text("persona_id").references(() => persona.id, { onDelete: "restrict" }),
     level: text("level", { enum: LEVELS }),
     accountFilterId: text("account_filter_id").references(() => accountFilter.id, {
@@ -39,6 +41,9 @@ export const person = sqliteTable(
     nextActionDate: text("next_action_date"),
     // Hidden from Today until this IST date (F08 "Snooze to tomorrow").
     snoozedUntil: text("snoozed_until"),
+    // Remove on Today (D-054): when the rep removed the follow-up. Keeps them off the
+    // follow-up lists until something new happens.
+    followUpRemovedAt: timestamp("follow_up_removed_at"),
     lostReason: text("lost_reason", { enum: LOST_REASONS }),
     converted: flag("converted").notNull().default(false),
     convertedDate: text("converted_date"),
@@ -78,6 +83,7 @@ export const person = sqliteTable(
     index("person_owner_idx").on(t.ownerId),
     index("person_stage_idx").on(t.stage),
     index("person_next_action_date_idx").on(t.nextActionDate),
+    index("person_office_idx").on(t.officeId),
     index("person_company_idx").on(t.companyId),
     index("person_persona_idx").on(t.personaId),
   ],

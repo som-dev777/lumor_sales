@@ -1059,3 +1059,31 @@ replaces it.
   upcoming meetings opened); and opens upcoming meetings when a rep reconnects Google. Meetings
   booked before this (like tsg-nbyh-xum) are opened by the check or the reconnect.
 - **Version 2.7.10** (PATCH).
+
+## D-054: The owner's list of 4 November (owner, 2026-11-04)
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **Version 2.8.0** (MINOR: a new feature, F28)
+- **Today's meetings only:** Today lists only today's meetings (the next 7 days are gone; they're
+  on the Calendar). The page refreshes itself every minute and when you come back to the tab, so a
+  meeting booked or cancelled during the day shows up without reloading.
+- **Company offices (F28):** a company has offices, one of them the main office; people can be
+  linked to an office. Any rep can add an office; its owner, the company's owner or an Admin can
+  edit it. "Added by" and "Owner" are always shown. When an office, person or company gets a new
+  owner, the previous and the new owner are notified. Notifications reuse the existing "added" and
+  "removed" kinds (kinds aren't shown in the app), so the notification table needs no rebuild.
+- **Add company after Fill with AI:** the save was refused (for example "already exists") but the
+  message showed at the top of the form, scrolled out of view, so the button seemed to do nothing.
+  Messages now show next to the buttons, including any field that needs fixing.
+- **Ask AI about a company (P10):** after Fill with AI (and when editing), the company form has a
+  chat box: ask anything about the company, the AI searches the web and answers with sources; an
+  answer can be added to the notes. Nothing is stored except what you add to the notes.
+- **Remove a follow-up:** Today's follow-up, backlog, "needs a follow-up date", reply-deadline and
+  "no activity" items get **Remove** (before Snooze), with a confirmation. It clears the next action,
+  its date, the reply-by date and any snooze, and keeps the person off those lists until something
+  new happens (new activity, or a new follow-up date). Replies, meetings and plan steps aren't
+  affected. Audited (`person.follow_up_removed_at`).
+- **Demo invitations in AI messages:** whenever a message invites the prospect to a demo, it gives
+  the rep's own booking link (their first event that's online on Calendar → Events; else the team
+  link) and offers the alternative: reply with a date and time that suits them and the rep will
+  set it up. No other links, and no invented time slots. The guardrails change, so P01–P04 and P07
+  get new versions.

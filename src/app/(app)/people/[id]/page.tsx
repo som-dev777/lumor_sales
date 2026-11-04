@@ -160,7 +160,9 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
             )}
             {fact("Persona", p.personaName)}
             {fact("Level", p.level)}
+            {fact("Office", p.officeName)}
             {fact("Owner", p.ownerName)}
+            {fact("Added by", p.addedByName)}
             {fact(
               "Next action",
               p.nextAction
@@ -212,6 +214,7 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
                 linkedinUrl: p.linkedinUrl ?? "",
                 salesNavUrl: p.salesNavUrl ?? "",
                 companyName: p.companyName ?? "",
+                officeId: p.officeId ?? "",
                 personaId: p.personaId ?? "",
                 level: p.level ?? "",
                 accountFilterId: p.accountFilterId ?? "",

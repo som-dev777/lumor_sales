@@ -465,6 +465,29 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
 - [ ] 14.1 On your phone (or Chrome's device toolbar), Today, People, a person's conversation and a booking page work: the menu collapses
       to a button, nothing runs off the side of the screen.
 
+## 15. The owner's list of 4 November (v2.8.0)
+
+- [ ] 15.1 **Today**: only today's meetings show (no "Next 7 days"). Book a meeting for later
+      today from another browser: within a minute (or when you come back to the tab) it appears;
+      cancel it and it disappears.
+- [ ] 15.2 Open a company → **Offices → Add office**: "Corporate office", London, United Kingdom,
+      tick **Main (corporate) office**. Ask a teammate to add "Bangalore office" on the same
+      company. Both show with **Owner** and **Added by**; the main office has the "Main office" tag.
+- [ ] 15.3 **Add person** on that company: the **Office** choice lists its offices; pick Bangalore
+      office. The person page shows the office and who added them; the company's People list shows
+      the office.
+- [ ] 15.4 Edit the teammate's office and change its **Owner** (as an Admin): the teammate's bell
+      shows "New owner for the office …". Do the same with a person's or company's owner.
+- [ ] 15.5 **Add company** → type a name → **Fill with AI**: the **Ask AI about this company** box
+      opens. Ask "Where are their offices in India?", then **Add to notes**. Then **Add company**:
+      it's added. Try again with the same name: "… already exists. Open it" shows right next to
+      the buttons.
+- [ ] 15.6 **Today** → a follow-up or backlog item → **Remove** (before Snooze) → the confirmation →
+      **Remove follow-up**: it's gone, and stays gone after a reload.
+- [ ] 15.7 On a person who replied, **Suggest next message** (or ask the AI chat) for a demo: the
+      message gives your booking link (Calendar → Events, your first event that's online) and
+      says they can also reply with a date and time that suits them. No other links.
+
 ---
 
 ## Before the team starts (only you can do these)

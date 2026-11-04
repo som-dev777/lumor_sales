@@ -22,9 +22,9 @@ describe("prompts are stored word for word (docs/ai-prompts.md)", () => {
       expect(doc).toContain(`## ${id}: ${p.name}`);
       expect(doc).toContain(`### Version ${p.version}`);
       expect(doc).toContain(p.system);
-      // P05 splits pasted text, P06 summarises a report and P08/P09 fill forms; none of them
-      // writes to a prospect.
-      if (!["P05", "P06", "P08", "P09"].includes(id)) expect(p.system).toContain(GUARDRAILS);
+      // P05 splits pasted text, P06 summarises a report, P08/P09 fill forms and P10 answers the
+      // rep about a company; none of them writes to a prospect.
+      if (!["P05", "P06", "P08", "P09", "P10"].includes(id)) expect(p.system).toContain(GUARDRAILS);
     });
   }
 });

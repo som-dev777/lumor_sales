@@ -17,26 +17,19 @@ type Meeting = {
 };
 
 /**
- * Your meetings at the top of Today (F22; D-045): today's, then the next 7 days, each with Join
- * (when there's a link) and Details.
+ * Today's meetings at the top of Today (F22; D-054: today only, the rest is on the Calendar),
+ * each with Join (when there's a link) and Details.
  */
-export function TodayMeetings({ today, upcoming }: { today: Meeting[]; upcoming: Meeting[] }) {
+export function TodayMeetings({ today }: { today: Meeting[] }) {
   return (
-    <section className={`${styles.card} ${styles.todayCard}`} aria-label="Your meetings">
+    <section className={`${styles.card} ${styles.todayCard}`} aria-label="Today's meetings">
       <h2 className={styles.cardTitle}>
-        <CalendarDays size={18} aria-hidden /> Your meetings
+        <CalendarDays size={18} aria-hidden /> Today&rsquo;s meetings
       </h2>
-      <h3 className={styles.sectionTitle}>Today</h3>
       {today.length === 0 ? (
         <p className={styles.muted}>No meetings today.</p>
       ) : (
-        <MeetingList meetings={today} withDay={false} />
-      )}
-      {upcoming.length > 0 && (
-        <>
-          <h3 className={styles.sectionTitle}>Next 7 days</h3>
-          <MeetingList meetings={upcoming} withDay />
-        </>
+        <MeetingList meetings={today} />
       )}
       <p className={styles.muted}>
         <Link href="/calendar">Open the calendar →</Link>
@@ -45,18 +38,14 @@ export function TodayMeetings({ today, upcoming }: { today: Meeting[]; upcoming:
   );
 }
 
-function MeetingList({ meetings, withDay }: { meetings: Meeting[]; withDay: boolean }) {
+function MeetingList({ meetings }: { meetings: Meeting[] }) {
   return (
-    <ul
-      className={styles.meetingRows}
-      aria-label={withDay ? "Upcoming meetings" : "Meetings today"}
-    >
+    <ul className={styles.meetingRows} aria-label="Meetings today">
       {meetings.map((m) => {
         const link = m.location && /^https?:\/\//.test(m.location) ? m.location : null;
         return (
           <li key={m.id} className={styles.meetingRow}>
             <div className={styles.meetingWhen}>
-              {withDay && <span>{formatIst(m.startsAt, "EEE d MMM")}</span>}
               <strong>
                 {formatIst(m.startsAt, "h:mm")}–{formatIst(m.endsAt, "h:mm aaa")}
               </strong>

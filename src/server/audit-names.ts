@@ -3,7 +3,15 @@
 // how it's shown.
 import { inArray } from "drizzle-orm";
 import type { DbOrTx } from "@/lib/db/client";
-import { accountFilter, company, person, persona, template, user } from "@/lib/db/schema";
+import {
+  accountFilter,
+  company,
+  companyOffice,
+  person,
+  persona,
+  template,
+  user,
+} from "@/lib/db/schema";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -22,7 +30,7 @@ export async function auditNameMap(
   }
   if (ids.size === 0) return {};
   const list = [...ids];
-  const [users, companies, personas, filters, templates, people] = await Promise.all([
+  const [users, companies, personas, filters, templates, people, offices] = await Promise.all([
     db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.id, list)),
     db
       .select({ id: company.id, name: company.name })
@@ -44,9 +52,14 @@ export async function auditNameMap(
       .select({ id: person.id, name: person.fullName })
       .from(person)
       .where(inArray(person.id, list)),
+    // F28: a person's office.
+    db
+      .select({ id: companyOffice.id, name: companyOffice.name })
+      .from(companyOffice)
+      .where(inArray(companyOffice.id, list)),
   ]);
   const map: Record<string, string> = {};
-  for (const r of [...users, ...companies, ...personas, ...templates, ...people])
+  for (const r of [...users, ...companies, ...personas, ...templates, ...people, ...offices])
     map[r.id] = r.name;
   for (const f of filters) map[f.id] = `${f.code} ${f.name}`;
   return map;

@@ -197,6 +197,14 @@
   gap: var(--space-4);
 }
 
+// Remove confirmation (D-054): the two buttons on the right.
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
 .snoozeChoices {
   display: flex;
   flex-wrap: wrap;

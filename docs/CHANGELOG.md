@@ -7,7 +7,18 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.7.10 (Google steps, then Check Google Meet).
+Next: the owner's QA of v2.8.0 (docs/qa-checklist.md section 15).
+
+## [2.8.0] - 2026-11-04
+
+The owner's list of 4 November (D-054).
+
+- **Company offices (F28):** a company can have a main (corporate) office and other offices; people can be linked to the office they work from. Any rep can add an office; "Added by" and "Owner" are always shown.
+- **Owner changes notify:** when an office, a person or a company gets a new owner, the previous and the new owner are told who changed it.
+- **Today:** only today's meetings (the rest are on the Calendar), and the page refreshes itself so bookings and cancellations show up during the day. Follow-ups and backlog items have **Remove**, with a confirmation.
+- **Ask AI about this company:** a chat box in the company form (it opens after Fill with AI); answers come with sources and can be added to the notes.
+- **Fixed:** after Fill with AI, Add company seemed to do nothing when the save was refused (for example the company already exists). The reason now shows next to the buttons, on the person form too.
+- **AI messages:** a demo invitation gives the rep's own booking link, or asks the prospect for a date and time that suits them.
 
 ## [2.7.10] - 2026-11-04
 

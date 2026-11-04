@@ -112,6 +112,8 @@ export type PlanFacts = {
 
 export type LeadFacts = {
   snoozedUntil: string | null;
+  /** Remove on Today (D-054). */
+  followUpRemovedAt?: Date | null;
   nextAction: string | null;
   nextActionDate: string | null;
   awaitingReplyUntil: string | null;
@@ -159,6 +161,9 @@ export function classifyLead(
   staleBefore: string,
 ): Classified | null {
   const snoozed = p.snoozedUntil !== null && p.snoozedUntil > today;
+  // Removed on Today (D-054): off the follow-up lists until there's new activity.
+  const removed =
+    p.followUpRemovedAt != null && (!last || last.at.getTime() <= p.followUpRemovedAt.getTime());
   const due = (d: string | null) => d !== null && d <= today;
   // A task snoozed to a date is due that day (not late).
   const withSnooze = (d: string | null) => later(d, p.snoozedUntil);
@@ -191,7 +196,7 @@ export function classifyLead(
     };
   }
   // 3. Expired reply deadlines (F18): nudge, at most twice, then close the loop.
-  if (!snoozed && p.awaitingReplyUntil && p.awaitingReplyUntil < today) {
+  if (!snoozed && !removed && p.awaitingReplyUntil && p.awaitingReplyUntil < today) {
     const by = formatIstDate(p.awaitingReplyUntil);
     return {
       section: "deadline",
@@ -264,7 +269,7 @@ export function classifyLead(
     return null;
   }
   // Someone being worked on with no follow-up date at all (D-044).
-  if (!closed && !snoozed && !p.nextActionDate && ACTIVE_STAGES.includes(p.stage)) {
+  if (!closed && !snoozed && !removed && !p.nextActionDate && ACTIVE_STAGES.includes(p.stage)) {
     return {
       section: "nodate",
       kind: "setdate",
@@ -273,7 +278,7 @@ export function classifyLead(
     };
   }
   // 9. Stale leads not on any plan.
-  if (!snoozed && !(CLOSED as readonly string[]).includes(p.stage)) {
+  if (!snoozed && !removed && !(CLOSED as readonly string[]).includes(p.stage)) {
     const lastDay = toIstDate(last?.at ?? p.createdAt);
     if (lastDay < staleBefore) {
       return {
@@ -760,6 +765,7 @@ export async function setFollowUp(
         nextAction: text ?? before.nextAction ?? "Follow up",
         nextActionDate: input.date,
         snoozedUntil: null,
+        followUpRemovedAt: null,
       })
       .where(eq(person.id, personId))
       .returning();
@@ -778,6 +784,52 @@ export async function setFollowUp(
         nextAction: after.nextAction,
         nextActionDate: after.nextActionDate,
         snoozedUntil: null,
+      },
+    });
+    return after;
+  });
+}
+
+/**
+ * Remove on Today (D-054): clears the follow-up (next action and date, reply-by date, snooze) and
+ * keeps the person off the follow-up, backlog, "no date" and "no activity" lists until something
+ * new happens. Replies, meetings and plan steps still show. Audited.
+ */
+export async function removeFollowUp(db: Db, actor: Actor, personId: string, now = new Date()) {
+  return db.transaction(async (tx) => {
+    const before = await loadPerson(tx, personId);
+    assertCan(actor, "lead.edit", before);
+    const [after] = await tx
+      .update(person)
+      .set({
+        nextAction: null,
+        nextActionDate: null,
+        awaitingReplyUntil: null,
+        snoozedUntil: null,
+        followUpRemovedAt: now,
+      })
+      .where(eq(person.id, personId))
+      .returning();
+    await writeAudit(tx, {
+      userId: actor.id,
+      entityType: "Person",
+      recordId: personId,
+      recordName: after.fullName,
+      action: "Updated",
+      before: {
+        nextAction: before.nextAction,
+        nextActionDate: before.nextActionDate,
+        awaitingReplyUntil: before.awaitingReplyUntil,
+        snoozedUntil: before.snoozedUntil,
+        followUpRemovedAt: before.followUpRemovedAt,
+      },
+      after: {
+        nextAction: null,
+        nextActionDate: null,
+        awaitingReplyUntil: null,
+        snoozedUntil: null,
+        followUpRemovedAt: now,
+        via: "Remove on Today",
       },
     });
     return after;

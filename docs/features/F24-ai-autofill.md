@@ -46,8 +46,9 @@ fills in the fields left empty. The rep checks and edits everything before savin
 
 ## Change history
 
-| Date       | Version | Change                                                                                                                        |
-| ---------- | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 2026-11-02 | 2.5.0   | Feature doc written (before code).                                                                                            |
-| 2026-11-02 | 2.5.0   | Built: P08/P09 with OpenAI web search (checked live: 10–15 seconds), Fill with AI on both forms, "Filled by AI" hints; tests. |
-| 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                                           |
+| Date       | Version | Change                                                                                                                                                                                               |
+| ---------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-02 | 2.5.0   | Feature doc written (before code).                                                                                                                                                                   |
+| 2026-11-02 | 2.5.0   | Built: P08/P09 with OpenAI web search (checked live: 10–15 seconds), Fill with AI on both forms, "Filled by AI" hints; tests.                                                                        |
+| 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                                                                                                                  |
+| 2026-11-04 | 2.8.0   | Fixed: after Fill with AI, a refused save looked like "nothing happens" (the message was out of view); it now shows next to the buttons. Ask AI about this company opens after filling (P10, D-054). |

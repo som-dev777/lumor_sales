@@ -223,13 +223,16 @@ test("exit check: the Team tab opens the list behind a number", async () => {
   ).toBeVisible();
 });
 
-test("v2.7.2: Today lists the coming meetings; a guest is added by email from the meeting", async () => {
+test("v2.8.0: Today shows only today's meetings; a guest is added by email from the meeting", async () => {
   await fay.goto("/");
-  const meetings = shown(fay.getByRole("region", { name: "Your meetings" }));
-  await expect(meetings).toContainText("Lumor walkthrough with Delta");
-  await meetings
-    .getByRole("link", { name: /Details of the meeting with/ })
-    .first()
+  // The meeting in 3 days isn't on Today any more (D-054); it's on the Calendar.
+  const meetings = shown(fay.getByRole("region", { name: "Today's meetings" }));
+  await expect(meetings).not.toContainText("Lumor walkthrough with Delta");
+  await fay.goto("/calendar?view=list");
+  await shown(fay.getByRole("table", { name: "Upcoming bookings" }))
+    .getByRole("row")
+    .filter({ hasText: "Lumor walkthrough with Delta" })
+    .getByRole("link", { name: /\d{4}, / })
     .click();
   await expect(fay).toHaveURL(/booking=/);
   const dialog = fay.getByRole("dialog");

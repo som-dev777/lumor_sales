@@ -32,10 +32,23 @@ import {
   type ChatView,
   type SavedReply,
 } from "../ai/chat";
-import { fillCompany, fillPerson, type FillResult } from "../ai/autofill";
+import {
+  askAboutCompany,
+  fillCompany,
+  fillPerson,
+  type CompanyAnswer,
+  type FillResult,
+} from "../ai/autofill";
 import { AiError } from "../ai/client";
 import { LeadError } from "../leads/companies";
-import { completeTask, rankToday, setFollowUp, snoozeLead, type Task } from "../today";
+import {
+  completeTask,
+  rankToday,
+  removeFollowUp,
+  setFollowUp,
+  snoozeLead,
+  type Task,
+} from "../today";
 
 export type AiResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -169,6 +182,16 @@ export async function snoozeTask(personId: string, until?: string | null) {
   return r.ok ? { ok: true as const, data: null } : r;
 }
 
+/** Remove on Today (D-054): clears the follow-up after the rep confirms. */
+export async function removeFollowUpTask(personId: string) {
+  const viewer = await requireUser();
+  if (!id.safeParse(personId).success) return bad("Unknown person.");
+  const now = await appNow();
+  const r = await run(() => removeFollowUp(getDb(), viewer, personId, now));
+  if (r.ok) refresh();
+  return r.ok ? { ok: true as const, data: null } : r;
+}
+
 /** Set next follow-up from Today (D-044): what and when. */
 export async function setFollowUpTask(personId: string, nextAction: string, date: string) {
   const viewer = await requireUser();
@@ -247,6 +270,13 @@ export async function fillCompanyWithAi(form: unknown): Promise<AiResult<FillRes
   const viewer = await requireUser();
   const now = await appNow();
   return run(() => fillCompany(getDb(), viewer, form, now));
+}
+
+/** Ask AI about a company (P10, D-054): one answer from the web. Nothing is saved. */
+export async function askCompanyAi(input: unknown): Promise<AiResult<CompanyAnswer>> {
+  const viewer = await requireUser();
+  const now = await appNow();
+  return run(() => askAboutCompany(getDb(), viewer, input, now));
 }
 
 /** Suggests values for the empty person fields. Nothing is saved. */

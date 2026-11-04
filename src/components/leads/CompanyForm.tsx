@@ -1,12 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useServerResult } from "@/components/auth/useServerResult";
-import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextArea } from "@/components/ui/TextArea";
@@ -17,6 +15,8 @@ import { companySchema, type CompanyData, type CompanyInput } from "@/lib/valida
 import { fillCompanyWithAi } from "@/server/actions/ai";
 import { saveCompany } from "@/server/actions/leads";
 import type { LeadFormOptions } from "@/server/leads/options";
+import { CompanyAiChat } from "./CompanyAiChat";
+import { FormProblems } from "./FormProblems";
 import styles from "./leads.module.scss";
 import { useAiFill } from "./useAiFill";
 
@@ -43,6 +43,20 @@ type Props = {
 };
 
 const NEW_INDUSTRY = "__new__";
+
+const COMPANY_LABELS: Record<string, string> = {
+  name: "Company name",
+  website: "Website",
+  linkedinUrl: "LinkedIn page",
+  industry: "Industry",
+  headcountBand: "Headcount band",
+  city: "City",
+  country: "Country",
+  accountFilterId: "Account filter",
+  ownerId: "Owner",
+  status: "Status",
+  notes: "Notes",
+};
 
 export function CompanyForm({ companyId, defaultValues, options, canChooseOwner, onDone }: Props) {
   const notify = useToast();
@@ -107,11 +121,6 @@ export function CompanyForm({ companyId, defaultValues, options, canChooseOwner,
 
   return (
     <form className={styles.form} onSubmit={onSubmit} noValidate>
-      {formError && (
-        <Alert tone="error">
-          {formError} {existingLink && <Link href={existingLink}>Open it</Link>}
-        </Alert>
-      )}
       <TextField
         label="Company name"
         autoFocus
@@ -191,6 +200,20 @@ export function CompanyForm({ companyId, defaultValues, options, canChooseOwner,
       )}
       <TextArea label="Notes" rows={3} error={errors.notes?.message} {...field("notes")} />
       {ai.panel}
+      <CompanyAiChat
+        getCompany={getValues}
+        startOpen={ai.done}
+        onAddToNotes={(answer) => {
+          const notes = (getValues("notes") ?? "").trim();
+          setValue("notes", notes ? `${notes}\n\n${answer}` : answer, { shouldDirty: true });
+        }}
+      />
+      <FormProblems
+        formError={formError}
+        errors={errors}
+        labels={COMPANY_LABELS}
+        link={existingLink ? { href: existingLink, label: "Open it" } : null}
+      />
       <div className={styles.formActions}>
         {ai.button}
         <Button variant="secondary" onClick={onDone} disabled={isSubmitting}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Clock, Mail, Sparkles } from "lucide-react";
+import { Check, Clock, Mail, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Alert } from "@/components/ui/Alert";
@@ -14,6 +14,7 @@ import { SuggestionCard } from "@/components/ai/SuggestionCard";
 import {
   doneTask,
   rankMyDay,
+  removeFollowUpTask,
   setFollowUpTask,
   snoozeTask,
   suggestNextMessage,
@@ -202,6 +203,13 @@ function TaskRow({
       say(r);
     });
   const [snoozing, setSnoozing] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  // Remove (D-054): follow-ups, backlogs, "no date", reply deadlines and "no activity".
+  const removable =
+    task.kind === "followup" ||
+    task.kind === "setdate" ||
+    task.kind === "open" ||
+    task.kind === "nudge";
   const [following, setFollowing] = useState(false);
   const snooze = (until: string) =>
     start(async () => {
@@ -376,6 +384,16 @@ function TaskRow({
             Open
           </Link>
         )}
+        {removable && (
+          <Button
+            variant="ghost"
+            disabled={busy}
+            onClick={() => setRemoving(true)}
+            aria-label={`Remove the follow-up for ${task.name}`}
+          >
+            <Trash2 size={16} aria-hidden /> Remove
+          </Button>
+        )}
         {task.kind !== "finished" && (
           <Button
             variant="ghost"
@@ -402,6 +420,33 @@ function TaskRow({
           }
         />
       )}
+      <Dialog
+        open={removing}
+        onOpenChange={setRemoving}
+        title={`Remove the follow-up for ${task.name}?`}
+        description="It leaves Today, with its next action and date. It comes back only if something new happens, like a reply, or when you set a new follow-up date on their page."
+      >
+        <div className={styles.dialogBody}>
+          <div className={styles.dialogActions}>
+            <Button variant="secondary" onClick={() => setRemoving(false)} disabled={busy}>
+              Keep it
+            </Button>
+            <Button
+              variant="danger"
+              loading={busy}
+              onClick={() =>
+                start(async () => {
+                  const r = await removeFollowUpTask(task.personId);
+                  say(r, `Follow-up for ${task.name} removed.`);
+                  if (r.ok) setRemoving(false);
+                })
+              }
+            >
+              Remove follow-up
+            </Button>
+          </div>
+        </div>
+      </Dialog>
       {snoozing && (
         <SnoozeDialog
           today={today}

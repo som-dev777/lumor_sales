@@ -61,6 +61,8 @@ export const personSchema = z
       .trim()
       .min(1, "Choose the company.")
       .max(200, "Name is too long."),
+    // F28: one of the company's offices (optional).
+    officeId: optionalId,
     personaId: optionalId,
     level: z
       .enum(LEVELS)
@@ -137,6 +139,18 @@ export const companySchema = z.object({
   notes: optionalText(5000),
 });
 export type CompanyInput = z.input<typeof companySchema>;
+
+/** A company office (F28, D-054). */
+export const officeSchema = z.object({
+  name: z.string().trim().min(1, "Enter the office name.").max(120, "Name is too long."),
+  city: optionalText(100),
+  country: optionalText(100),
+  address: optionalText(300),
+  isMain: z.boolean().optional().default(false),
+  ownerId: optionalId,
+});
+export type OfficeInput = z.input<typeof officeSchema>;
+export type OfficeData = z.output<typeof officeSchema>;
 export type CompanyData = z.output<typeof companySchema>;
 
 export const customerSchema = z.object({

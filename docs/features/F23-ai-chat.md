@@ -57,8 +57,9 @@ It replaces the **Suggest next message** tab on the person page. Today keeps its
 
 ## Change history
 
-| Date       | Version | Change                                                                                 |
-| ---------- | ------- | -------------------------------------------------------------------------------------- |
-| 2026-11-02 | 2.5.0   | Feature doc written (before code).                                                     |
-| 2026-11-02 | 2.5.0   | Built: chat tables (migration 0011), P07, the Chat tab, reply-type picker kept; tests. |
-| 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                    |
+| Date       | Version | Change                                                                                                      |
+| ---------- | ------- | ----------------------------------------------------------------------------------------------------------- |
+| 2026-11-02 | 2.5.0   | Feature doc written (before code).                                                                          |
+| 2026-11-02 | 2.5.0   | Built: chat tables (migration 0011), P07, the Chat tab, reply-type picker kept; tests.                      |
+| 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                         |
+| 2026-11-04 | 2.8.0   | P07 v1.1: demo invitations give the rep's booking link, or ask for a date and time that suits them (D-054). |

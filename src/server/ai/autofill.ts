@@ -151,6 +151,72 @@ export async function fillCompany(
   return { values: onlyEmpty(form, suggested), sources, checks, ...result };
 }
 
+// --- P10 Ask about a company (D-054) ---------------------------------------------------------
+
+export const companyAnswerSchema = z.object({
+  answer: z.string(),
+  sources: z.array(z.string()),
+});
+
+/** One earlier question and answer in the company chat (kept only in the browser). */
+const chatTurn = z.object({
+  question: z.string().max(1000),
+  answer: z.string().max(4000),
+});
+
+export const companyQuestionSchema = z.object({
+  company: formText,
+  chat: z.array(chatTurn).max(10),
+  question: z
+    .string()
+    .trim()
+    .min(1, "Type a question first.")
+    .max(1000, "That question is too long."),
+});
+
+export type CompanyAnswer = { answer: string; sources: string[]; searched: boolean };
+
+/** P10: answers the rep's question about the company on the form, from the web. Nothing saved. */
+export async function askAboutCompany(
+  db: DbOrTx,
+  actor: Actor,
+  input: unknown,
+  now = new Date(),
+): Promise<CompanyAnswer> {
+  assertCan(actor, "lead.create");
+  const parsed = companyQuestionSchema.safeParse(input);
+  if (!parsed.success) throw new LeadError(parsed.error.issues[0].message);
+  const { company, chat, question } = parsed.data;
+  const name = text(company.name);
+  if (name.length < 2) throw new LeadError("Type the company name first.");
+  const { data, searched } = await runSearchPrompt(
+    "P10",
+    companyAnswerSchema,
+    {
+      COMPANY: {
+        name,
+        website: text(company.website) || null,
+        linkedinPage: text(company.linkedinUrl) || null,
+        industry: text(company.industry) || null,
+        headcountBand: text(company.headcountBand) || null,
+        city: text(company.city) || null,
+        country: text(company.country) || null,
+        notes: text(company.notes) || null,
+      },
+      CHAT: chat,
+      QUESTION: question,
+      TODAY: todayIst(now),
+    },
+    () => ({
+      answer: `${name} runs consumer research panels. (A stand-in answer to: ${question})`,
+      sources: [`https://www.${name.toLowerCase().replace(/[^a-z0-9]+/g, "")}.com`],
+    }),
+  );
+  const answer = data.answer.trim().slice(0, 4000);
+  if (!answer) throw new LeadError("The AI had no answer to that. Try asking another way.");
+  return { answer, sources: tidy(data.sources, 3).filter(isLink), searched };
+}
+
 /** P09: suggests the empty person fields from the web. */
 export async function fillPerson(
   db: DbOrTx,

@@ -24,6 +24,8 @@ import { formatIstDate, todayIst } from "@/lib/time";
 import { asc, ne } from "drizzle-orm";
 import { company } from "@/lib/db/schema";
 import { companyTimeline, getCompany } from "@/server/leads/companies";
+import { canChangeOfficeOwner, canEditOffice, listOffices } from "@/server/leads/offices";
+import { DeleteOfficeButton, OfficeDialogButton } from "@/components/leads/OfficeDialogButton";
 import { leadFormOptions } from "@/server/leads/options";
 
 export const metadata: Metadata = { title: "Company" };
@@ -52,7 +54,7 @@ async function Company({ params }: Pick<PageProps<"/companies/[id]">, "params">)
   const c = await getCompany(db, id);
   if (!c) notFound();
   const mayDelete = can(viewer, "lead.delete");
-  const [events, options, others] = await Promise.all([
+  const [events, options, others, offices] = await Promise.all([
     companyTimeline(db, id),
     leadFormOptions(db),
     mayDelete
@@ -62,7 +64,9 @@ async function Company({ params }: Pick<PageProps<"/companies/[id]">, "params">)
           .where(ne(company.id, id))
           .orderBy(asc(company.name))
       : Promise.resolve([]),
+    listOffices(db, id),
   ]);
+  const officeName = new Map(offices.map((o) => [o.id, o.name]));
   const mayEdit = can(viewer, "lead.edit", { ownerId: c.ownerId });
   const fact = (label: string, value: React.ReactNode) => (
     <div>
@@ -179,6 +183,66 @@ async function Company({ params }: Pick<PageProps<"/companies/[id]">, "params">)
               <p className={styles.muted}>Not a customer yet.</p>
             )}
           </section>
+          <section className={styles.panel} aria-label="Offices">
+            <div className={styles.panelHead}>
+              <h2 className={styles.panelTitle}>Offices ({offices.length})</h2>
+              {can(viewer, "lead.create") && (
+                <OfficeDialogButton
+                  companyId={c.id}
+                  companyName={c.name}
+                  owners={options.owners}
+                  canChooseOwner={can(viewer, "lead.reassign")}
+                />
+              )}
+            </div>
+            {offices.length === 0 ? (
+              <p className={styles.muted}>
+                No offices yet. Add the main (corporate) office and any others, like Bangalore or
+                Mumbai.
+              </p>
+            ) : (
+              <ul className={styles.officeList}>
+                {offices.map((o) => (
+                  <li key={o.id} className={styles.officeItem} aria-label={`Office ${o.name}`}>
+                    <div className={styles.officeMain}>
+                      <span>
+                        <strong>{o.name}</strong>{" "}
+                        {o.isMain && <Badge tone="primary">Main office</Badge>}
+                      </span>
+                      <span className={styles.muted}>
+                        {[o.address, o.city, o.country].filter(Boolean).join(", ") ||
+                          "No location yet"}{" "}
+                        · {o.peopleCount} {o.peopleCount === 1 ? "person" : "people"}
+                      </span>
+                      <span className={styles.muted}>
+                        Owner: {o.ownerName} · Added by {o.addedByName ?? "—"}
+                      </span>
+                    </div>
+                    {canEditOffice(viewer, o, c.ownerId) && (
+                      <div className={styles.officeActions}>
+                        <OfficeDialogButton
+                          companyId={c.id}
+                          companyName={c.name}
+                          officeId={o.id}
+                          owners={options.owners}
+                          canChooseOwner={canChangeOfficeOwner(viewer, o)}
+                          defaults={{
+                            name: o.name,
+                            city: o.city ?? "",
+                            country: o.country ?? "",
+                            address: o.address ?? "",
+                            isMain: o.isMain,
+                            ownerId: "",
+                          }}
+                        />
+                        <DeleteOfficeButton officeId={o.id} name={o.name} />
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
           <section className={styles.panel} aria-label="People">
             <div className={styles.panelHead}>
               <h2 className={styles.panelTitle}>People ({c.people.length})</h2>
@@ -200,7 +264,11 @@ async function Company({ params }: Pick<PageProps<"/companies/[id]">, "params">)
                       <Link href={`/people/${p.id}`}>{p.fullName}</Link>
                       <span className={styles.muted}>
                         {" "}
-                        · {p.title ?? "No title"} · {p.ownerName}
+                        · {p.title ?? "No title"}
+                        {p.officeId && officeName.has(p.officeId)
+                          ? ` · ${officeName.get(p.officeId)}`
+                          : ""}{" "}
+                        · {p.ownerName}
                       </span>
                     </span>
                     <StageBadge stage={p.stage} />

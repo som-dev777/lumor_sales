@@ -2,8 +2,9 @@
 // transaction.
 import { and, asc, count, desc, eq, inArray, like, sql, type SQL } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit";
+import { notifyOwnerChange } from "./ownership";
 import type { Db, DbOrTx } from "@/lib/db/client";
-import { accountFilter, activity, company, person, user } from "@/lib/db/schema";
+import { accountFilter, activity, company, companyOffice, person, user } from "@/lib/db/schema";
 import { assertCan, type Actor } from "@/lib/permissions";
 import type { CompanyData, CustomerData } from "@/lib/validation/leads";
 import { ensureIndustries } from "../industry-list";
@@ -136,6 +137,14 @@ export async function updateCompany(db: Db, actor: Actor, id: string, data: Comp
       before: companyAudit(before),
       after: companyAudit(after),
     });
+    // F28 (D-054): the previous and the new owner are told.
+    await notifyOwnerChange(
+      tx,
+      actor,
+      { kind: "company", name: after.name, link: `/companies/${id}` },
+      before.ownerId,
+      ownerId,
+    );
     return after;
   });
 }
@@ -208,6 +217,20 @@ export async function deleteCompany(db: Db, actor: Actor, id: string) {
       );
     }
     await tx.update(activity).set({ companyId: null }).where(eq(activity.companyId, id));
+    // F28: its offices go with it (no one can be linked to them: it has no people).
+    const offices = await tx.select().from(companyOffice).where(eq(companyOffice.companyId, id));
+    for (const o of offices) {
+      await tx.delete(companyOffice).where(eq(companyOffice.id, o.id));
+      await writeAudit(tx, {
+        userId: actor.id,
+        entityType: "Office",
+        recordId: o.id,
+        recordName: `${before.name} · ${o.name}`,
+        action: "Deleted",
+        before: { name: o.name, city: o.city, country: o.country, isMain: o.isMain },
+        after: { via: "Company deleted" },
+      });
+    }
     await tx.delete(company).where(eq(company.id, id));
     await writeAudit(tx, {
       userId: actor.id,
@@ -249,6 +272,37 @@ export async function mergeCompanies(db: Db, actor: Actor, sourceId: string, tar
       .where(eq(person.companyId, sourceId))
       .returning({ id: person.id });
     await tx.update(activity).set({ companyId: targetId }).where(eq(activity.companyId, sourceId));
+    // F28: the duplicate's offices move too (renamed if the name is taken; one main office).
+    const targetOffices = await tx
+      .select()
+      .from(companyOffice)
+      .where(eq(companyOffice.companyId, targetId));
+    const taken = new Set(targetOffices.map((o) => o.name.trim().toLowerCase()));
+    let hasMain = targetOffices.some((o) => o.isMain);
+    for (const o of await tx
+      .select()
+      .from(companyOffice)
+      .where(eq(companyOffice.companyId, sourceId))) {
+      const name = taken.has(o.name.trim().toLowerCase())
+        ? `${o.name} (from ${source.name})`
+        : o.name;
+      const isMain = o.isMain && !hasMain;
+      hasMain ||= isMain;
+      taken.add(name.trim().toLowerCase());
+      await tx
+        .update(companyOffice)
+        .set({ companyId: targetId, name, isMain })
+        .where(eq(companyOffice.id, o.id));
+      await writeAudit(tx, {
+        userId: actor.id,
+        entityType: "Office",
+        recordId: o.id,
+        recordName: `${target.name} · ${name}`,
+        action: "Updated",
+        before: { companyId: sourceId, name: o.name, isMain: o.isMain },
+        after: { companyId: targetId, name, isMain, via: "Company merge" },
+      });
+    }
 
     const filled: Partial<CompanyRow> = {};
     for (const k of FILLABLE)
@@ -362,6 +416,7 @@ export async function getCompany(db: DbOrTx, id: string) {
       title: person.title,
       stage: person.stage,
       ownerName: user.name,
+      officeId: person.officeId,
     })
     .from(person)
     .leftJoin(user, eq(user.id, person.ownerId))

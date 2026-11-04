@@ -22,6 +22,8 @@ export function useAiFill(
   panel: ReactNode;
   hint: (field: string) => string | undefined;
   edited: (field: string) => void;
+  /** Fill with AI has answered (D-054: opens Ask AI about this company). */
+  done: boolean;
 } {
   const [busy, start] = useTransition();
   const [filled, setFilled] = useState<Set<string>>(new Set());
@@ -91,6 +93,7 @@ export function useAiFill(
   return {
     button,
     panel,
+    done: result !== null,
     hint: (field) => (filled.has(field) ? AI_HINT : undefined),
     edited: (field) =>
       setFilled((before) => {
