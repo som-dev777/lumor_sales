@@ -25,10 +25,12 @@ import { formatIst, formatIstDate, toIstLocal, todayIst } from "@/lib/time";
 import { leadFormOptions } from "@/server/leads/options";
 import { canLogOutreach, getPerson } from "@/server/leads/people";
 import { situationOf, threadOf } from "@/server/conversation";
-import { listChats, loadChat } from "@/server/ai/chat";
+import { deskThread } from "@/server/ai/desk-thread";
+import { describeSituation } from "@/server/ai/assist";
+import { user } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { bookingLinksFor, bookingsOfPerson } from "@/server/calendar";
 import { CopyField } from "@/components/ui/CopyField";
-import { describeSituation } from "@/server/ai/assist";
 import { aiMode } from "@/server/ai/client";
 import { planState } from "@/server/plans/enrolment";
 import { usablePlans } from "@/server/plans/plans";
@@ -57,22 +59,22 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
   if (!p) notFound();
   const now = await appNow();
   const today = todayIst(now);
-  const [thread, situation, options, knowledge, state, plans, chats] = await Promise.all([
+  const [thread, situation, options, knowledge, state, plans, desk, me] = await Promise.all([
     threadOf(db, id),
     situationOf(db, id, today),
     leadFormOptions(db),
     knowledgeFor(db, "P02"),
     planState(db, id, today),
     usablePlans(db, viewer),
-    listChats(db, viewer, id),
+    // The Outreach Desk thread in the AI panel (D-056); old AI chats show to their author.
+    deskThread(db, viewer, id),
+    db.select({ jobTitle: user.jobTitle }).from(user).where(eq(user.id, viewer.id)),
   ]);
   const [links, bookings, backlog] = await Promise.all([
     canLogOutreach(viewer, p.ownerId) ? bookingLinksFor(db, viewer.id) : [],
     bookingsOfPerson(db, id),
     backlogOf(db, id, now),
   ]);
-  // The rep's latest AI chat on this person (F23); chats are private to their author.
-  const chat = chats[0] ? await loadChat(db, viewer, chats[0].id) : null;
   const SUGGESTED: Partial<Record<string, string>> = {
     "Meeting done": "Meeting follow-up",
     Trial: "Trial",
@@ -315,16 +317,12 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
         <AiPanel
           personId={p.id}
           status={aiMode() === "off" ? "off" : knowledge ? "ready" : "no-knowledge"}
-          templates={options.templates}
+          firstName={firstName}
+          items={desk}
+          brief={p.brief ?? null}
+          askTitle={!me[0]?.jobTitle}
+          today={today}
           situation={describeSituation(situation, firstName)}
-          situationKind={situation.kind}
-          channel={
-            situation.lastChannel && situation.lastChannel !== "In person"
-              ? situation.lastChannel
-              : "LinkedIn"
-          }
-          chats={chats}
-          chat={chat}
         />
       )}
 

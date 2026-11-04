@@ -3,7 +3,7 @@
 Lumor Sales Hub is the internal web app where Lumor's sales team manages LinkedIn
 prospecting, from finding a lead in Sales Navigator to a paying customer.
 
-**Current version:** 2.9.0 (released 4 Nov 2026: the owner's second list of 4 November, D-055). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
+**Current version:** 2.10.0 (released 4 Nov 2026: the Outreach Desk in the AI assistant panel, D-056). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
 
 ## Documents
 
@@ -43,7 +43,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F09 | [Reply Assistant](features/F09-reply-assistant.md) (replaced by F18) | P1       | R6      | Replaced (2.2.0) |
 | F10 | [Conversation summary and draft](features/F10-summary-draft.md)      | P1       | R6      | Done (1.5.0)     |
 | F17 | [Plans](features/F17-plans.md)                                       | P0       | R7      | Done (2.0.0)     |
-| F18 | [Conversation thread](features/F18-conversation-thread.md)           | P0       | R8      | Done (2.2.0)     |
+| F18 | [Conversation thread](features/F18-conversation-thread.md)           | P0       | R8      | Done (2.10.0)    |
 | F19 | [Reports](features/F19-reports.md)                                   | P1       | R9      | Done (2.3.0)     |
 | F20 | [AI Resources](features/F20-ai-resources.md)                         | P0       | 2.1.0   | Done             |
 | F21 | [Industries](features/F21-industries.md)                             | P1       | 2.4.0   | Done (2.4.0)     |
@@ -76,6 +76,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | Owner's list 3 Nov     | 2.7.0   | F22, F27, F08, F17, F07, F19, F02, F03, F25 | Released 2026-11-03 |
 | Owner's list 4 Nov     | 2.8.0   | F28, F08, F03, F02, F24, F25, F18, F23      | Released 2026-11-04 |
 | Owner's list 4 Nov (2) | 2.9.0   | F08, F02, F03, F18, F23, F24, F29           | Released 2026-11-04 |
+| Outreach Desk          | 2.10.0  | F18, F23, F10                               | Released 2026-11-04 |
 
 ## Running the app locally
 

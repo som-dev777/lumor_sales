@@ -51,55 +51,51 @@ test.beforeAll(async ({ browser }) => {
   await expect(rep).toHaveURL("/");
 });
 
-test("exit check: a reply gets a reply type and a message from the AI chat, marked as sent", async () => {
+test("exit check: a reply gets a reply type and a drafted response, marked as sent", async () => {
   await addLead("Asha Verma", "asha-verma-r6");
-  const conversation = shown(rep.getByRole("region", { name: "Conversation" }));
-  await conversation.getByLabel("From Asha").check();
-  await conversation
-    .getByLabel("What Asha sent or said")
-    .fill("Sounds interesting. How does it work?");
-  await conversation.getByRole("button", { name: "Add to conversation" }).click();
-  await expect(shown(rep.getByText("Added to the conversation."))).toBeVisible();
-  // The AI chat (F23) replaced the one-shot suggestions on the person page.
-  await rep.getByRole("button", { name: "Suggest my next message" }).click();
-  await expect(rep.getByLabel("Reply type", { exact: true })).toHaveValue("Interested");
-  const chat = rep.getByRole("log", { name: "AI chat" });
-  await expect(chat).toContainText("Here's a message for Asha.");
-  await chat.getByRole("button", { name: "Use this message" }).click();
-  const cards = rep.getByLabel(/^Reply: /);
-  await expect(cards).toHaveCount(1);
-  await expect(cards.first()).toHaveValue(/20-minute demo/);
+  // The Outreach Desk (D-056) in the AI assistant panel: paste their reply, get drafts.
+  const desk = shown(rep.getByRole("region", { name: "AI assistant" }));
+  await desk.getByLabel("What they replied").fill("Sounds interesting. How does it work?");
+  await desk.getByRole("button", { name: "Add reply & draft" }).click();
+  const thread = desk.getByRole("log", { name: "Outreach thread" });
+  await expect(thread.getByLabel("Reply type", { exact: true })).toHaveValue("Interested");
+  await expect(thread).toContainText("Interested. They asked how it works");
   await rep.screenshot({ path: "test-results/r6-assistant.png", fullPage: true });
   await expect(rep.locator("dl").getByText("Replied", { exact: true })).toBeVisible();
 
-  // The rep edits the draft lightly and marks it as sent.
-  await cards.first().fill((await cards.first().inputValue()) + " Thanks!");
-  await rep.getByRole("button", { name: "Mark as sent" }).first().click();
-  await expect(shown(rep.getByText("Logged as sent."))).toBeVisible();
+  // The rep edits a draft lightly and marks it as sent.
+  const option = thread.getByRole("article", { name: "Option: Share the link" });
+  await option.getByRole("button", { name: "Edit Share the link" }).click();
+  const text = option.getByLabel("Edit Share the link");
+  await text.fill((await text.inputValue()) + " Thanks!");
+  await option.getByRole("button", { name: "Mark as sent: Share the link" }).click();
+  await expect(shown(rep.getByText("Marked as sent."))).toBeVisible();
   await rep.reload();
   await expect(shown(rep.getByText("Sounds interesting. How does it work?"))).toBeVisible();
   await expect(shown(rep.getByText(/Thanks!$/))).toBeVisible();
 });
 
-test("summarise the conversation and save it as a note; draft from a template", async () => {
+test("summarise the conversation and save it as a note; a draft with a placeholder is blocked until filled", async () => {
   await rep.goto(leadUrls[0]);
-  await rep.getByRole("tab", { name: "Summarise conversation" }).click();
-  await rep.getByRole("button", { name: "Summarise" }).click();
+  await rep.getByRole("button", { name: "Summarise conversation" }).click();
+  await rep.getByRole("button", { name: "Summarise", exact: true }).click();
   await expect(rep.getByText(/Asha Verma is interested/)).toBeVisible();
   await rep.getByRole("button", { name: "Save as note" }).click();
   await expect(shown(rep.getByText("Saved as a note."))).toBeVisible();
   await rep.getByRole("button", { name: "Confirm" }).click();
   await expect(shown(rep.getByText("Next step saved."))).toBeVisible();
 
-  await rep.getByRole("tab", { name: "Draft message" }).click();
-  await rep.getByLabel("Template").selectOption({ index: 1 });
-  await rep.getByRole("button", { name: "Draft", exact: true }).click();
-  const draft = rep.getByLabel("Message", { exact: true });
-  await expect(draft).not.toHaveValue("");
-  // Unknown placeholders stay visible (guardrails file); the rep fills them before sending.
-  await draft.fill((await draft.inputValue()).replace(/\{[^}]*\}/g, "research"));
-  await rep.getByRole("button", { name: "Mark as sent" }).click();
-  await expect(shown(rep.getByText("Logged as sent."))).toBeVisible();
+  const desk = shown(rep.getByRole("region", { name: "AI assistant" }));
+  await desk.getByText("Ask AI", { exact: true }).click();
+  await desk.getByRole("button", { name: "Draft", exact: true }).click();
+  const option = desk.getByRole("article", { name: "Option: Demo slots" }).last();
+  await option.getByRole("button", { name: "Mark as sent: Demo slots" }).click();
+  // Unknown values stay visible as placeholders; the rep fills them before sending.
+  await expect(option.getByText("Fill in {slot 1} first.")).toBeVisible();
+  const text = option.getByLabel("Edit Demo slots");
+  await text.fill((await text.inputValue()).replace(/\{[^}]*\}/g, "Tuesday 11am"));
+  await option.getByRole("button", { name: "Mark as sent: Demo slots" }).click();
+  await expect(shown(rep.getByText("Marked as sent."))).toBeVisible();
 });
 
 test("exit check: Today shows the rep's list and ranks it; Done and Snooze clear tasks", async () => {

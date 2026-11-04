@@ -514,6 +514,28 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
       click **Stop**: the words appear in the box. Try the mic in **Ask AI about this company**
       (Add company → Fill with AI) and in **Paste a whole conversation**, and once on your phone.
 
+## 17. Outreach Desk in the AI assistant panel (v2.10.0)
+
+- [ ] 17.1 Open a person you've worked with before: the **AI assistant** panel shows a thread with
+      everything already logged (messages, their replies, notes, calls, stage and plan events),
+      oldest first. Your earlier AI chats on them show too.
+- [ ] 17.2 The panel asks **Your title, for signatures** once: type it, **Save title**.
+- [ ] 17.3 On a new person: fill **Who they are**, pick **LinkedIn message**, **Initiate**: 2
+      options with labels and a tip. **Copy** one (paste it somewhere to check), then **Mark as
+      sent**: a blue bubble on the right.
+- [ ] 17.4 **Their reply**, pick **WhatsApp**, paste a reply, **Add reply & draft**: a bubble on
+      the left, short WhatsApp drafts, the tip starts with the reply type and the Reply type box
+      shows it; if they were on a plan, it's paused.
+- [ ] 17.5 **Ask AI**, pick **Email**, type "make it shorter", **Draft**: email drafts with subject
+      lines.
+- [ ] 17.6 A draft with `{slot 1}`: **Mark as sent** says "Fill in {slot 1} first" and opens the
+      text to edit; replace it, then Mark as sent works.
+- [ ] 17.7 Pick **Call**, **Ask AI**, **Draft**: a talk track (opening, questions, objection,
+      close) with **Mark as called**.
+- [ ] 17.8 **Dictate**: allow the microphone, speak, Stop: the words appear in the box.
+- [ ] 17.9 **Summarise conversation** → **Summarise**: the summary appears; Save as note works.
+- [ ] 17.10 The Dashboard and Today still count the messages and replies you logged here.
+
 ---
 
 ## Before the team starts (only you can do these)

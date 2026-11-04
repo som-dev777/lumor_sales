@@ -18,6 +18,8 @@ export const user = sqliteTable(
     role: text("role", { enum: ROLES }).notNull().default("User"),
     active: flag("active").notNull().default(true),
     mustChangePassword: flag("must_change_password").notNull().default(false),
+    // Their job title, for sign-offs in AI drafts (D-056). Asked once on the Outreach Desk.
+    jobTitle: text("job_title"),
     createdAt: timestamp("created_at")
       .notNull()
       .default(nowMs)

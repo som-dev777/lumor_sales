@@ -1,5 +1,8 @@
 # F23: AI chat on a person
 
+> **Replaced in v2.10.0 (D-056):** the Outreach Desk (F18) replaces the chat in the AI assistant
+> panel. Earlier chats still show in the Desk thread to the rep who wrote them.
+
 - **Priority:** P1 · **Release:** v2.5.0 · **Status:** Done
 - **Decisions:** D-041 (the owner's requests of 2026-11-02)
 
@@ -68,3 +71,4 @@ It replaces the **Suggest next message** tab on the person page. Today keeps its
 | 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                         |
 | 2026-11-04 | 2.8.0   | P07 v1.1: demo invitations give the rep's booking link, or ask for a date and time that suits them (D-054). |
 | 2026-11-04 | 2.9.0   | New one-click question "They accepted my LinkedIn request: first message?"; mic next to Send (F29) (D-055). |
+| 2026-11-04 | 2.10.0  | Replaced by the Outreach Desk in the panel; old chats show in its thread (D-056).                           |

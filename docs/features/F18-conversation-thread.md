@@ -129,6 +129,28 @@ One button. It reads the whole thread and works out the situation first:
   and save it; Suggest next message, accept a suggestion with a 2-day reply-by date, move the
   test date past it and see the nudge task on Today; an Admin sees the Team tab.
 
+## Outreach Desk in the AI assistant panel (v2.10.0, D-056)
+
+The detailed design is docs/specs/outreach-desk.md (sections 4–9, inside the AI assistant panel).
+The page's Conversation section stays as it is; the panel gets its own thread with AI drafting:
+
+- **Thread, oldest first:** Who they are (`person.brief`, editable), notes, their replies (left),
+  what was sent or called (right), instructions to the AI (dashed) and AI draft cards. Plan and
+  stage events show as small grey lines. Every existing activity shows; old ones are mapped for
+  display (Reply received → their reply; Message sent, InMail sent, Call and Request sent → sent;
+  Meeting note → note) and never changed. Old AI chats (F23) show to the rep who wrote them.
+- **Initiate** when nothing has been sent yet.
+- **Composer:** Their reply (saves Reply received, then drafts a response), Info about them (a
+  note, no draft), Ask AI (saves the instruction, then drafts; empty drafts the next message).
+  Channels: LinkedIn message, LinkedIn connection note, LinkedIn InMail, Email, WhatsApp, Call
+  (remembered in the browser). Cmd/Ctrl+Enter submits. Dictate (F29).
+- **Draft cards:** 2–3 options (label, subject for Email and InMail, editable text), Copy, Mark
+  as sent (Mark as called for Call), blocked while a `{placeholder}` is left; the tip; a red
+  warning if the output checker still failed.
+- **Logged as before:** Reply received, Message sent, InMail sent, Call, Request sent (with
+  note) for a connection note, each audited, so plans and the Dashboard keep working.
+- **Summarise conversation** stays in the panel.
+
 ## Change history
 
 | Date       | Version | Change                                                                                                                                                                      |
@@ -141,3 +163,5 @@ One button. It reads the whole thread and works out the situation first:
 | 2026-11-02 | 2.5.0   | Released in v2.5.0.                                                                                                                                                         |
 | 2026-11-04 | 2.8.0   | P02 v2.1: demo invitations give the rep's booking link, or ask for a date and time that suits them (D-054).                                                                 |
 | 2026-11-04 | 2.9.0   | **Follow-up** choice next to From me, From them and Note: next action, date and an optional note; shows on Today that day. Mic on Paste a whole conversation (F29) (D-055). |
+| 2026-11-04 | 2.10.0  | Outreach Desk in the AI assistant panel (docs/specs/outreach-desk.md sections 4–9, D-056): written before code.                                                             |
+| 2026-11-04 | 2.10.0  | Built and released: the Desk thread, composer, draft cards, P11, output checker, migration 0022 (additive) with a no-data-changed test (D-056).                             |

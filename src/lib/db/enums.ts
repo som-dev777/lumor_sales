@@ -109,6 +109,29 @@ export const THREAD_CHANNELS = [
 ] as const satisfies readonly Channel[];
 export type ThreadChannel = (typeof THREAD_CHANNELS)[number];
 
+/** The Outreach Desk's channels (D-056), stored in activity.desk_channel and desk_entry.channel. */
+export const DESK_CHANNELS = [
+  "LinkedIn message",
+  "LinkedIn connection note",
+  "LinkedIn InMail",
+  "Email",
+  "WhatsApp",
+  "Call",
+] as const;
+export type DeskChannel = (typeof DESK_CHANNELS)[number];
+/** The nearest existing activity channel for each desk channel. */
+export const DESK_TO_CHANNEL: Record<DeskChannel, Channel> = {
+  "LinkedIn message": "LinkedIn",
+  "LinkedIn connection note": "LinkedIn",
+  "LinkedIn InMail": "InMail",
+  Email: "Email",
+  WhatsApp: "WhatsApp",
+  Call: "Call",
+};
+export const DESK_KINDS = ["ask", "draft"] as const;
+export const DESK_TASKS = ["first", "reply", "next", "ask"] as const;
+export type DeskTask = (typeof DESK_TASKS)[number];
+
 /** Which side of the conversation a message is on (F18): from the rep or from the prospect. */
 export const DIRECTIONS = ["out", "in"] as const;
 export type Direction = (typeof DIRECTIONS)[number];

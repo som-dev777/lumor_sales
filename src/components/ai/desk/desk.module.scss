@@ -1,0 +1,294 @@
+@use "../../../styles/mixins" as *;
+
+// Outreach Desk (D-056): the thread, the composer and the draft cards, inside the AI panel.
+
+.desk {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: 640px;
+  overflow-y: auto;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-page);
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.meta,
+.metaSent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-bottom: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.metaSent {
+  justify-content: flex-end;
+  color: var(--color-text-on-primary);
+  opacity: 0.85;
+}
+
+.bubbleText,
+.noteText,
+.optionText {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+// Who they are and notes: pale yellow, centred.
+.note {
+  align-self: center;
+  width: min(100%, 560px);
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-warning-soft);
+  color: var(--color-text);
+}
+
+.noteLabel {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-warning-text);
+}
+
+.event {
+  align-self: center;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+// Their replies: left, on a card.
+.them {
+  align-self: flex-start;
+  max-width: 85%;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card);
+}
+
+.replyType {
+  max-width: 220px;
+  margin-top: var(--space-2);
+}
+
+// What we sent or called: right, in the primary colour.
+.sent {
+  align-self: flex-end;
+  max-width: 85%;
+  padding: var(--space-3);
+  border-radius: var(--radius-card);
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+// Instructions to the AI: right, dashed, italic.
+.ask {
+  align-self: flex-end;
+  max-width: 85%;
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-card);
+  font-style: italic;
+}
+
+.draft {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-card);
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-2);
+
+  @include mobile {
+    grid-template-columns: 1fr;
+  }
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-page);
+}
+
+.optionLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.subject {
+  font-weight: var(--weight-medium);
+}
+
+.tip {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.problem {
+  font-size: var(--text-sm);
+  color: var(--color-danger-text);
+}
+
+.warnings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.list {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.sentMark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-success-text);
+}
+
+.start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  text-align: center;
+}
+
+.startTitle {
+  font-weight: var(--weight-medium);
+}
+
+.drafting {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: desk-pulse 1s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes desk-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.composer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.composerTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.modes {
+  display: inline-flex;
+  flex-wrap: wrap;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-card);
+}
+
+.mode,
+.modeOn {
+  padding: var(--space-1) var(--space-3);
+  border-radius: calc(var(--radius-control) - 2px);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+
+  &:focus-within {
+    @include focus-ring;
+  }
+}
+
+.modeOn {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.channel {
+  min-width: 200px;
+}
+
+.composerActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.titlePrompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

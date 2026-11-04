@@ -1,6 +1,6 @@
 // v2.5.0 exit check (D-041): F22 Calendar (a rep sets hours, makes a meeting type and copies its
 // link; a signed-out visitor books, sees the confirmation and cancels; the booking reaches the
-// rep's calendar and the person), F23 AI chat (ask, refine, use, mark as sent; the chat stays
+// rep's calendar and the person), the Outreach Desk (ask, refine, mark as sent; the thread stays; D-056 replaced the F23 chat
 // after reloading) and F24 Fill with AI (fields filled and marked, then saved). AI runs in
 // test mode (AI_FAKE).
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
@@ -162,29 +162,31 @@ test("exit check: the visitor cancels from their link", async ({ browser }) => {
   );
 });
 
-test("exit check: chat with the AI, refine, use the message, and the chat stays", async () => {
+test("exit check: ask the AI on the Desk, refine, send, and the thread stays", async () => {
   await rep.goto("/people");
   await shown(rep.getByRole("link", { name: "Vera Visitor" })).click();
-  const chat = rep.getByRole("log", { name: "AI chat" });
-  await rep.getByLabel("Message the AI").fill("What should I send Vera?");
-  await rep.getByLabel("Message the AI").press("Enter");
-  await expect(chat).toContainText("Here's a message for Vera.");
-  await rep.getByLabel("Message the AI").fill("Make it shorter");
-  await rep.getByRole("button", { name: "Send" }).click();
-  await expect(chat).toContainText("Here's a shorter version.");
-  await chat.getByRole("button", { name: "Use this message" }).last().click();
-  const draft = rep.getByLabel(/^Reply: Shorter/);
-  await expect(draft).toHaveValue("Hi Vera, 20 minutes this week for a quick demo?");
+  const desk = shown(rep.getByRole("region", { name: "AI assistant" }));
+  const thread = desk.getByRole("log", { name: "Outreach thread" });
+  await desk.getByText("Ask AI", { exact: true }).click();
+  await desk.getByLabel("Instruction for the AI (optional)").fill("What should I send Vera?");
+  await desk.getByLabel("Instruction for the AI (optional)").press("Control+Enter");
+  await expect(thread.getByRole("article", { name: "Option: Question first" })).toBeVisible();
+  await desk.getByLabel("Instruction for the AI (optional)").fill("Make it shorter");
+  await desk.getByRole("button", { name: "Draft", exact: true }).click();
+  const shorter = thread.getByRole("article", { name: "Option: Shorter" });
+  await expect(shorter).toContainText("Hi Vera, how do you recruit for surveys today?");
   await rep.screenshot({ path: "test-results/v25-chat.png", fullPage: true });
-  await rep.getByRole("button", { name: "Mark as sent" }).click();
-  await expect(shown(rep.getByText("Logged as sent."))).toBeVisible();
+  await shorter.getByRole("button", { name: "Mark as sent: Shorter" }).click();
+  await expect(shown(rep.getByText("Marked as sent."))).toBeVisible();
   await rep.reload();
   await expect(
     shown(rep.getByRole("region", { name: "Conversation" })).getByText(
-      "Hi Vera, 20 minutes this week for a quick demo?",
+      "Hi Vera, how do you recruit for surveys today?",
     ),
   ).toBeVisible();
-  await expect(rep.getByRole("log", { name: "AI chat" })).toContainText("Make it shorter");
+  await expect(shown(rep.getByRole("log", { name: "Outreach thread" }))).toContainText(
+    "Make it shorter",
+  );
 });
 
 test("exit check: Fill with AI fills the empty company fields, marked, then saved", async () => {

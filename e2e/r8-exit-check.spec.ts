@@ -93,17 +93,15 @@ test("paste a whole conversation: the AI splits it, the rep checks it and saves 
   await expect(rep.locator("dl").getByText("Replied", { exact: true })).toBeVisible();
 });
 
-test("exit check: suggest the next message and accept it with a 2-day reply-by date", async () => {
+test("exit check: draft the next message on the Desk and send it with a 2-day reply-by date", async () => {
   await expect(shown(rep.getByText("Nadia replied on 1 Nov 2026. It's your turn."))).toBeVisible();
-  await rep.getByRole("button", { name: "Suggest my next message" }).click();
-  await expect(rep.getByLabel("Reply type", { exact: true })).toHaveValue("Interested");
-  await rep.getByRole("button", { name: "Use this message" }).click();
-  const cards = rep.getByLabel(/^Reply: /);
-  await expect(cards).toHaveCount(1);
-  const replyBy = shown(rep.getByLabel("Expect a reply by"));
-  await expect(replyBy).toHaveValue("2026-11-04");
-  await rep.getByRole("button", { name: "Mark as sent" }).first().click();
-  await expect(shown(rep.getByText("Logged as sent."))).toBeVisible();
+  const desk = shown(rep.getByRole("region", { name: "AI assistant" }));
+  await desk.getByText("Ask AI", { exact: true }).click();
+  await desk.getByRole("button", { name: "Draft", exact: true }).click();
+  const option = desk.getByRole("article", { name: "Option: Question first" });
+  await expect(option.getByLabel("Expect a reply by")).toHaveValue("2026-11-04");
+  await option.getByRole("button", { name: "Mark as sent: Question first" }).click();
+  await expect(shown(rep.getByText("Marked as sent."))).toBeVisible();
   await rep.reload();
   await expect(
     shown(rep.getByText("You wrote last (2 Nov 2026). A reply is expected by 4 Nov 2026.")),

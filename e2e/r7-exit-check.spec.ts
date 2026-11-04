@@ -169,12 +169,10 @@ test("exit check: enrol, on time, wait for acceptance, weekend → Monday, late 
 test("exit check: a reply pauses the plan; Resume brings it back", async () => {
   await setDate("2026-10-30");
   await rep.goto(personUrl);
-  const conversation = shown(rep.getByRole("region", { name: "Conversation" }));
-  await conversation.getByLabel("From Ella").check();
-  await conversation.getByLabel("What Ella sent or said").fill("Interesting, tell me more.");
-  await conversation.getByRole("button", { name: "Add to conversation" }).click();
-  await expect(shown(rep.getByText("Added to the conversation."))).toBeVisible();
-  await shown(rep.getByRole("button", { name: "Suggest my next message" })).click();
+  // Their reply on the Outreach Desk (D-056): saved as Reply received, then a response drafted.
+  const desk = shown(rep.getByRole("region", { name: "AI assistant" }));
+  await desk.getByLabel("What they replied").fill("Interesting, tell me more.");
+  await desk.getByRole("button", { name: "Add reply & draft" }).click();
   await expect(shown(rep.getByLabel("Reply type", { exact: true }))).toHaveValue("Interested");
   await rep.reload();
   await expect(panel(rep)).toContainText("Paused");

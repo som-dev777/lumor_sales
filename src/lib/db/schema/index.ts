@@ -19,3 +19,4 @@ export * from "./industry";
 export * from "./ai-chat";
 export * from "./calendar";
 export * from "./notification";
+export * from "./desk";

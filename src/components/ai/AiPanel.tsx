@@ -1,20 +1,16 @@
 "use client";
 
-import * as Tabs from "@radix-ui/react-tabs";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
-import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-import { confirmNextStep, draftMessage, summarise } from "@/server/actions/ai";
+import { confirmNextStep, summarise } from "@/server/actions/ai";
 import { addPersonNote } from "@/server/actions/leads";
-import type { ChatSummary, ChatView } from "@/server/ai/chat";
-import type { Choice } from "@/server/leads/options";
-import { ChatTool } from "./ChatTool";
-import { SuggestionCard, type SituationKind } from "./SuggestionCard";
+import type { DeskItem } from "@/server/ai/desk-thread";
+import { OutreachDesk } from "./desk/OutreachDesk";
 import styles from "./ai.module.scss";
 
 export type AiStatus = "ready" | "off" | "no-knowledge";
@@ -23,29 +19,32 @@ type Step = { stage: string; nextAction: string; nextActionDate: string };
 
 const THINKING = "Thinking… (up to 30 seconds)";
 
-/** The AI tools on a person page (F18, F10). Only shown to the lead's owner or an Admin. */
+/**
+ * The AI assistant panel on a person page: the Outreach Desk (D-056) and Summarise conversation
+ * (F10). Only shown to the lead's owner or an Admin.
+ */
 export function AiPanel({
   personId,
   status,
-  templates,
+  firstName,
+  items,
+  brief,
+  askTitle,
+  today,
   situation,
-  situationKind,
-  channel,
-  chats,
-  chat,
 }: {
   personId: string;
   status: AiStatus;
-  templates: Choice[];
+  firstName: string;
+  /** The Desk thread, oldest first (old activities mapped for display). */
+  items: DeskItem[];
+  brief: string | null;
+  askTitle: boolean;
+  today: string;
   /** Where the conversation stands, in one sentence (F18). */
   situation: string;
-  situationKind: SituationKind;
-  /** The channel the conversation is on, for Mark as sent. */
-  channel: string;
-  /** The rep's chats on this person, and the latest one (F23). */
-  chats: ChatSummary[];
-  chat: ChatView | null;
 }) {
+  const [summaryOpen, setSummaryOpen] = useState(false);
   return (
     <section className={styles.panel} aria-label="AI assistant">
       <h2 className={styles.title}>
@@ -54,7 +53,7 @@ export function AiPanel({
       {status === "off" && (
         <Alert tone="info">
           AI isn&rsquo;t set up yet. An Admin needs to add OPENAI_API_KEY (see docs/deploy.md).
-          Everything else works without it.
+          Replies and notes still save; drafting needs the AI.
         </Alert>
       )}
       {status === "no-knowledge" && (
@@ -63,37 +62,25 @@ export function AiPanel({
           <Link href="/ai-resources">Open AI Resources</Link>
         </Alert>
       )}
-      {status === "ready" && (
-        <Tabs.Root defaultValue="chat">
-          <Tabs.List className={styles.tabs} aria-label="AI tools">
-            <Tabs.Trigger value="chat" className={styles.tab}>
-              Chat
-            </Tabs.Trigger>
-            <Tabs.Trigger value="summary" className={styles.tab}>
-              Summarise conversation
-            </Tabs.Trigger>
-            <Tabs.Trigger value="draft" className={styles.tab}>
-              Draft message
-            </Tabs.Trigger>
-          </Tabs.List>
-          <Tabs.Content value="chat" className={styles.content}>
-            <ChatTool
-              personId={personId}
-              situation={situation}
-              situationKind={situationKind}
-              channel={channel}
-              initialChats={chats}
-              initialChat={chat}
-            />
-          </Tabs.Content>
-          <Tabs.Content value="summary" className={styles.content}>
-            <SummaryTool personId={personId} />
-          </Tabs.Content>
-          <Tabs.Content value="draft" className={styles.content}>
-            <DraftTool personId={personId} templates={templates} />
-          </Tabs.Content>
-        </Tabs.Root>
-      )}
+      <p className={styles.muted}>{situation}</p>
+      <OutreachDesk
+        personId={personId}
+        firstName={firstName}
+        items={items}
+        brief={brief}
+        askTitle={askTitle}
+        today={today}
+      />
+      <div className={styles.summaryBar}>
+        <Button
+          variant="secondary"
+          aria-expanded={summaryOpen}
+          onClick={() => setSummaryOpen((o) => !o)}
+        >
+          <Sparkles size={16} aria-hidden /> Summarise conversation
+        </Button>
+      </div>
+      {summaryOpen && status === "ready" && <SummaryTool personId={personId} />}
     </section>
   );
 }
@@ -237,76 +224,6 @@ function SummaryTool({ personId }: { personId: string }) {
             </div>
           </div>
           <NextStep personId={personId} step={result.nextStep} />
-        </>
-      )}
-    </div>
-  );
-}
-
-// --- Draft message (F10) ---------------------------------------------------------------------
-
-function DraftTool({ personId, templates }: { personId: string; templates: Choice[] }) {
-  const [templateId, setTemplateId] = useState("");
-  const [busy, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ message: string; notes: string[]; key: number } | null>(
-    null,
-  );
-
-  const run = () =>
-    start(async () => {
-      setError(null);
-      const r = await draftMessage(personId, templateId);
-      if (r.ok) setDraft({ ...r.data, key: Date.now() });
-      else setError(r.error);
-    });
-
-  return (
-    <div className={styles.stack}>
-      <SelectField
-        label="Template"
-        value={templateId}
-        onChange={(e) => setTemplateId(e.target.value)}
-        options={[
-          { value: "", label: "Choose a template…" },
-          ...templates.map((t) => ({ value: t.id, label: t.label })),
-        ]}
-      />
-      <div className={styles.row}>
-        <Button onClick={run} loading={busy} disabled={!templateId}>
-          <Sparkles size={16} aria-hidden /> Draft
-        </Button>
-        {busy && <span className={styles.muted}>{THINKING}</span>}
-      </div>
-      {error && (
-        <div className={styles.errorRow}>
-          <Alert tone="error">{error}</Alert>
-          <Button variant="secondary" onClick={run} loading={busy}>
-            Try again
-          </Button>
-        </div>
-      )}
-      {draft && (
-        <>
-          {draft.notes.length > 0 && (
-            <Alert tone="warning">
-              <ul className={styles.list}>
-                {draft.notes.map((n) => (
-                  <li key={n}>{n}</li>
-                ))}
-              </ul>
-            </Alert>
-          )}
-          <SuggestionCard
-            key={draft.key}
-            personId={personId}
-            suggestion={{ approach: "", text: draft.message }}
-            templateId={templateId}
-          />
-          <p className={styles.muted}>
-            For Message 1 or a follow-up, also click the matching quick-log button so the follow-up
-            dates move on.
-          </p>
         </>
       )}
     </div>

@@ -39,6 +39,7 @@ import { bookingLinksFor } from "../calendar";
 import { getCalendarLink } from "../settings";
 import type { AiPromptId } from "@/lib/db/enums";
 import { AiError, runPrompt } from "./client";
+import { deskThread, transcript } from "./desk-thread";
 
 // --- Edit level (PRD) -----------------------------------------------------------------------
 
@@ -329,6 +330,11 @@ export type SentMessage = {
   replyBy?: string | null;
   /** The situation the suggestion was for: a nudge counts, a reply resets, close clears. */
   situation?: SituationKind | null;
+  /** Outreach Desk (D-056): where it came from, and its subject. */
+  deskChannel?: string | null;
+  subject?: string | null;
+  fromDraftId?: string | null;
+  optionIndex?: number | null;
 };
 
 /** Logs a "Message sent" from the AI panel, with approach, template and edit level (F09, F10). */
@@ -379,6 +385,10 @@ export async function markSent(
         aiSuggestionUsed: true,
         suggestionApproach: msg.approach?.trim().slice(0, 100) || null,
         editLevel: level,
+        deskChannel: msg.deskChannel ?? null,
+        subject: msg.subject?.trim() || null,
+        fromDraftId: msg.fromDraftId ?? null,
+        optionIndex: msg.optionIndex ?? null,
       })
       .returning();
     await writeAudit(tx, {
@@ -395,6 +405,13 @@ export async function markSent(
         editLevel: level,
         templateId: row.templateId,
         channel,
+        ...(row.deskChannel
+          ? {
+              deskChannel: row.deskChannel,
+              fromDraftId: row.fromDraftId,
+              optionIndex: row.optionIndex,
+            }
+          : {}),
       },
     });
     if (msg.situation === "close") {
@@ -492,6 +509,8 @@ export async function summariseThread(db: Db, actor: Actor, personId: string, no
   if (ctx.CONVERSATION.length === 0) {
     throw new LeadError("There's nothing in the conversation yet. Add the messages first.");
   }
+  // P03 v1.5 (D-056): the conversation as the Outreach Desk transcript.
+  const conversation = transcript(await deskThread(db, actor, personId), ctx.PERSON.name, 60);
   const today = todayIst(now);
   const result = await runPrompt(
     "P03",
@@ -499,7 +518,7 @@ export async function summariseThread(db: Db, actor: Actor, personId: string, no
     {
       "KNOWLEDGE BASE": ctx.KNOWLEDGE_BASE,
       TODAY: today,
-      CONVERSATION: ctx.CONVERSATION,
+      CONVERSATION: conversation,
       PERSON: ctx.PERSON,
     },
     () => ({

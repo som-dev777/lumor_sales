@@ -27,10 +27,16 @@ export function DictateButton({
   onText,
   disabled = false,
   label = "Speak instead of typing",
+  unavailable,
+  children,
 }: {
   onText: (text: string) => void;
   disabled?: boolean;
   label?: string;
+  /** Shown when the browser can't record or the mic is blocked; the button then stays visible. */
+  unavailable?: string;
+  /** A visible label next to the mic (e.g. "Dictate"). */
+  children?: React.ReactNode;
 }) {
   const notify = useToast();
   const [state, setState] = useState<State>("idle");
@@ -70,7 +76,8 @@ export function DictateButton({
     } catch {
       notify(
         "error",
-        "Couldn't use the microphone. Allow it for this site in your browser settings, then try again.",
+        unavailable ??
+          "Couldn't use the microphone. Allow it for this site in your browser settings, then try again.",
       );
       return;
     }
@@ -112,7 +119,15 @@ export function DictateButton({
     if (recorder.current?.state === "recording") recorder.current.stop();
   }
 
-  if (!supported) return null;
+  if (!supported) {
+    if (!unavailable) return null;
+    return (
+      <Button variant="secondary" onClick={() => notify("error", unavailable)} aria-label={label}>
+        <Mic size={16} aria-hidden />
+        {children ?? <span className={styles.srOnly}>{label}</span>}
+      </Button>
+    );
+  }
   const clock = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
   return state === "recording" ? (
     <Button variant="danger" onClick={stop} aria-label="Stop recording and add what I said">
@@ -129,7 +144,9 @@ export function DictateButton({
       title={label}
     >
       <Mic size={16} aria-hidden />
-      {state === "working" ? "Writing it down…" : <span className={styles.srOnly}>{label}</span>}
+      {state === "working"
+        ? "Writing it down…"
+        : (children ?? <span className={styles.srOnly}>{label}</span>)}
     </Button>
   );
 }

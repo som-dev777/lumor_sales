@@ -1125,3 +1125,48 @@ replaces it.
 - **Follow-up in the conversation:** next to From me, From them and Note, a **Follow-up** choice
   sets the next action and its date (shown on Today that day, and as a backlog if it's missed),
   with an optional note added to the conversation. Owner or Admin, audited.
+
+## D-056: Outreach Desk in the AI assistant panel (owner, 2026-11-04)
+
+- **Date:** 2026-11-04 · **Status:** Accepted · **Version 2.10.0** (MINOR)
+- **What:** the AI assistant panel on the person page becomes the Outreach Desk from
+  docs/specs/outreach-desk.md, sections 4–9 only, fitted inside the panel: a chat-style thread
+  (Who they are, notes, their replies, sent messages, instructions, AI drafts), Initiate, a
+  composer with three modes (Their reply / Info about them / Ask AI), six channels and Dictate,
+  draft cards with 2–3 options (Copy, Mark as sent or Mark as called, inline editing, placeholder
+  block), and Summarise conversation. The spec's sections 2–3 beyond the panel (People status
+  chips, replacing the page's timeline) are out of scope; the rest of the page is unchanged.
+  The spec wins over the earlier F18/F23 panel text.
+- **Replaces in the panel:** the AI chat (F23, P07) and Draft message from a template (P04).
+  Old chats still show in the thread to the rep who wrote them (they were private).
+- **Data, additive only (migration 0022):** `person.brief`, `user.job_title`,
+  `activity.desk_channel`, `activity.subject`, `activity.from_draft_id`,
+  `activity.option_index`, and a new `desk_entry` table for instructions and drafts. Instructions
+  and drafts don't go in `activity` (as the spec suggests) because `activity.type` and
+  `activity.channel` have fixed value lists in the database; new values would need the table
+  rebuilt. The six desk channels are kept in `desk_channel`, and `channel` gets the nearest
+  existing value (connection note → LinkedIn, InMail → InMail). No `thread_kind` column: the kind
+  is worked out from type and direction, the same for old and new rows. No existing row is
+  changed; old activities are mapped to thread entries for display only.
+- **Same activity types:** Their reply → Reply received (pauses the plan, reply type from the
+  AI); Mark as sent → Message sent or InMail sent (AI suggestion used, edit level against the
+  option); Mark as called → Call (outcome Connected), as the conversation box logs it; a
+  LinkedIn connection note → **Request sent with note** (owner's choice, as quick-log does, so
+  the funnel counts it as a request). Drafts and instructions never count in the funnel.
+- **Templates (owner):** the Official, Active templates matching the person's persona and the
+  draft's purpose (Message 1, a follow-up, or the reply type's template) go into the prompt as
+  style references after the writing rules. The first one is saved on the draft and carried to
+  the activity on Mark as sent, so template stats keep counting.
+- **AI:** a new prompt, P11 "Outreach Desk draft", with the spec's input order (knowledge, with
+  08-ai-guardrails last; writing rules; booking link; templates; the person; the last 40 thread
+  entries in the spec's transcript format; the task). Structured Outputs. Model
+  `AI_MODEL_WRITING` (default gpt-5.4-mini), used for P11 only (the owner allowed gpt-5.4-mini in
+  OpenAI just for this); other prompts keep their model. Output limit about 700 tokens of text;
+  the hard limit is higher because the model's reasoning counts toward it. An output checker
+  rejects banned phrases, speed or savings claims and upcoming feature names, retries once, then
+  saves the draft with a red warning. Summarise (P03 v1.5) reads the same transcript format.
+  Drafting runs as a server action (the app's pattern), not `POST /api/ai/draft`.
+- **Owner's choices:** no daily AI cap; Dictate uses the existing OpenAI mic (F29), with the
+  spec's fallback message where a browser can't record; the rep's title for sign-offs is asked
+  once in the panel and saved on their user; the third mode is called "Ask AI" (the AI is
+  OpenAI, not Claude).

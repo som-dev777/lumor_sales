@@ -70,16 +70,17 @@ This document must match the code. Update it in the same step as any schema chan
 
 Better Auth's user table, with Lumor's fields added.
 
-| Column               | Rules                                                                  |
-| -------------------- | ---------------------------------------------------------------------- |
-| name                 | required                                                               |
-| email                | required, unique                                                       |
-| email_verified       | 0/1 (required by Better Auth)                                          |
-| image                | optional (required by Better Auth)                                     |
-| role                 | Role, default User                                                     |
-| active               | 0/1, default 1                                                         |
-| must_change_password | 0/1, default 0. Forces a password change before any other page (D-006) |
-| created_by           | may be empty: the first Admin is created by a script                   |
+| Column               | Rules                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------- |
+| name                 | required                                                                               |
+| email                | required, unique                                                                       |
+| email_verified       | 0/1 (required by Better Auth)                                                          |
+| image                | optional (required by Better Auth)                                                     |
+| role                 | Role, default User                                                                     |
+| active               | 0/1, default 1                                                                         |
+| must_change_password | 0/1, default 0. Forces a password change before any other page (D-006)                 |
+| job_title            | text, optional; for sign-offs in Outreach Desk drafts, asked once in the panel (D-056) |
+| created_by           | may be empty: the first Admin is created by a script                                   |
 
 ### persona
 
@@ -193,6 +194,7 @@ deleted; offices move with a company merge and go with a deleted company.
 | awaiting_reply_until    | plain date; the reply-by date the rep confirmed (F18)                                                                       |
 | nudge_count             | nudges sent since the last reply, default 0 (F18: at most 2)                                                                |
 | review_note             | "From the booking page / Calendly: check details" (D-043)                                                                   |
+| brief                   | text, optional; "Who they are" on the Outreach Desk (D-056)                                                                 |
 
 CHECK `person_contact_check`: a LinkedIn profile **or** an email (D-043).
 `sequence_step` was removed in v2 (D-032); a plan's current step replaces it.
@@ -201,28 +203,32 @@ Indexes: owner_id, stage, next_action_date, company_id, persona_id, email.
 
 ### activity
 
-| Column              | Rules                                                                    |
-| ------------------- | ------------------------------------------------------------------------ |
-| person_id           | → person, required                                                       |
-| company_id          | → company                                                                |
-| user_id             | → user, required                                                         |
-| occurred_at         | date-time, required                                                      |
-| type                | Activity type                                                            |
-| channel             | Channel, default LinkedIn                                                |
-| content             | text                                                                     |
-| reply_type          | Reply type. **Only allowed when type is Reply received** (CHECK)         |
-| template_id         | → template                                                               |
-| template_version    | A, B or C                                                                |
-| ai_suggestion_used  | 0/1, default 0                                                           |
-| suggestion_approach | text                                                                     |
-| edit_level          | Edit level                                                               |
-| call_outcome        | Call outcome (v2)                                                        |
-| plan_enrolment_id   | the plan enrolment this touch or reply belongs to (no FK)                |
-| plan_step_order     | the plan step number                                                     |
-| to_stage            | for Stage change: the stage moved to (filled for v1 rows, D-029)         |
-| request_note        | 0/1: a connection request sent with a note (counts as a touch)           |
-| direction           | `out` (from the rep), `in` (from the prospect) or empty (F18)            |
-| plan_due_date       | plain date the plan step was due when it was done (F19; empty before R9) |
+| Column              | Rules                                                                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| person_id           | → person, required                                                                                                                              |
+| company_id          | → company                                                                                                                                       |
+| user_id             | → user, required                                                                                                                                |
+| occurred_at         | date-time, required                                                                                                                             |
+| type                | Activity type                                                                                                                                   |
+| channel             | Channel, default LinkedIn                                                                                                                       |
+| content             | text                                                                                                                                            |
+| reply_type          | Reply type. **Only allowed when type is Reply received** (CHECK)                                                                                |
+| template_id         | → template                                                                                                                                      |
+| template_version    | A, B or C                                                                                                                                       |
+| ai_suggestion_used  | 0/1, default 0                                                                                                                                  |
+| suggestion_approach | text                                                                                                                                            |
+| edit_level          | Edit level                                                                                                                                      |
+| call_outcome        | Call outcome (v2)                                                                                                                               |
+| plan_enrolment_id   | the plan enrolment this touch or reply belongs to (no FK)                                                                                       |
+| plan_step_order     | the plan step number                                                                                                                            |
+| to_stage            | for Stage change: the stage moved to (filled for v1 rows, D-029)                                                                                |
+| request_note        | 0/1: a connection request sent with a note (counts as a touch)                                                                                  |
+| direction           | `out` (from the rep), `in` (from the prospect) or empty (F18)                                                                                   |
+| plan_due_date       | plain date the plan step was due when it was done (F19; empty before R9)                                                                        |
+| desk_channel        | Outreach Desk channel (LinkedIn message, LinkedIn connection note, LinkedIn InMail, Email, WhatsApp, Call); new rows from the Desk only (D-056) |
+| subject             | Email or InMail subject, from the Desk (D-056)                                                                                                  |
+| from_draft_id       | the `desk_entry` draft a sent message came from (plain id, D-056)                                                                               |
+| option_index        | which option of that draft (0, 1 or 2; D-056)                                                                                                   |
 
 Indexes: (person_id, occurred_at), (user_id, occurred_at), (type, occurred_at), plan_enrolment_id.
 
@@ -446,6 +452,27 @@ invitee a reschedule replaced).
 | summary      | text             |
 | changes      | JSON list        |
 
+### desk_entry (D-056)
+
+The Outreach Desk's instructions to the AI and its drafts. They never count in the funnel;
+messages, replies and notes stay `activity` rows.
+
+| Column            | Rules                                                              |
+| ----------------- | ------------------------------------------------------------------ |
+| person_id         | → person, required                                                 |
+| user_id           | → user, required (who asked)                                       |
+| kind              | `ask` or `draft` (CHECK)                                           |
+| channel           | one of the six desk channels (CHECK)                               |
+| task              | `first`, `reply`, `next` or `ask` (drafts; CHECK)                  |
+| content           | the instruction (asks)                                             |
+| options           | JSON `[{label, subject, text}]`, 2–3 options (drafts)              |
+| tip               | the AI's tip; for replies it starts with the reply type            |
+| warning           | the output checker's problem, when it still failed after one retry |
+| template_id       | → template; the style reference credited on Mark as sent           |
+| reply_activity_id | the reply a reply-draft answers (plain id)                         |
+
+Index: (person_id, created_at).
+
 ## Support tables (not business entities)
 
 | Table             | Why it exists                                                                                                                                                              |
@@ -492,4 +519,4 @@ columns `calendar_profile.notify_email`, `meeting_type.google_meet`, `booking.go
 and `booking.meet_link`. 0014 (v2.7.0, D-043) makes `person.linkedin_url` optional (with the
 LinkedIn-or-email check) and adds `person.review_note`; adds `calendly_booking`; the round 3
 calendar columns on `calendar_profile`, `meeting_type` and `booking`; `plan_step.custom_purpose`;
-`report_run.shared_with`; and the `report` and `calendly` notification kinds. 0015 (v2.7.2, D-045) turns the seeded draft plans into ordinary Official plans and drops "(draft)" from their names. From 2.7.2 a meeting's `cc_emails` also holds guests added by email. 0016 (v2.7.4, D-047) adds `calendar_profile.use_google_busy` (default on). 0017 (v2.7.5, D-048) adds `meeting_type.deleted_at` and sets every `buffer_min` to 0 (gaps are gone). 0018 (v2.7.8, D-051) sets every `min_notice_hours` to 0 (same-day booking) and every `use_google_busy` to off; the app now uses 0 and off as the defaults. 0019 (v2.7.10, D-053) adds `booking.meet_open`. 0020 (v2.8.0, D-054) adds the `company_office` table, `person.office_id` and `person.follow_up_removed_at`. 0021 (v2.9.0, D-055) adds `person.next_action_set_at` (empty for existing people: any activity on or after their follow-up date clears it).
+`report_run.shared_with`; and the `report` and `calendly` notification kinds. 0015 (v2.7.2, D-045) turns the seeded draft plans into ordinary Official plans and drops "(draft)" from their names. From 2.7.2 a meeting's `cc_emails` also holds guests added by email. 0016 (v2.7.4, D-047) adds `calendar_profile.use_google_busy` (default on). 0017 (v2.7.5, D-048) adds `meeting_type.deleted_at` and sets every `buffer_min` to 0 (gaps are gone). 0018 (v2.7.8, D-051) sets every `min_notice_hours` to 0 (same-day booking) and every `use_google_busy` to off; the app now uses 0 and off as the defaults. 0019 (v2.7.10, D-053) adds `booking.meet_open`. 0020 (v2.8.0, D-054) adds the `company_office` table, `person.office_id` and `person.follow_up_removed_at`. 0021 (v2.9.0, D-055) adds `person.next_action_set_at` (empty for existing people: any activity on or after their follow-up date clears it). 0022 (v2.10.0, D-056) adds the `desk_entry` table, `person.brief`, `user.job_title` and `activity.desk_channel`, `subject`, `from_draft_id` and `option_index`; additive only, no existing row changed (proved by `src/server/desk-migration.test.ts`).

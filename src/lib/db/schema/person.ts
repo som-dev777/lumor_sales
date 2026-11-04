@@ -65,6 +65,8 @@ export const person = sqliteTable(
     nudgeCount: integer("nudge_count").notNull().default(0),
     // "From the booking page: check details" on people created from a booking (D-043).
     reviewNote: text("review_note"),
+    // "Who they are" on the Outreach Desk (D-056).
+    brief: text("brief"),
   },
   (t) => [
     check(

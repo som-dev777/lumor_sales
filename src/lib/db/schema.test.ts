@@ -71,6 +71,7 @@ describe("migrations", () => {
       "calendly_booking",
       "company",
       "company_office",
+      "desk_entry",
       "google_connection",
       "industry",
       "invite",

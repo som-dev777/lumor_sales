@@ -215,7 +215,7 @@ export async function addEntry(
   return db.transaction((tx) => addEntryTx(tx, actor, personId, entry, opts));
 }
 
-async function addEntryTx(
+export async function addEntryTx(
   tx: DbOrTx,
   actor: Actor,
   personId: string,

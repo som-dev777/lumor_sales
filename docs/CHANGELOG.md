@@ -7,7 +7,18 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.9.0 (docs/qa-checklist.md section 16).
+Next: the owner's QA of v2.10.0 (docs/qa-checklist.md section 17).
+
+## [2.10.0] - 2026-11-04
+
+Outreach Desk in the AI assistant panel (D-056).
+
+- **The AI assistant panel is now the Outreach Desk:** a chat-style thread of everything with the person (Who they are, notes, their replies, what you sent or called, your instructions to the AI and its drafts), with every earlier activity and AI chat still shown.
+- **Initiate** drafts first messages when nothing has been sent yet. The composer has three modes (Their reply, Info about them, Ask AI), six channels (LinkedIn message, connection note, InMail, Email, WhatsApp, Call) and Dictate.
+- **Draft cards** give 2–3 options with Copy, Edit, and Mark as sent (Mark as called for calls). Mark as sent is blocked until every {placeholder} is filled in. For a reply, the tip names the reply type and saves it.
+- Drafts follow the team's writing rules and use the matching Official templates as style references (template stats keep counting). A checker blocks banned phrases, speed or savings claims and upcoming features.
+- **Summarise conversation** stays in the panel.
+- Everything is logged as before (Reply received pauses the plan; Message sent counts in the funnel; a connection note counts as a request sent), so plans and the Dashboard work as they did. The database change only adds things; no existing data changed.
 
 ## [2.9.0] - 2026-11-04
 

@@ -1,6 +1,6 @@
 // v2.9.0 exit check (D-055): a Follow-up set from the conversation shows on Today; a call logged
 // on the person's page clears it from Today straight away; Companies and People sort A–Z with a
-// slim filter bar; the AI chat has the LinkedIn-acceptance question and the mic. AI runs in fake
+// slim filter bar; the AI assistant has the mic. AI runs in fake
 // mode.
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
@@ -106,10 +106,9 @@ test("exit check: Companies and People sort A–Z, with a slim filter bar", asyn
   await admin.screenshot({ path: "test-results/v29-people.png", fullPage: true });
 });
 
-test("exit check: the AI chat has the LinkedIn-acceptance question and the mic", async () => {
+test("exit check: the AI assistant has Initiate and the mic (the Desk replaced the chat, D-056)", async () => {
   await admin.goto(personUrl);
-  await expect(
-    shown(admin.getByRole("button", { name: "They accepted my LinkedIn request: first message?" })),
-  ).toBeVisible();
-  await expect(shown(admin.getByRole("button", { name: "Speak instead of typing" }))).toBeVisible();
+  const desk = shown(admin.getByRole("region", { name: "AI assistant" }));
+  await expect(desk.getByRole("button", { name: "Dictate" })).toBeVisible();
+  await expect(desk.getByRole("button", { name: "Initiate" })).toBeHidden(); // a call was logged
 });

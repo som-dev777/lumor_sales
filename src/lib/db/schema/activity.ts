@@ -50,6 +50,12 @@ export const activity = sqliteTable(
     direction: text("direction", { enum: DIRECTIONS }),
     // R9 (F19): the date a plan step was due when it was done (for plan adherence).
     planDueDate: text("plan_due_date"),
+    // Outreach Desk (D-056), on new rows only: the desk channel, an Email/InMail subject, and
+    // the draft and option a sent message came from. Plain ids (no foreign key).
+    deskChannel: text("desk_channel"),
+    subject: text("subject"),
+    fromDraftId: text("from_draft_id"),
+    optionIndex: integer("option_index"),
   },
   (t) => [
     check("activity_type_check", oneOf("type", ACTIVITY_TYPES)),

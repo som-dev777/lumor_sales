@@ -111,7 +111,30 @@ function searchNotSupported(e: unknown) {
   return e instanceof OpenAI.BadRequestError && /tool|web_search|search/i.test(e.message);
 }
 
-type RunOptions = { webSearch?: boolean };
+type RunOptions = {
+  webSearch?: boolean;
+  /** A model for this prompt only (P11 uses AI_MODEL_WRITING, D-056); falls back if refused. */
+  model?: string;
+  /** Hard limit on output tokens (reasoning counts toward it). */
+  maxOutputTokens?: number;
+};
+
+/** The model for writing outreach messages (P11 only, D-056). */
+export const DEFAULT_WRITING_MODEL = "gpt-5.4-mini";
+export function writingModel(): string {
+  return process.env.AI_MODEL_WRITING?.trim() || DEFAULT_WRITING_MODEL;
+}
+
+/** Runs a prompt with its own model and output limit (the Outreach Desk, D-056). */
+export async function runPromptWith<T>(
+  id: PromptId,
+  schema: z.ZodType<T>,
+  input: Record<string, unknown>,
+  fake: () => T,
+  opts: { model?: string; maxOutputTokens?: number },
+): Promise<T> {
+  return (await callAi(id, schema, input, fake, opts)).data;
+}
 
 /**
  * Runs one prompt. `fake` answers instead of the AI in the browser tests. Throws AiError with
@@ -144,7 +167,7 @@ async function callAi<T>(
   schema: z.ZodType<T>,
   input: Record<string, unknown>,
   fake: () => T,
-  { webSearch = false }: RunOptions,
+  { webSearch = false, model: ownModel, maxOutputTokens }: RunOptions,
 ): Promise<{ data: T; searched: boolean }> {
   const mode = aiMode();
   if (mode === "off") throw new AiError(AI_NOT_SET_UP);
@@ -160,6 +183,7 @@ async function callAi<T>(
         input: formatInput(input),
         // Low reasoning effort keeps answers well inside the time limit.
         reasoning: { effort: "low" },
+        ...(maxOutputTokens ? { max_output_tokens: maxOutputTokens } : {}),
         ...(searched ? { tools: [WEB_SEARCH_TOOL] } : {}),
         text: { format: zodTextFormat(schema, `${id.toLowerCase()}_result`) },
       },
@@ -177,23 +201,33 @@ async function callAi<T>(
     }
   };
   let response;
-  try {
-    response = await attempt(fallbackModel ?? aiModel());
-  } catch (e) {
-    if (!modelNotAllowed(e) || fallbackModel) throw new AiError(explain(e, webSearch));
-    // The configured model isn't allowed for this OpenAI project: use the best one that is.
+  // A prompt with its own model (P11): if the project refuses it, use the usual model below.
+  if (ownModel) {
     try {
-      const available: string[] = [];
-      for await (const m of ai.models.list()) available.push(m.id);
-      const next = pickModel(available, aiModel());
-      if (!next) throw e;
-      console.warn(`AI: ${aiModel()} isn't allowed for this OpenAI project; using ${next}.`);
-      fallbackModel = next;
-      response = await attempt(next);
-    } catch (e2) {
-      throw new AiError(explain(e2, webSearch));
+      response = await attempt(ownModel);
+    } catch (e) {
+      if (!modelNotAllowed(e)) throw new AiError(explain(e, webSearch));
+      console.warn(`AI: ${ownModel} isn't allowed for this OpenAI project; using the usual model.`);
     }
   }
+  if (!response)
+    try {
+      response = await attempt(fallbackModel ?? aiModel());
+    } catch (e) {
+      if (!modelNotAllowed(e) || fallbackModel) throw new AiError(explain(e, webSearch));
+      // The configured model isn't allowed for this OpenAI project: use the best one that is.
+      try {
+        const available: string[] = [];
+        for await (const m of ai.models.list()) available.push(m.id);
+        const next = pickModel(available, aiModel());
+        if (!next) throw e;
+        console.warn(`AI: ${aiModel()} isn't allowed for this OpenAI project; using ${next}.`);
+        fallbackModel = next;
+        response = await attempt(next);
+      } catch (e2) {
+        throw new AiError(explain(e2, webSearch));
+      }
+    }
   const refused = response.output.some(
     (item) => item.type === "message" && item.content.some((c) => c.type === "refusal"),
   );
