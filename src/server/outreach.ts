@@ -61,3 +61,34 @@ export async function newOutreach(
   }
   return out;
 }
+
+/**
+ * Follow-ups (D-058): per rep, the people they contacted in the range (request, message, InMail,
+ * call) who aren't their new outreach in it: people already contacted before.
+ */
+export async function followUps(
+  db: DbOrTx,
+  range: Range,
+  fresh: Map<string, Set<string>>,
+  userIds?: string[],
+): Promise<Map<string, Set<string>>> {
+  const out = new Map<string, Set<string>>();
+  const touches = await db
+    .select({ personId: activity.personId, userId: activity.userId })
+    .from(activity)
+    .where(
+      and(
+        inArray(activity.type, [...OUTREACH_TYPES]),
+        gte(activity.occurredAt, range.start),
+        lt(activity.occurredAt, range.end),
+      ),
+    );
+  for (const t of touches) {
+    if (!t.personId || (userIds && !userIds.includes(t.userId))) continue;
+    if (fresh.get(t.userId)?.has(t.personId)) continue;
+    const set = out.get(t.userId) ?? new Set<string>();
+    set.add(t.personId);
+    out.set(t.userId, set);
+  }
+  return out;
+}

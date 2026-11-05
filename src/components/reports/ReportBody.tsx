@@ -2,18 +2,22 @@
 
 import { Pencil, Undo2 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useOptimistic, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { applyEdits, type ReportEdits, type ReportSection } from "@/lib/report-shape";
 import { formatIst } from "@/lib/time";
 import { includeReportSection, saveReportNumbers } from "@/server/actions/reports";
-import { NUMBER_SECTIONS, PIPELINE_COLUMNS, REPORT_COLUMNS } from "@/lib/report-columns";
+import {
+  eventsTitle,
+  headlines,
+  NUMBER_SECTIONS,
+  PIPELINE_COLUMNS,
+  REPORT_COLUMNS,
+} from "@/lib/report-columns";
 import type { ReportData } from "@/server/reports";
-import { OutreachChart, StageChart } from "./ReportCharts";
 import styles from "./reports.module.scss";
 
-const pct = (n: number | null) => (n === null ? "—" : `${Math.round(n * 100)}%`);
 const inr = new Intl.NumberFormat("en-IN", {
   style: "currency",
   currency: "INR",
@@ -49,7 +53,6 @@ export function ReportBody({
     () => applyEdits(data, editing ? draft : edits),
     [data, edits, draft, editing],
   );
-  const original = data;
   const edited = (key: string) => key in (editing ? draft : edits);
 
   /** A number cell: a box while editing, else the value (marked when edited). */
@@ -145,14 +148,21 @@ export function ReportBody({
 
       {p && (
         <Section id="pipeline" title="Pipeline" {...{ reportId, hidden, canShape }}>
-          <OutreachChart
-            data={p.people.map((x, i) => ({
-              name: x.name,
-              outreach: x.newOutreach,
-              replied: x.replied,
-              meetings: shown.people[i]?.meetingsBooked ?? 0,
-            }))}
-          />
+          <div className={styles.kpis}>
+            {headlines(shown).map((h) => (
+              <div key={h.key} className={styles.kpi}>
+                <span className={styles.kpiValue}>
+                  {h.value === null ? "—" : num(h.key, h.value, `${h.label} (total)`)}
+                </span>
+                <span className={styles.kpiLabel}>{h.label}</span>
+              </div>
+            ))}
+          </div>
+          <p className={styles.muted}>
+            New outreach: people added, sent a connection request or contacted for the first time.
+            Follow-ups: people contacted before and contacted again. Responded: people who replied
+            or interacted back. Demos: meetings booked and held.
+          </p>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
@@ -171,7 +181,13 @@ export function ReportBody({
                     <td>{x.name}</td>
                     {PIPELINE_COLUMNS.map((c) => (
                       <td key={c.key} className={styles.number}>
-                        {num(`pipeline.${rowKey(x)}.${c.key}`, x[c.key], `${x.name} · ${c.label}`)}
+                        {x[c.key] === undefined
+                          ? "—"
+                          : num(
+                              `pipeline.${rowKey(x)}.${c.key}`,
+                              x[c.key]!,
+                              `${x.name} · ${c.label}`,
+                            )}
                       </td>
                     ))}
                   </tr>
@@ -183,7 +199,9 @@ export function ReportBody({
                     <td>Total</td>
                     {PIPELINE_COLUMNS.map((c) => (
                       <td key={c.key} className={styles.number}>
-                        {num(`pipeline.total.${c.key}`, p.total[c.key], `Total · ${c.label}`)}
+                        {p.total[c.key] === undefined
+                          ? "—"
+                          : num(`pipeline.total.${c.key}`, p.total[c.key]!, `Total · ${c.label}`)}
                       </td>
                     ))}
                   </tr>
@@ -191,21 +209,6 @@ export function ReportBody({
               )}
             </table>
           </div>
-          <p className={styles.muted}>
-            New outreach: people added, sent a connection request or contacted for the first time in
-            the period (the same rule as Today). Replied: people who replied. Converted: marked
-            converted or moved to Paid. No response yet: new outreach with no reply.
-          </p>
-          {Object.keys(p.total.stages).length > 0 && (
-            <>
-              <h3 className={styles.cardTitle}>Where their people stand now</h3>
-              <StageChart
-                data={Object.entries(p.total.stages)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([stage, count]) => ({ stage, count }))}
-              />
-            </>
-          )}
         </Section>
       )}
 
@@ -259,95 +262,21 @@ export function ReportBody({
               )}
             </table>
           </div>
-          {sec.key === "adherence" && original.total.stepsNotRecorded > 0 && (
-            <p className={styles.muted}>Steps done before v2.3.0 have no due date recorded.</p>
-          )}
         </Section>
       ))}
 
-      <Section id="funnel" title="Funnel" {...{ reportId, hidden, canShape }}>
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Conversion</th>
-                <th className={styles.number}>From</th>
-                <th className={styles.number}>To</th>
-                <th className={styles.number}>Rate</th>
-                <th className={styles.number}>Benchmark</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shown.funnel.conversions.map((c, i) => (
-                <tr key={c.label}>
-                  <td>{c.label}</td>
-                  <td className={styles.number}>
-                    {num(`funnel.${i}.from`, c.from, `${c.label} · From`)}
-                  </td>
-                  <td className={styles.number}>
-                    {num(`funnel.${i}.to`, c.to, `${c.label} · To`)}
-                  </td>
-                  <td className={`${styles.number} ${c.status === "below" ? styles.below : ""}`}>
-                    {pct(c.rate)}
-                    {c.status === "low" ? " (low sample)" : ""}
-                  </td>
-                  <td className={styles.number}>{pct(c.benchmark)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Section>
-
-      <Section id="plans" title="Plan performance" {...{ reportId, hidden, canShape }}>
-        {shown.plans.length === 0 ? (
-          <p className={styles.muted}>No plan activity in this period.</p>
-        ) : (
-          <div className={styles.tableWrap}>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Plan</th>
-                  <th className={styles.number}>Enrolled</th>
-                  <th className={styles.number}>Replied</th>
-                  <th className={styles.number}>Reply rate</th>
-                  <th>By step (done → replies)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shown.plans.map((pl) => (
-                  <tr key={pl.planId}>
-                    <td>{pl.name}</td>
-                    <td className={styles.number}>
-                      {num(`plans.${pl.planId}.enrolled`, pl.enrolled, `${pl.name} · Enrolled`)}
-                    </td>
-                    <td className={styles.number}>
-                      {num(`plans.${pl.planId}.replied`, pl.replied, `${pl.name} · Replied`)}
-                    </td>
-                    <td className={styles.number}>{pct(pl.replyRate)}</td>
-                    <td>
-                      {pl.steps.length
-                        ? pl.steps
-                            .map((s) => `Step ${s.order}: ${s.done} → ${s.replies}`)
-                            .join(" · ")
-                        : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Section>
-
-      {shown.details ? (
+      {shown.events ? (
+        <Section id="details" title={eventsTitle(shown)} {...{ reportId, hidden, canShape }}>
+          <Events events={shown.events} />
+        </Section>
+      ) : shown.details ? (
         <Section id="details" title="What happened" {...{ reportId, hidden, canShape }}>
           <Details details={shown.details} />
         </Section>
       ) : (
         <p className={styles.muted}>
-          This report was made before the What happened section existed. Make a new report to see
-          who was contacted and what was sent.
+          This report was made before Events of the day existed. Make a new report to see each
+          company and person, with a summary of where things stand.
         </p>
       )}
     </>
@@ -371,9 +300,20 @@ function Section({
   children: React.ReactNode;
 }) {
   const notify = useToast();
-  const [busy, start] = useTransition();
-  // Flips at once; the server's answer then confirms it (or puts it back).
-  const [included, setIncluded] = useOptimistic(!hidden.includes(id));
+  const [, start] = useTransition();
+  // What the server says, and what's on screen: a click shows at once; a failure puts it back.
+  const fromServer = !hidden.includes(id);
+  const [state, setState] = useState({ fromServer, included: fromServer });
+  if (state.fromServer !== fromServer) setState({ fromServer, included: fromServer });
+  const included = state.included;
+  const toggle = (next: boolean) => {
+    setState((s) => ({ ...s, included: next }));
+    start(async () => {
+      const r = await includeReportSection(reportId, id, next);
+      if (!r.ok) setState((s) => ({ ...s, included: !next }));
+      notify(r.ok ? "success" : "error", r.ok ? (r.message ?? "Saved.") : r.error);
+    });
+  };
   return (
     <section
       className={`${styles.card} ${included ? "" : `${styles.excluded} ${styles.noPrint}`}`}
@@ -387,16 +327,8 @@ function Section({
               type="checkbox"
               role="switch"
               checked={included}
-              disabled={busy}
               aria-label={`Include ${title} in the report`}
-              onChange={(e) => {
-                const next = e.target.checked;
-                start(async () => {
-                  setIncluded(next);
-                  const r = await includeReportSection(reportId, id, next);
-                  notify(r.ok ? "success" : "error", r.ok ? (r.message ?? "Saved.") : r.error);
-                });
-              }}
+              onChange={(e) => toggle(e.target.checked)}
             />
             Include in report
           </label>
@@ -405,9 +337,14 @@ function Section({
       {included ? (
         children
       ) : (
-        <p className={styles.muted}>
-          Left out of the PDF, CSV, email and print. Switch it back on to include it.
-        </p>
+        <div className={styles.excludedNote}>
+          <p className={styles.muted}>Left out of the PDF, CSV, email and print.</p>
+          {canShape && (
+            <Button variant="secondary" onClick={() => toggle(true)}>
+              Include it again
+            </Button>
+          )}
+        </div>
       )}
     </section>
   );
@@ -510,6 +447,101 @@ function Details({ details }: { details: NonNullable<ReportData["details"]> }) {
         <p className={styles.muted}>
           {d.more.companies + d.more.people + d.more.actions} more rows aren&rsquo;t listed (the
           first 500 of each list are). The CSV has the same rows.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Events of the day (D-058): company by company, new ones marked, with a summary per person. */
+function Events({ events }: { events: NonNullable<ReportData["events"]> }) {
+  const c = events.counts;
+  const tiles = [
+    { label: "Companies added", value: c.companies },
+    { label: "People added", value: c.people },
+    { label: "Contacts", value: c.contacts },
+    { label: "Replies", value: c.replies },
+    { label: "Meetings and demos", value: c.meetings },
+  ];
+  return (
+    <div className={styles.details}>
+      <div className={styles.kpis}>
+        {tiles.map((t) => (
+          <div key={t.label} className={styles.kpi}>
+            <span className={styles.kpiValue}>{t.value}</span>
+            <span className={styles.kpiLabel}>{t.label}</span>
+          </div>
+        ))}
+      </div>
+      {events.companies.length === 0 ? (
+        <p className={styles.muted}>Nothing happened in this period.</p>
+      ) : (
+        <ul className={styles.companies} aria-label="Companies and people">
+          {events.companies.map((co) => (
+            <li key={co.companyId ?? "none"} className={styles.company} aria-label={co.name}>
+              <h3 className={styles.companyName}>
+                {co.companyId ? (
+                  <Link href={`/companies/${co.companyId}`}>{co.name}</Link>
+                ) : (
+                  co.name
+                )}
+                {co.isNew && <span className={styles.newPill}>New</span>}
+              </h3>
+              {co.people.length === 0 ? (
+                <p className={styles.muted}>No people added yet.</p>
+              ) : (
+                <ul className={styles.eventPeople}>
+                  {co.people.map((x) => (
+                    <li key={x.personId} className={styles.eventPerson} aria-label={x.name}>
+                      <p className={styles.personLine}>
+                        <Link href={`/people/${x.personId}`}>{x.name}</Link>
+                        {x.title ? <span className={styles.muted}>, {x.title}</span> : null}
+                        {x.isNew && <span className={styles.newPill}>New</span>}
+                      </p>
+                      <p className={styles.facts}>{x.facts.join(" · ")}</p>
+                      {x.summary && (
+                        <dl className={styles.summaryList}>
+                          {x.summary.offered && (
+                            <>
+                              <dt>Offered</dt>
+                              <dd>{x.summary.offered}</dd>
+                            </>
+                          )}
+                          {x.summary.theySaid && (
+                            <>
+                              <dt>They said</dt>
+                              <dd>{x.summary.theySaid}</dd>
+                            </>
+                          )}
+                          {x.summary.outlook && (
+                            <>
+                              <dt>Outlook</dt>
+                              <dd>{x.summary.outlook}</dd>
+                            </>
+                          )}
+                          {x.summary.nextStep && (
+                            <>
+                              <dt>Next step</dt>
+                              <dd>{x.summary.nextStep}</dd>
+                            </>
+                          )}
+                        </dl>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {events.more > 0 && (
+        <p className={styles.muted}>{events.more} more people aren&rsquo;t listed.</p>
+      )}
+      {events.withoutSummary > 0 && (
+        <p className={styles.muted}>
+          {events.withoutSummary} {events.withoutSummary === 1 ? "person is" : "people are"} shown
+          with the facts only (the AI summary was over the limit, off or too slow).
         </p>
       )}
     </div>

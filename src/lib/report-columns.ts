@@ -1,18 +1,18 @@
 // The report's tables and their columns (F19, D-043, D-057), shared by the server (PDF, CSV)
 // and the page.
 import type { ReportSection } from "./report-shape";
-import type { PersonNumbers, PipelineRow } from "@/server/reports";
+import type { PersonNumbers, ReportData } from "@/server/reports";
 
 export const PIPELINE_COLUMNS: {
-  key: Exclude<keyof PipelineRow, "userId" | "name" | "stages">;
+  key: "peopleAdded" | "companiesAdded" | "newOutreach" | "followUps" | "replied" | "converted";
   label: string;
 }[] = [
   { key: "peopleAdded", label: "People added" },
   { key: "companiesAdded", label: "Companies added" },
   { key: "newOutreach", label: "New outreach" },
+  { key: "followUps", label: "Follow-ups" },
   { key: "replied", label: "Replied" },
   { key: "converted", label: "Converted" },
-  { key: "noResponse", label: "No response yet" },
 ];
 
 export const NUMBER_KEYS = [
@@ -73,13 +73,28 @@ export const NUMBER_SECTIONS = [
       "dealValueInr",
     ],
   },
-  {
-    key: "adherence",
-    title: "Plan adherence",
-    keys: ["stepsDone", "stepsOnTime", "stepsLate", "stepsNotRecorded"],
-  },
 ] as const satisfies readonly {
   key: ReportSection;
   title: string;
   keys: readonly (typeof NUMBER_KEYS)[number][];
 }[];
+
+/** The five headline numbers (D-058), from the report as shown. */
+export function headlines(r: ReportData) {
+  const p = r.pipeline?.total;
+  return [
+    { key: "pipeline.total.newOutreach", label: "New outreach", value: p?.newOutreach ?? null },
+    { key: "pipeline.total.followUps", label: "Follow-ups", value: p?.followUps ?? null },
+    { key: "pipeline.total.replied", label: "Responded", value: p?.replied ?? null },
+    {
+      key: "numbers.total.meetingsBooked",
+      label: "Demos scheduled",
+      value: r.total.meetingsBooked,
+    },
+    { key: "numbers.total.meetingsHeld", label: "Demos conducted", value: r.total.meetingsHeld },
+  ];
+}
+
+/** "Events of the day" for one day, else "Events in this period". */
+export const eventsTitle = (r: Pick<ReportData, "from" | "to">) =>
+  r.from === r.to ? "Events of the day" : "Events in this period";

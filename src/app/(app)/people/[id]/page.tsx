@@ -333,7 +333,7 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
           items={items}
           canLog={mayEdit}
           now={toIstLocal(now)}
-          currentStep={currentStep && currentStep.action !== "requestSent" ? currentStep : null}
+          currentStep={currentStep}
           defaultChannel={
             situation.lastChannel && situation.lastChannel !== "In person"
               ? situation.lastChannel

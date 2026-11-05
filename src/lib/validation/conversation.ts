@@ -21,21 +21,27 @@ const text = z
   .min(1, "Write the message first.")
   .max(5000, "That message is too long (5,000 characters).");
 
-export const entrySchema = z.object({
-  from: z.enum(["me", "them", "note"]),
-  channel: z.enum(THREAD_CHANNELS, "Choose where it happened."),
-  at: when,
-  text,
-  replyType: z
-    .union([z.enum(REPLY_TYPES), z.literal("")])
-    .nullish()
-    .transform((v) => v || null),
-  replyBy: z
-    .string()
-    .nullish()
-    .refine((v) => !v || isIstDate(v), "Pick a valid date.")
-    .transform((v) => v || null),
-});
+export const entrySchema = z
+  .object({
+    // "request": a LinkedIn connection request, with the note sent with it if any (D-058).
+    from: z.enum(["request", "me", "them", "note"]),
+    channel: z.enum(THREAD_CHANNELS, "Choose where it happened."),
+    at: when,
+    text: z.string().trim().max(5000, "That message is too long (5,000 characters)."),
+    replyType: z
+      .union([z.enum(REPLY_TYPES), z.literal("")])
+      .nullish()
+      .transform((v) => v || null),
+    replyBy: z
+      .string()
+      .nullish()
+      .refine((v) => !v || isIstDate(v), "Pick a valid date.")
+      .transform((v) => v || null),
+  })
+  .refine((e) => e.from === "request" || e.text.length > 0, {
+    message: "Write the message first.",
+    path: ["text"],
+  });
 export type EntryInput = z.input<typeof entrySchema>;
 
 export const pastedRowsSchema = z

@@ -1,24 +1,25 @@
 # AI prompts
 
-The AI prompts (P01–P11), stored word for word with a version number. The code
+The AI prompts (P01–P12), stored word for word with a version number. The code
 (`src/server/ai/prompts.ts`) uses exactly the text recorded here, and an automated test checks
 that the two match. Change a prompt only by adding a new version below it.
 
 See [PRD.md § AI features](PRD.md#ai-features) for what each must do.
 
-| ID  | Feature                | Current version | Status |
-| --- | ---------------------- | --------------- | ------ |
-| P01 | Today planner          | 1.3             | Live   |
-| P02 | Suggest next message   | 2.1             | Live   |
-| P03 | Summarise conversation | 1.5             | Live   |
-| P04 | Draft message          | 1.4             | Live   |
-| P05 | Split conversation     | 1.0             | Live   |
-| P06 | Report summary         | 1.0             | Live   |
-| P07 | AI chat                | 1.1             | Live   |
-| P08 | Fill company details   | 1.0             | Live   |
-| P09 | Fill person details    | 1.0             | Live   |
-| P10 | Ask about a company    | 1.0             | Live   |
-| P11 | Outreach Desk draft    | 1.0             | Live   |
+| ID  | Feature                                     | Current version | Status |
+| --- | ------------------------------------------- | --------------- | ------ |
+| P01 | Today planner                               | 1.3             | Live   |
+| P02 | Suggest next message                        | 2.1             | Live   |
+| P03 | Summarise conversation                      | 1.5             | Live   |
+| P04 | Draft message                               | 1.4             | Live   |
+| P05 | Split conversation                          | 1.0             | Live   |
+| P06 | Report summary                              | 1.0             | Live   |
+| P07 | AI chat                                     | 1.1             | Live   |
+| P08 | Fill company details                        | 1.0             | Live   |
+| P09 | Fill person details                         | 1.0             | Live   |
+| P10 | Ask about a company                         | 1.0             | Live   |
+| P11 | Outreach Desk draft                         | 1.0             | Live   |
+| P12 | Report: where things stand with each person | 1.0             | Live   |
 
 ## How they run
 
@@ -800,3 +801,24 @@ CHANNEL FORMATS
 | reply | They just replied (the last entry). Classify their reply at the start of the tip (Interested, Asking for details, Not now, Objection, Using a competitor, Not interested) and draft the response on: {channel}. Move toward a 20-minute demo unless they said no. |
 | next  | Draft the next message to send on: {channel}, based on where the conversation stands. If the last message got no reply, the follow-up must add something new.                                                                                                     |
 | ask   | Follow the rep's latest instruction ("{instruction}") and draft on: {channel}.                                                                                                                                                                                    |
+
+## P12: Report: where things stand with each person
+
+Writes the short summary next to each person in a report's Events of the day (D-058). The app sends TODAY and PEOPLE (each with an id, name, title, company, stage, FACTS worked out by the app, and the last 20 conversation entries as a transcript), 15 people per call, up to 60 people, calls in parallel. If the AI is off or takes longer than 20 seconds, the report is made with the facts only. Nothing is sent to a prospect.
+
+### Version 1.0 (2026-11-05)
+
+```text
+You summarise where a Lumor sales rep stands with each prospect, for a daily sales report read by the rep and their manager.
+
+You receive TODAY and PEOPLE. Each person has an id, their name, title, company and stage, FACTS (dates, counts and the scheduled follow-up, worked out by the app and always correct) and the CONVERSATION so far (a transcript, oldest first: what the rep sent or said on calls, the prospect's replies and the rep's notes).
+
+For every person, return:
+- id: exactly as given.
+- offered: what the rep has offered or proposed so far (the value, the demo, the resource), in one short sentence. Empty if nothing has been offered yet.
+- theySaid: the gist of the prospect's replies, in one short sentence. Empty if they haven't replied.
+- outlook: one short phrase on where it's heading, for example "Warm, likely to book a demo" or "Cold, no reply after two follow-ups".
+- nextStep: the scheduled follow-up from FACTS if there is one (what and when), otherwise one short suggested next step.
+
+Use only what the FACTS and the CONVERSATION say. Never invent replies, numbers, dates or interest. Write plain, short sentences in your own words; don't quote the messages. Return every person exactly once.
+```

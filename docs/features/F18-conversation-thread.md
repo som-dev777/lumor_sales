@@ -165,3 +165,5 @@ The page's Conversation section stays as it is; the panel gets its own thread wi
 | 2026-11-04 | 2.9.0   | **Follow-up** choice next to From me, From them and Note: next action, date and an optional note; shows on Today that day. Mic on Paste a whole conversation (F29) (D-055). |
 | 2026-11-04 | 2.10.0  | Outreach Desk in the AI assistant panel (docs/specs/outreach-desk.md sections 4–9, D-056): written before code.                                                             |
 | 2026-11-04 | 2.10.0  | Built and released: the Desk thread, composer, draft cards, P11, output checker, migration 0022 (additive) with a no-data-changed test (D-056).                             |
+| 2026-11-05 | 2.12.0  | Connection request choice in the conversation box (with an optional note; asks "Is this step N?" on a plan's request step) (D-058): written before code.                    |
+| 2026-11-05 | 2.12.0  | Built and released: Connection request in the conversation box (D-058).                                                                                                     |

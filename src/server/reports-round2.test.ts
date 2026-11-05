@@ -72,7 +72,7 @@ describe("the Pipeline section (D-043)", () => {
     await touch(asha, old.id, "Reply received", on("2026-10-10"));
 
     const r = await buildReport(t.db, { scope: "team" }, OCT);
-    expect(r.version).toBe(3);
+    expect(r.version).toBe(4);
     const row = r.pipeline!.people.find((x) => x.name === "Asha")!;
     expect(row).toMatchObject({
       peopleAdded: 2,

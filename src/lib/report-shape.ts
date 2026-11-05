@@ -8,10 +8,7 @@ export const REPORT_SECTIONS = [
   { key: "pipeline", label: "Pipeline" },
   { key: "activity", label: "Activity" },
   { key: "outcomes", label: "Replies and outcomes" },
-  { key: "adherence", label: "Plan adherence" },
-  { key: "funnel", label: "Funnel" },
-  { key: "plans", label: "Plan performance" },
-  { key: "details", label: "What happened" },
+  { key: "details", label: "Events" },
 ] as const;
 export type ReportSection = (typeof REPORT_SECTIONS)[number]["key"];
 export const SECTION_KEYS = REPORT_SECTIONS.map((s) => s.key) as ReportSection[];
@@ -24,6 +21,7 @@ const PIPELINE_KEYS = [
   "peopleAdded",
   "companiesAdded",
   "newOutreach",
+  "followUps",
   "replied",
   "converted",
   "noResponse",

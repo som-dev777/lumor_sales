@@ -2,7 +2,6 @@
 // changes later. Anyone can report on themselves; Admins on the team or anyone. Each report is
 // audited when made and when its AI summary is written.
 import { and, desc, eq, gte, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import { writeAudit } from "@/lib/audit";
 import { csvFile } from "@/lib/csv";
@@ -14,15 +13,18 @@ import { istDateSpan, toIstDate } from "@/lib/time";
 import { runPrompt } from "./ai/client";
 import { funnelTotals, planPerformance, type Conversion, type Counts } from "./dashboard";
 import { LeadError } from "./leads/companies";
-import { newOutreach } from "./outreach";
+import { followUps, newOutreach } from "./outreach";
+import { buildEvents, type ReportEvents } from "./report-events";
 import {
+  eventsTitle,
+  headlines,
   NUMBER_KEYS,
   NUMBER_SECTIONS,
   PIPELINE_COLUMNS,
   REPORT_COLUMNS,
 } from "@/lib/report-columns";
 
-export { NUMBER_SECTIONS, PIPELINE_COLUMNS, REPORT_COLUMNS };
+export { eventsTitle, headlines, NUMBER_SECTIONS, PIPELINE_COLUMNS, REPORT_COLUMNS };
 const COLUMNS = REPORT_COLUMNS;
 import {
   applyEdits,
@@ -60,8 +62,10 @@ export type PipelineRow = {
   name: string;
   peopleAdded: number;
   companiesAdded: number;
-  /** People contacted for the first time in the period. */
+  /** People added, sent a request or contacted for the first time in the period (D-057). */
   newOutreach: number;
+  /** People contacted before and contacted again in the period (D-058; missing before 2.12). */
+  followUps?: number;
   /** People who replied in the period. */
   replied: number;
   converted: number;
@@ -100,8 +104,11 @@ export type ReportDetails = {
 };
 
 export type ReportData = {
-  /** 2 from v2.7.0 (adds Pipeline); 3 from v2.11.0 (adds What happened). Older ones stay. */
-  version: 1 | 2 | 3;
+  /**
+   * 2 from v2.7.0 (adds Pipeline); 3 from v2.11.0 (adds What happened); 4 from v2.12.0 (Events
+   * of the day replaces What happened). Older saved reports keep what they had.
+   */
+  version: 1 | 2 | 3 | 4;
   title: string;
   scope: "team" | "person";
   personName: string | null;
@@ -113,149 +120,11 @@ export type ReportData = {
   funnel: { totals: Counts; conversions: Conversion[] };
   plans: Awaited<ReturnType<typeof planPerformance>>;
   pipeline?: { people: PipelineRow[]; total: PipelineRow };
+  /** What happened (v2.11.0 reports only). */
   details?: ReportDetails;
+  /** Events of the day (from v2.12.0, D-058). */
+  events?: ReportEvents;
 };
-
-/** The most rows each What happened list keeps. */
-export const DETAIL_LIMIT = 500;
-const DETAIL_TEXT_MAX = 1500;
-const DETAIL_TYPES = [
-  "Request sent",
-  "Message sent",
-  "InMail sent",
-  "Call",
-  "Reply received",
-  "Meeting booked",
-  "Meeting held",
-  "Meeting note",
-] as const;
-
-/** A plain description of an activity for the What happened list. */
-export function detailWhat(a: {
-  type: string;
-  channel: string | null;
-  requestNote: boolean;
-  callOutcome: string | null;
-  replyType: string | null;
-}): string {
-  switch (a.type) {
-    case "Request sent":
-      return a.requestNote ? "Connection request with a note" : "Connection request";
-    case "Message sent":
-      return a.channel === "Email" ? "Email" : `Message (${a.channel ?? "LinkedIn"})`;
-    case "InMail sent":
-      return "InMail";
-    case "Call":
-      return a.callOutcome ? `Call · ${a.callOutcome}` : "Call";
-    case "Reply received":
-      return a.replyType ? `Reply · ${a.replyType}` : "Reply";
-    case "Meeting note":
-      return "Note";
-    default:
-      return a.type;
-  }
-}
-
-/** Companies and people added, and everything done with people, in the period (D-057). */
-async function buildDetails(
-  db: DbOrTx,
-  range: { start: Date; end: Date },
-  repId: string | null,
-): Promise<ReportDetails> {
-  const maker = alias(user, "maker");
-  const companies = await db
-    .select({ id: company.id, name: company.name, at: company.createdAt, by: maker.name })
-    .from(company)
-    .leftJoin(maker, eq(maker.id, company.createdBy))
-    .where(
-      and(
-        gte(company.createdAt, range.start),
-        lt(company.createdAt, range.end),
-        repId ? eq(company.createdBy, repId) : undefined,
-      ),
-    )
-    .orderBy(company.createdAt);
-  const people = await db
-    .select({
-      id: person.id,
-      name: person.fullName,
-      title: person.title,
-      company: company.name,
-      at: person.createdAt,
-      by: maker.name,
-    })
-    .from(person)
-    .leftJoin(company, eq(company.id, person.companyId))
-    .leftJoin(maker, eq(maker.id, person.createdBy))
-    .where(
-      and(
-        gte(person.createdAt, range.start),
-        lt(person.createdAt, range.end),
-        repId ? eq(person.createdBy, repId) : undefined,
-      ),
-    )
-    .orderBy(person.createdAt);
-  const actions = await db
-    .select({
-      at: activity.occurredAt,
-      rep: maker.name,
-      personId: activity.personId,
-      person: person.fullName,
-      company: company.name,
-      type: activity.type,
-      channel: activity.channel,
-      requestNote: activity.requestNote,
-      callOutcome: activity.callOutcome,
-      replyType: activity.replyType,
-      text: activity.content,
-    })
-    .from(activity)
-    .leftJoin(person, eq(person.id, activity.personId))
-    .leftJoin(company, eq(company.id, person.companyId))
-    .leftJoin(maker, eq(maker.id, activity.userId))
-    .where(
-      and(
-        inArray(activity.type, [...DETAIL_TYPES]),
-        gte(activity.occurredAt, range.start),
-        lt(activity.occurredAt, range.end),
-        repId ? eq(activity.userId, repId) : undefined,
-      ),
-    )
-    .orderBy(activity.occurredAt);
-  const cut = (t: string | null) =>
-    t && t.length > DETAIL_TEXT_MAX ? `${t.slice(0, DETAIL_TEXT_MAX - 1)}…` : t;
-  return {
-    companies: companies.slice(0, DETAIL_LIMIT).map((c) => ({
-      at: c.at.toISOString(),
-      name: c.name,
-      by: c.by,
-      companyId: c.id,
-    })),
-    people: people.slice(0, DETAIL_LIMIT).map((p) => ({
-      at: p.at.toISOString(),
-      name: p.name,
-      title: p.title,
-      company: p.company,
-      by: p.by,
-      personId: p.id,
-    })),
-    actions: actions.slice(0, DETAIL_LIMIT).map((a) => ({
-      at: a.at.toISOString(),
-      rep: a.rep ?? "—",
-      personId: a.personId,
-      person: a.person,
-      company: a.company,
-      what: detailWhat(a),
-      channel: a.type === "Meeting note" ? null : a.channel,
-      text: cut(a.text),
-    })),
-    more: {
-      companies: Math.max(0, companies.length - DETAIL_LIMIT),
-      people: Math.max(0, people.length - DETAIL_LIMIT),
-      actions: Math.max(0, actions.length - DETAIL_LIMIT),
-    },
-  };
-}
 
 /** Stages that mean converted (a manual move in the edit form counts too, D-057). */
 const CONVERTED_STAGES = ["Paid", "Active customer"] as const;
@@ -323,6 +192,7 @@ async function buildPipeline(
         peopleAdded: 0,
         companiesAdded: 0,
         newOutreach: 0,
+        followUps: 0,
         replied: 0,
         converted: p.conversions,
         noResponse: 0,
@@ -360,11 +230,16 @@ async function buildPipeline(
           .where(eq(activity.type, "Reply received"))
       ).map((r) => r.personId),
     );
-    for (const [userId, set] of await newOutreach(db, range, ids)) {
+    const fresh = await newOutreach(db, range, ids);
+    for (const [userId, set] of fresh) {
       const row = rows.get(userId);
       if (!row) continue;
       row.newOutreach = set.size;
       row.noResponse = [...set].filter((id) => !repliedEver.has(id)).length;
+    }
+    for (const [userId, set] of await followUps(db, range, fresh, ids)) {
+      const row = rows.get(userId);
+      if (row) row.followUps = set.size;
     }
     // Replied: each person who replied in the period (or was moved to Replied), by their owner.
     const repliedIds = new Set(
@@ -402,13 +277,15 @@ async function buildPipeline(
     peopleAdded: 0,
     companiesAdded: 0,
     newOutreach: 0,
+    followUps: 0,
     replied: 0,
     converted: 0,
     noResponse: 0,
     stages: {},
   };
   for (const r of list) {
-    for (const c of PIPELINE_COLUMNS) total[c.key] += r[c.key];
+    for (const c of PIPELINE_COLUMNS) total[c.key] = (total[c.key] ?? 0) + (r[c.key] ?? 0);
+    total.noResponse += r.noResponse;
     for (const [k, n] of Object.entries(r.stages)) total.stages[k] = (total.stages[k] ?? 0) + n;
   }
   return { people: list, total };
@@ -508,7 +385,7 @@ export async function buildReport(
   const personName = target.scope === "person" ? people[0].name : null;
   const repIds = target.scope === "person" ? [target.userId] : null;
   return {
-    version: 3,
+    version: 4,
     title: `${personName ?? "Team"} · ${spanLabel(span)}`,
     scope: target.scope,
     personName,
@@ -520,7 +397,12 @@ export async function buildReport(
     funnel: await funnelTotals(db, range, repIds),
     plans: await planPerformance(db, range, repIds),
     pipeline: await buildPipeline(db, people, range),
-    details: await buildDetails(db, range, target.scope === "person" ? target.userId : null),
+    events: await buildEvents(
+      db,
+      range,
+      target.scope === "person" ? target.userId : null,
+      toIstDate(now),
+    ),
   };
 }
 
@@ -644,7 +526,7 @@ export async function getReport(db: DbOrTx, viewer: Actor, id: string) {
 
 const pct = (n: number | null) => (n === null ? "" : `${Math.round(n * 100)}%`);
 
-/** One CSV with every included table, each under its own heading row (D-057). */
+/** One CSV with every included table, each under its own heading row (D-057, D-058). */
 export function reportCsv(
   r: ReportData,
   aiSummary: string | null,
@@ -655,13 +537,17 @@ export function reportCsv(
   const rows: unknown[][] = [[r.title], ["Period", r.from, r.to], ["Made", r.generatedAt]];
   if (aiSummary && on("summary")) rows.push([], ["AI summary"], [aiSummary]);
   if (r.pipeline && on("pipeline")) {
+    const h = headlines(r);
     rows.push(
       [],
       ["Pipeline"],
+      h.map((x) => x.label),
+      h.map((x) => x.value ?? ""),
+      [],
       ["Person", ...PIPELINE_COLUMNS.map((c) => c.label)],
       ...[...r.pipeline.people, r.pipeline.total].map((p) => [
         p.name,
-        ...PIPELINE_COLUMNS.map((c) => p[c.key]),
+        ...PIPELINE_COLUMNS.map((c) => p[c.key] ?? ""),
       ]),
     );
   }
@@ -674,36 +560,48 @@ export function reportCsv(
       ...[...r.people, r.total].map((p) => [p.name, ...sec.keys.map((k) => p[k])]),
     );
   }
-  if (on("funnel")) {
+  if (r.events && on("details")) {
+    const e = r.events;
     rows.push(
       [],
-      ["Funnel"],
-      ["Conversion", "From", "To", "Rate", "Benchmark"],
-      ...r.funnel.conversions.map((c) => [c.label, c.from, c.to, pct(c.rate), pct(c.benchmark)]),
-    );
-  }
-  if (on("plans")) {
-    rows.push(
+      [eventsTitle(r)],
+      ["Companies added", "People added", "Contacts", "Replies", "Meetings and demos"],
+      [e.counts.companies, e.counts.people, e.counts.contacts, e.counts.replies, e.counts.meetings],
       [],
-      ["Plan performance"],
-      ["Plan", "Step", "Enrolled / done", "Replied", "Reply rate"],
-      ...r.plans.flatMap((p) => [
-        [p.name, "All", p.enrolled, p.replied, pct(p.replyRate)],
-        ...p.steps.map((s) => [p.name, s.order, s.done, s.replies, pct(s.rate)]),
-      ]),
+      [
+        "Company",
+        "New company",
+        "Person",
+        "Title",
+        "New person",
+        "Facts",
+        "What we offered",
+        "What they said",
+        "Outlook",
+        "Next step",
+      ],
     );
-  }
-  if (r.details && on("details")) {
+    for (const c of e.companies) {
+      if (c.people.length === 0)
+        rows.push([c.name, c.isNew ? "New" : "", "", "", "", "", "", "", "", ""]);
+      for (const p of c.people) {
+        rows.push([
+          c.name,
+          c.isNew ? "New" : "",
+          p.name,
+          p.title ?? "",
+          p.isNew ? "New" : "",
+          p.facts.join(" · "),
+          p.summary?.offered ?? "",
+          p.summary?.theySaid ?? "",
+          p.summary?.outlook ?? "",
+          p.summary?.nextStep ?? "",
+        ]);
+      }
+    }
+  } else if (r.details && on("details")) {
     const d = r.details;
     rows.push(
-      [],
-      ["What happened: companies added"],
-      ["When", "Company", "Added by"],
-      ...d.companies.map((c) => [c.at, c.name, c.by ?? ""]),
-      [],
-      ["What happened: people added"],
-      ["When", "Person", "Title", "Company", "Added by"],
-      ...d.people.map((p) => [p.at, p.name, p.title ?? "", p.company ?? "", p.by ?? ""]),
       [],
       ["What happened: contacts, replies and meetings"],
       ["When", "Rep", "Person", "Company", "What", "Channel", "Message"],

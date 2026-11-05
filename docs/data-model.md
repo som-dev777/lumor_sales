@@ -437,7 +437,9 @@ report_schedule), emailed_to (JSON list), shared_with (JSON list of user ids it 
 can open it, D-043), hidden_sections (JSON list of sections left out of the downloads, default
 `[]`, D-057) and edits (JSON map of numbers edited on this report only, default `{}`, D-057; the
 data snapshot itself is never changed). From v2.11.0 the data includes `details` (What happened:
-companies and people added, and every contact, reply and meeting, up to 500 of each). Indexes on
+companies and people added, and every contact, reply and meeting, up to 500 of each); from
+v2.12.0 (version 4, D-058) `events` instead (Events of the day: counts, then company by company
+with New flags, each person's facts and their P12 summary) and `pipeline.*.followUps`. Indexes on
 created_at and person_user_id.
 
 ### calendly_booking (F27)

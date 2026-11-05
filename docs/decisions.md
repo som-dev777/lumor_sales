@@ -1211,3 +1211,38 @@ replaces it.
   is still open, what the rep did that day, and that day's meetings. Today itself is unchanged.
 - **Migration 0023** adds `report_run.hidden_sections` and `report_run.edits` (empty by default);
   nothing else changes.
+
+## D-058: A simpler report with Events of the day, and Connection request on the person page (owner, 2026-11-05)
+
+- **Date:** 2026-11-05 · **Status:** Accepted · **Version 2.12.0** (MINOR)
+- **Include in report could not be switched back on:** fixed, with a test that switches a section
+  off and on again.
+- **Pipeline:** five headline numbers instead of charts: **New outreach**, **Follow-ups** (people
+  already contacted before the period who were contacted again in it), **Responded** (people who
+  replied or interacted back in the period; owner's choice 2a: anyone who replied, not only new
+  outreach), **Demos scheduled** (was Meetings booked) and **Demos conducted** (meetings held).
+  Then one table per rep: People added, Companies added, New outreach, Follow-ups, Replied,
+  Converted. "No response yet", the outreach bar chart and "Where their people stand now" are
+  gone.
+- **Activity:** Connection requests, Messages, Emails, Calls, Calls connected (kept, owner).
+  **Replies and outcomes:** unchanged.
+- **Removed from reports:** Plan adherence, Funnel and Plan performance, on screen and in the PDF,
+  CSV and email, for older saved reports too (their data stays stored). The Dashboard keeps its
+  funnel.
+- **Events of the day** (was What happened; "Events in this period" for longer periods): counts
+  on top (companies added, people added, contacts, replies, meetings and demos), then company by
+  company, each with the people who are new or had something happen in the period. A company or
+  person added in the period gets a **New** pill, so a new company shows new people, and an
+  existing company can show new people (pill) and existing people (no pill). Next to each person,
+  a short summary: the facts from the data (when the connection request went out, since when
+  you've been talking, messages each way, the stage, and the follow-up date if one is set) and,
+  from the AI (new prompt P12), what we offered, what they said, the outlook and the next step
+  (the follow-up if scheduled, else a suggestion). Written when the report is generated (owner's
+  choice 1a) and saved with it. Up to 60 people get an AI summary (in parallel batches, so
+  generating stays within the time limit); everyone gets the facts; if the AI is off or slow, the
+  report is made with the facts only. The long list of every message is gone. Reports made before
+  this keep their What happened list.
+- **Connection request on the person page:** the conversation box gets **Connection request**
+  first (before From me, From them, Note, Follow-up). It logs a Request sent, with the note if one
+  is typed, so it counts in Activity, Today's new outreach and the funnel. When the person's plan
+  is on its connection-request step, it asks "Is this step N of their plan?" (owner's choice).

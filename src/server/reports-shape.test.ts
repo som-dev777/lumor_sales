@@ -1,12 +1,13 @@
 // D-057: report numbers that match Today and People, What happened, Include in report, Edit
 // numbers; People's "Active today"; Today by day.
 import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { activity, auditLog, person, reportRun } from "@/lib/db/schema";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { activity, auditLog, company, person, reportRun } from "@/lib/db/schema";
 import { createTestDb, insertTestUser } from "@/lib/db/test-db";
 import type { Actor } from "@/lib/permissions";
 import { applyEdits, cleanEdits, isEditKey } from "@/lib/report-shape";
 import { personSchema } from "@/lib/validation/leads";
+import { addEntry } from "./conversation";
 import { createPerson, listPeople, updatePerson } from "./leads/people";
 import { quickLog } from "./leads/quicklog";
 import { reportPdf } from "./report-pdf";
@@ -109,42 +110,133 @@ describe("report numbers match Today and People (D-057)", () => {
   });
 });
 
-describe("What happened (D-057)", () => {
-  it("lists companies and people added and what was done, with the message text", async () => {
-    const p = await lead(asha, at(9));
-    await quickLog(t.db, asha, p.id, { action: "requestSent", withNote: true }, { now: at(10) });
+describe("Events of the day (D-058)", () => {
+  it("company by company: new companies and people marked, facts and a summary per person", async () => {
+    // A new company with a new person, contacted today.
+    const fresh = await lead(asha, at(9));
+    await t.db
+      .update(company)
+      .set({ createdAt: at(9) })
+      .where(eq(company.id, fresh.companyId!));
     await quickLog(
       t.db,
       asha,
-      p.id,
-      { action: "messageSent", channel: "Email" },
-      { now: at(11), note: "Hi, a quick question about your panels?" },
+      fresh.id,
+      { action: "requestSent", withNote: true },
+      { now: at(10) },
     );
+    // An existing company: an existing person who replied today, and a new person added today.
+    const old = await lead(asha, at(9, "2026-10-01"), { companyName: "Old Co" });
+    await t.db
+      .update(company)
+      .set({ createdAt: at(9, "2026-10-01") })
+      .where(eq(company.id, old.companyId!));
+    await quickLog(t.db, asha, old.id, { action: "messageSent" }, { now: at(9, "2026-10-02") });
     await quickLog(
       t.db,
-      ravi,
-      (await lead(ravi, at(9))).id,
-      { action: "requestSent" },
-      { now: at(12) },
+      asha,
+      old.id,
+      { action: "gotReply", replyType: "Interested" },
+      { now: at(11) },
     );
-    const team = await buildReport(t.db, { scope: "team" }, SPAN, at(18));
-    expect(team.version).toBe(3);
-    expect(team.details!.people.map((x) => x.name)).toHaveLength(2);
-    const mine = await buildReport(t.db, { scope: "person", userId: asha.id }, SPAN, at(18));
-    const d = mine.details!;
-    expect(d.people.map((x) => x.name)).toEqual([p.fullName]);
-    expect(d.companies).toHaveLength(1);
-    expect(d.actions.map((a) => [a.what, a.person, a.rep])).toEqual([
-      ["Connection request with a note", p.fullName, "Asha"],
-      ["Email", p.fullName, "Asha"],
+    await setFollowUp(t.db, asha, old.id, { nextAction: "Send deck", date: "2026-11-06" }, at(12));
+    const added = await lead(asha, at(13), { companyName: "Old Co" });
+    // Someone with nothing today: not listed.
+    await lead(asha, at(9, "2026-10-01"));
+
+    const r = await buildReport(t.db, { scope: "person", userId: asha.id }, SPAN, at(18));
+    expect(r.version).toBe(4);
+    const e = r.events!;
+    expect(e.counts).toEqual({ companies: 1, people: 2, contacts: 1, replies: 1, meetings: 0 });
+    expect(e.companies.map((c) => [c.name, c.isNew])).toEqual([
+      [fresh.fullName.replace("Lead", "Company"), true],
+      ["Old Co", false],
     ]);
-    expect(d.actions[1].text).toContain("a quick question about your panels?");
-    expect(reportCsv(mine, null)).toContain("a quick question about your panels?");
-    expect(reportPdf(mine, null).length).toBeGreaterThan(1000);
+    const oldCo = e.companies[1];
+    expect(oldCo.people.map((p) => [p.name, p.isNew])).toEqual([
+      [added.fullName, true],
+      [old.fullName, false],
+    ]);
+    const facts = oldCo.people[1].facts;
+    expect(facts).toContain("First contacted 2 Oct");
+    expect(facts).toContain("Talking since 4 Nov");
+    expect(facts).toContain("1 message or call from us, 1 reply");
+    expect(facts).toContain("Follow-up: Send deck on 6 Nov");
+    expect(e.companies[0].people[0].facts[0]).toBe("Connection request sent 4 Nov (with a note)");
+    // AI off in tests: facts only, and the report says so.
+    expect(oldCo.people[1].summary).toBeNull();
+    expect(e.withoutSummary).toBe(3);
+    const csv = reportCsv(r, null);
+    expect(csv).toContain("Old Co,,");
+    expect(csv).toContain("Follow-up: Send deck on 6 Nov");
+    expect(reportPdf(r, null).length).toBeGreaterThan(1000);
+  });
+
+  it("writes a summary per person with the AI (stand-in in tests)", async () => {
+    vi.stubEnv("AI_FAKE", "1");
+    vi.stubEnv("DATABASE_URL", "file:test.db");
+    const p = await lead(asha, at(9));
+    await quickLog(t.db, asha, p.id, { action: "messageSent" }, { now: at(10), note: "Hi there" });
+    await setFollowUp(t.db, asha, p.id, { nextAction: "Call", date: "2026-11-06" }, at(11));
+    const r = await buildReport(t.db, { scope: "person", userId: asha.id }, SPAN, at(18));
+    const person1 = r.events!.companies[0].people[0];
+    expect(person1.summary).toMatchObject({
+      offered: "A short demo of Lumor for their research.",
+      nextStep: "Call on 6 Nov",
+    });
+    expect(r.events!.withoutSummary).toBe(0);
+    vi.unstubAllEnvs();
+  });
+});
+
+describe("Follow-ups and the Connection request (D-058)", () => {
+  it("Follow-ups count people contacted before and contacted again", async () => {
+    const before = await lead(asha, at(9, "2026-10-01"));
+    await quickLog(t.db, asha, before.id, { action: "messageSent" }, { now: at(9, "2026-10-02") });
+    await quickLog(t.db, asha, before.id, { action: "messageSent" }, { now: at(10) });
+    const fresh = await lead(asha, at(9));
+    await quickLog(t.db, asha, fresh.id, { action: "messageSent" }, { now: at(11) });
+    const r = await buildReport(t.db, { scope: "person", userId: asha.id }, SPAN, at(18));
+    expect(r.pipeline!.total).toMatchObject({ newOutreach: 1, followUps: 1 });
+  });
+
+  it("the conversation box logs a connection request, with the note, as Request sent", async () => {
+    const p = await lead(asha, at(9));
+    await addEntry(
+      t.db,
+      asha,
+      p.id,
+      { from: "request", channel: "LinkedIn", at: at(10), text: "Hi, loved your talk" },
+      { now: at(11) },
+    );
+    await addEntry(
+      t.db,
+      asha,
+      (await lead(asha, at(9))).id,
+      { from: "request", channel: "LinkedIn", at: at(10), text: "" },
+      { now: at(11) },
+    );
+    const rows = await t.db.select().from(activity).where(eq(activity.type, "Request sent"));
+    expect(rows.map((r) => [r.requestNote, r.content])).toEqual([
+      [true, "Hi, loved your talk"],
+      [false, null],
+    ]);
+    const r = await buildReport(t.db, { scope: "person", userId: asha.id }, SPAN, at(18));
+    expect(r.total.requests).toBe(2);
   });
 });
 
 describe("Include in report and Edit numbers (D-057)", () => {
+  it("a section switched off can be switched back on (D-058)", async () => {
+    const run = await createReport(t.db, asha, { scope: "person", userId: asha.id }, SPAN, {
+      now: at(18),
+    });
+    await setSectionIncluded(t.db, asha, run.id, "activity", false);
+    expect((await getReport(t.db, asha, run.id))!.hiddenSections).toEqual(["activity"]);
+    await setSectionIncluded(t.db, asha, run.id, "activity", true);
+    expect((await getReport(t.db, asha, run.id))!.hiddenSections).toEqual([]);
+  });
+
   it("edits lay over a copy; rates follow; only known whole numbers are accepted", async () => {
     await lead(asha, at(9));
     const r = await buildReport(t.db, { scope: "team" }, SPAN, at(18));
@@ -171,18 +263,18 @@ describe("Include in report and Edit numbers (D-057)", () => {
     const run = await createReport(t.db, asha, { scope: "person", userId: asha.id }, SPAN, {
       now: at(18),
     });
-    await setSectionIncluded(t.db, asha, run.id, "funnel", false);
+    await setSectionIncluded(t.db, asha, run.id, "outcomes", false);
     await saveReportEdits(t.db, asha, run.id, {
       [`numbers.${asha.id}.requests`]: 7,
       // Same as the original: not kept.
       [`pipeline.${asha.id}.peopleAdded`]: 1,
     });
-    await expect(setSectionIncluded(t.db, ravi, run.id, "plans", false)).rejects.toThrow(
+    await expect(setSectionIncluded(t.db, ravi, run.id, "details", false)).rejects.toThrow(
       "That report doesn't exist.",
     );
-    await setSectionIncluded(t.db, admin, run.id, "plans", false);
+    await setSectionIncluded(t.db, admin, run.id, "details", false);
     const saved = (await getReport(t.db, asha, run.id))!;
-    expect(saved.hiddenSections).toEqual(["funnel", "plans"]);
+    expect(saved.hiddenSections).toEqual(["outcomes", "details"]);
     expect(saved.edits).toEqual({ [`numbers.${asha.id}.requests`]: 7 });
     // The report's own data is never changed.
     const [row] = await t.db.select().from(reportRun).where(eq(reportRun.id, run.id));
@@ -190,8 +282,8 @@ describe("Include in report and Edit numbers (D-057)", () => {
     const shaped = shapeOf(saved);
     expect(shaped.data.people[0].requests).toBe(7);
     const csv = reportCsv(shaped.data, null, shaped.hidden);
-    expect(csv).not.toContain("Funnel");
-    expect(csv).not.toContain("Plan performance");
+    expect(csv).not.toContain("Replies and outcomes");
+    expect(csv).not.toContain("Events");
     expect(csv).toContain("Activity\r\nPerson,Connection requests");
     expect(csv).toContain("Asha,7,");
     const audits = await t.db.select().from(auditLog).where(eq(auditLog.recordId, run.id));

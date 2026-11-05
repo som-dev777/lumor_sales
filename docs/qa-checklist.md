@@ -555,6 +555,21 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
       ahead. **Previous day**: what's still open from that day and what you logged. **Back to
       today** returns.
 
+## 19. A simpler report with Events of the day (v2.12.0)
+
+- [ ] 19.1 On a person, choose **Connection request** in the conversation box, type a note, **Log
+      connection request**: "Connection request logged", and the AI assistant's thread shows it.
+- [ ] 19.2 **Reports → Period: Today → Generate.** The Pipeline shows five numbers (New outreach,
+      Follow-ups, Responded, Demos scheduled, Demos conducted) and one table, with no charts.
+- [ ] 19.3 Activity shows Connection requests, Messages, Emails, Calls and Calls connected. There's
+      no Plan adherence, Funnel or Plan performance.
+- [ ] 19.4 **Events of the day**: counts on top, then each company (a **New** pill if added today)
+      with its people (a **New** pill if added today), each with facts and a summary (Offered,
+      They said, Outlook, Next step). An existing company with a new person shows the person as
+      New.
+- [ ] 19.5 Switch **Include in report** off on any section, then on again (or use **Include it
+      again**). Reload: it stays as you left it. Try it on your phone too.
+
 ---
 
 ## Before the team starts (only you can do these)

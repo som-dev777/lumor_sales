@@ -92,8 +92,10 @@ test("exit check: an Admin makes a team report; the print layout and the CSV wor
   const activity = shown(admin.getByRole("region", { name: "Activity", exact: true }));
   await expect(activity.getByRole("row", { name: /Zara Rep/ })).toBeVisible();
   await expect(activity.getByRole("row", { name: /Total/ })).toBeVisible();
-  await expect(shown(admin.getByRole("region", { name: "Funnel" }))).toContainText(
-    "Contacted → Connected",
+  // D-058: the Funnel and plan sections are gone; the Pipeline shows five headline numbers.
+  await expect(admin.getByRole("region", { name: "Funnel" })).toHaveCount(0);
+  await expect(shown(admin.getByRole("region", { name: "Pipeline" }))).toContainText(
+    "Demos conducted",
   );
 
   // Download PDF gives a real PDF made by the app (D-043).

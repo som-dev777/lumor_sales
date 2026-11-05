@@ -12,7 +12,7 @@ import { emailConfigured, sendEmail, type Email } from "./email";
 import { LeadError } from "./leads/companies";
 import { addNotificationsTx } from "./notifications";
 import { reportPdf } from "./report-pdf";
-import { getReport, shapeOf, type ReportData } from "./reports";
+import { getReport, headlines, shapeOf, type ReportData } from "./reports";
 
 export const MAX_REPORT_RECIPIENTS = 20;
 
@@ -25,28 +25,26 @@ export function reportMail(
   by: string | null,
 ): Email {
   const t = data.total;
-  const p = data.pipeline?.total;
+  const e = data.events?.counts;
   const { text, html } = renderMail({
     heading: `Report: ${data.title}`,
     intro: by
       ? `${by} sent you this report. The PDF is attached.`
       : "Your scheduled report. The PDF is attached.",
     rows: [
-      ...(p
-        ? ([
-            ["People added", String(p.peopleAdded)],
-            ["Companies added", String(p.companiesAdded)],
-            ["New outreach", String(p.newOutreach)],
-            ["Replied", String(p.replied)],
-            ["No response yet", String(p.noResponse)],
-          ] as [string, string][])
-        : []),
+      // The five headline numbers (D-058), then the day's counts.
+      ...headlines(data)
+        .filter((h) => h.value !== null)
+        .map((h) => [h.label, String(h.value)] as [string, string]),
       ["Connection requests", String(t.requests)],
       ["Messages and emails", String(t.messages + t.emails)],
-      ["Calls", String(t.calls)],
-      ["Meetings booked", String(t.meetingsBooked)],
-      ["Conversions", String(t.conversions)],
-      ["Plan steps", `${t.stepsDone} done, ${t.stepsLate} late`],
+      ["Calls", `${t.calls} (${t.callsConnected} connected)`],
+      ...(e
+        ? ([
+            ["Companies added", String(e.companies)],
+            ["People added", String(e.people)],
+          ] as [string, string][])
+        : []),
     ],
     after: summary ? [summary] : [],
     button: { label: "Open the full report", url: `${appUrl()}/reports/${runId}` },

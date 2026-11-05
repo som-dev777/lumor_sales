@@ -40,7 +40,7 @@ type Props = {
   defaultChannel: string;
 };
 
-type From = "me" | "them" | "note" | "follow";
+type From = "request" | "me" | "them" | "note" | "follow";
 type Warning = { rule: number; message: string };
 
 const channelOptions = THREAD_CHANNELS.map((c) => ({ value: c, label: c }));
@@ -130,7 +130,7 @@ function Composer({
 
   const input = () => ({
     from,
-    channel,
+    channel: from === "request" ? "LinkedIn" : channel,
     at,
     text,
     replyType: from === "them" ? replyType : null,
@@ -156,11 +156,12 @@ function Composer({
     });
 
   const matchesStep =
-    from === "me" &&
     currentStep !== null &&
-    ((currentStep.action === "callLogged" && channel === "Call") ||
-      (currentStep.action === "messageSent" &&
-        ["LinkedIn", "InMail", "Email", "WhatsApp"].includes(channel)));
+    ((from === "request" && currentStep.action === "requestSent") ||
+      (from === "me" &&
+        ((currentStep.action === "callLogged" && channel === "Call") ||
+          (currentStep.action === "messageSent" &&
+            ["LinkedIn", "InMail", "Email", "WhatsApp"].includes(channel)))));
 
   const saveFollowUp = () =>
     start(async () => {
@@ -194,6 +195,7 @@ function Composer({
         <div className={styles.toggle} role="radiogroup" aria-label="Who is it from">
           {(
             [
+              ["request", "Connection request"],
               ["me", "From me"],
               ["them", `From ${firstName}`],
               ["note", "Note"],
@@ -242,12 +244,14 @@ function Composer({
         </div>
       )}
       <div className={styles.fields} hidden={from === "follow"}>
-        <SelectField
-          label={from === "note" ? "About (channel)" : "Channel"}
-          value={channel}
-          onChange={(e) => setChannel(e.target.value)}
-          options={channelOptions}
-        />
+        {from !== "request" && (
+          <SelectField
+            label={from === "note" ? "About (channel)" : "Channel"}
+            value={channel}
+            onChange={(e) => setChannel(e.target.value)}
+            options={channelOptions}
+          />
+        )}
         <TextField
           label="When"
           type="datetime-local"
@@ -277,13 +281,15 @@ function Composer({
       </div>
       <TextArea
         label={
-          from === "follow"
-            ? "Note (optional)"
-            : from === "note"
-              ? "Add a note"
-              : from === "me"
-                ? "What you sent or said"
-                : `What ${firstName} sent or said`
+          from === "request"
+            ? "Note sent with it (optional)"
+            : from === "follow"
+              ? "Note (optional)"
+              : from === "note"
+                ? "Add a note"
+                : from === "me"
+                  ? "What you sent or said"
+                  : `What ${firstName} sent or said`
         }
         rows={3}
         value={text}
@@ -299,7 +305,7 @@ function Composer({
               Yes, step {currentStep.order}
             </Button>
             <Button variant="secondary" onClick={() => send()} disabled={busy}>
-              No, an extra message
+              {from === "request" ? "No, not a plan step" : "No, an extra message"}
             </Button>
           </div>
         </div>
@@ -331,13 +337,15 @@ function Composer({
           <Button
             type="submit"
             loading={busy}
-            disabled={from === "follow" ? !followDate : !text.trim()}
+            disabled={from === "follow" ? !followDate : from === "request" ? false : !text.trim()}
           >
-            {from === "follow"
-              ? "Set follow-up"
-              : from === "note"
-                ? "Add note"
-                : "Add to conversation"}
+            {from === "request"
+              ? "Log connection request"
+              : from === "follow"
+                ? "Set follow-up"
+                : from === "note"
+                  ? "Add note"
+                  : "Add to conversation"}
           </Button>
           {canLog && (
             <PasteConversation

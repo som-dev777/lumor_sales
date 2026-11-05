@@ -58,9 +58,13 @@ export async function addThreadEntry(
       message:
         parsed.data.from === "note"
           ? "Note added."
-          : opts.asStep
-            ? "Added to the conversation as their plan step."
-            : "Added to the conversation.",
+          : parsed.data.from === "request"
+            ? opts.asStep
+              ? "Connection request logged as their plan step."
+              : "Connection request logged."
+            : opts.asStep
+              ? "Added to the conversation as their plan step."
+              : "Added to the conversation.",
     };
   } catch (e) {
     return failure(e);

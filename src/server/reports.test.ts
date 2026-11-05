@@ -162,11 +162,17 @@ describe("the numbers (F19)", () => {
     // One table per section (D-057), each under its own heading.
     expect(csv).toContain("Activity\r\nPerson,Connection requests,Messages,Emails,Calls");
     expect(csv).toContain("Replies and outcomes\r\nPerson,Replies,Meetings booked");
-    expect(csv).toContain("Plan adherence\r\nPerson,Plan steps done");
-    expect(csv).toContain("Pipeline\r\nPerson,People added,Companies added,New outreach");
-    expect(csv).toContain("What happened: contacts, replies and meetings");
+    // D-058: no Plan adherence, Funnel or Plan performance; five headline numbers; Events.
+    expect(csv).not.toContain("Plan adherence");
+    expect(csv).not.toContain("Funnel");
+    expect(csv).toContain(
+      "Pipeline\r\nNew outreach,Follow-ups,Responded,Demos scheduled,Demos conducted",
+    );
+    expect(csv).toContain(
+      "Person,People added,Companies added,New outreach,Follow-ups,Replied,Converted",
+    );
+    expect(csv).toContain("Events in this period");
     expect(csv).toContain("'=HYPERLINK()");
-    expect(csv).toContain("Contacted → Connected");
     expect(csv).toContain("AI summary\r\nGood month.");
   });
 });

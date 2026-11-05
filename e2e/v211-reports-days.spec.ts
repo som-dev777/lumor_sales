@@ -1,4 +1,4 @@
-// v2.11.0 exit check (D-057): a report's What happened lists who was contacted and what was sent;
+// v2.11.0 exit check (D-057; Events of the day since D-058): a report lists who was contacted;
 // sections can be left out (and the CSV follows); numbers can be edited on the report; People has
 // Active today and Add follow-up; Today has Previous day / Next day.
 import { expect, test, type Locator, type Page } from "@playwright/test";
@@ -72,7 +72,7 @@ test("exit check: Today's Next day shows what's due tomorrow; Previous day goes 
   await expect(shown(admin.getByRole("region", { name: /^Done on / }))).toBeVisible();
 });
 
-test("exit check: a report lists what happened; sections can be left out; numbers edited", async () => {
+test("exit check: a report lists the day's events; sections can be left out; numbers edited", async () => {
   await admin.goto("/reports");
   const form = shown(admin.getByRole("form", { name: "Make a report" }));
   await form.getByLabel("Period").selectOption("today");
@@ -80,22 +80,23 @@ test("exit check: a report lists what happened; sections can be left out; number
   await expect(admin).toHaveURL(/\/reports\/[0-9a-f-]{36}$/);
   const reportUrl = new URL(admin.url()).pathname;
 
-  const what = shown(admin.getByRole("region", { name: "What happened" }));
-  await expect(what.getByRole("table", { name: "People added" })).toContainText("Rhea Report");
-  await expect(what.getByRole("table", { name: "Companies added" })).toContainText("Report Labs");
-  await expect(what.getByRole("list", { name: "Contacts, replies and meetings" })).toContainText(
-    "Hi Rhea, how do you recruit for studies?",
-  );
+  // Events of the day (D-058 replaced What happened): the company and person, marked new.
+  const events = shown(admin.getByRole("region", { name: "Events of the day" }));
+  const co = events.getByRole("listitem", { name: "Report Labs" });
+  await expect(co).toContainText("New");
+  await expect(co.getByRole("listitem", { name: "Rhea Report" })).toContainText("New");
 
-  // Leave the Funnel out: it folds away here, and the CSV doesn't have it.
-  await shown(admin.getByRole("switch", { name: "Include Funnel in the report" })).uncheck();
+  // Leave Replies and outcomes out: it folds away here, and the CSV doesn't have it.
+  await shown(
+    admin.getByRole("switch", { name: "Include Replies and outcomes in the report" }),
+  ).uncheck();
   await expect(shown(admin.getByText("Left out of the report."))).toBeVisible();
-  await expect(shown(admin.getByRole("region", { name: "Funnel" }))).toContainText(
+  await expect(shown(admin.getByRole("region", { name: "Replies and outcomes" }))).toContainText(
     "Left out of the PDF, CSV, email and print.",
   );
   const csv = await (await admin.request.get(`${reportUrl}/csv`)).text();
-  expect(csv).not.toContain("Funnel");
-  expect(csv).toContain("Hi Rhea, how do you recruit for studies?");
+  expect(csv).not.toContain("Replies and outcomes");
+  expect(csv).toContain("Rhea Report");
 
   // Edit a number on this report only.
   await shown(admin.getByRole("button", { name: "Edit numbers" })).click();

@@ -1,20 +1,22 @@
 // The report as a PDF (F19 round 2, D-043), made on the server with jsPDF: headline numbers,
-// three charts (outreach per rep, people by stage, the funnel) and every table. Landscape A4 so
+// the headline numbers and every included table (no charts since D-058). Landscape A4 so
 // the wide tables fit. The built-in Helvetica font only has Western characters, so text is
 // cleaned first ("₹" becomes "INR", arrows become "->").
 import { jsPDF } from "jspdf";
 import { formatIst } from "@/lib/time";
 import type { ReportSection } from "@/lib/report-shape";
-import { NUMBER_SECTIONS, PIPELINE_COLUMNS, REPORT_COLUMNS, type ReportData } from "./reports";
+import {
+  eventsTitle,
+  headlines,
+  NUMBER_SECTIONS,
+  PIPELINE_COLUMNS,
+  REPORT_COLUMNS,
+  type ReportData,
+} from "./reports";
 
 const BLUE: [number, number, number] = [30, 58, 196];
 const GREY: [number, number, number] = [91, 100, 112];
 const INK: [number, number, number] = [20, 23, 26];
-const SERIES: [number, number, number][] = [
-  [30, 58, 196],
-  [31, 122, 77],
-  [214, 132, 23],
-];
 const PAGE_W = 297;
 const PAGE_H = 210;
 const M = 14;
@@ -30,8 +32,6 @@ export function pdfText(s: string): string {
     .replace(/…/g, "...")
     .replace(/[^\x20-\x7e\xa0-\xff\n]/g, "");
 }
-
-const pct = (n: number | null) => (n === null ? "-" : `${Math.round(n * 100)}%`);
 
 class Doc {
   pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
@@ -113,80 +113,9 @@ class Doc {
     });
     this.y += 2;
   }
-
-  /** Vertical grouped bars: one group per label, one bar per series. */
-  groupedBars(title: string, labels: string[], series: { name: string; values: number[] }[]) {
-    const h = 62;
-    this.ensure(h + 14);
-    this.text(title, 10, INK, true);
-    const top = this.y + 2;
-    const left = M + 8;
-    const width = PAGE_W - 2 * M - 8;
-    const max = Math.max(1, ...series.flatMap((s) => s.values));
-    const plotH = h - 16;
-    const base = top + plotH;
-    this.pdf.setDrawColor(200, 200, 200);
-    this.pdf.line(left, base, left + width, base);
-    this.pdf.setFontSize(7);
-    this.pdf.setTextColor(...GREY);
-    this.pdf.text(String(max), M, top + 3);
-    this.pdf.text("0", M + 3, base);
-    const groupW = width / Math.max(1, labels.length);
-    const barW = Math.min(12, (groupW * 0.7) / series.length);
-    labels.forEach((label, gi) => {
-      const gx = left + gi * groupW + (groupW - barW * series.length) / 2;
-      series.forEach((s, si) => {
-        const v = s.values[gi] ?? 0;
-        const bh = (v / max) * plotH;
-        this.pdf.setFillColor(...SERIES[si % SERIES.length]);
-        this.pdf.rect(gx + si * barW, base - bh, barW - 0.8, bh, "F");
-        if (v > 0) {
-          this.pdf.setTextColor(...INK);
-          this.pdf.text(String(v), gx + si * barW + barW / 2 - 0.4, base - bh - 1, {
-            align: "center",
-          });
-        }
-      });
-      this.pdf.setTextColor(...GREY);
-      const name = (this.pdf.splitTextToSize(pdfText(label), groupW - 2) as string[])[0];
-      this.pdf.text(name, left + gi * groupW + groupW / 2, base + 4, { align: "center" });
-    });
-    // Legend.
-    let lx = left;
-    series.forEach((s, si) => {
-      this.pdf.setFillColor(...SERIES[si % SERIES.length]);
-      this.pdf.rect(lx, base + 7, 3, 3, "F");
-      this.pdf.setTextColor(...INK);
-      this.pdf.text(pdfText(s.name), lx + 4.5, base + 9.6);
-      lx += 6 + this.pdf.getTextWidth(pdfText(s.name)) + 6;
-    });
-    this.y = base + 14;
-  }
-
-  /** Horizontal bars, one per row, with a label and a value. */
-  hBars(title: string, rows: { label: string; value: number; text?: string }[]) {
-    const rowH = 6.5;
-    this.ensure(rows.length * rowH + 12);
-    this.text(title, 10, INK, true);
-    const labelW = 62;
-    const width = PAGE_W - 2 * M - labelW - 24;
-    const max = Math.max(1, ...rows.map((r) => r.value));
-    rows.forEach((r) => {
-      this.pdf.setFontSize(8);
-      this.pdf.setTextColor(...INK);
-      this.pdf.text(pdfText(r.label), M, this.y + 4);
-      const bw = (r.value / max) * width;
-      this.pdf.setFillColor(...BLUE);
-      if (bw > 0) this.pdf.rect(M + labelW, this.y + 0.8, bw, rowH - 2.2, "F");
-      this.pdf.setTextColor(...GREY);
-      this.pdf.text(pdfText(r.text ?? String(r.value)), M + labelW + bw + 2, this.y + 4);
-      this.y += rowH;
-    });
-    this.y += 3;
-  }
 }
 
-/** The PDF for a saved report, as bytes. */
+/** The PDF for a saved report, as bytes: what the maker included, with edited numbers. */
 export function reportPdf(
   r: ReportData,
   aiSummary: string | null,
@@ -206,62 +135,18 @@ export function reportPdf(
     d.text(`Summary: ${aiSummary}`, 10);
   }
 
-  const t = r.total;
   const p = r.pipeline;
-  d.heading("Headline numbers");
-  d.table(
-    [
-      "",
-      "People added",
-      "New outreach",
-      "Replied",
-      "Meetings booked",
-      "Converted",
-      "No response yet",
-    ],
-    [
-      [
-        "Total",
-        p ? p.total.peopleAdded : "-",
-        p ? p.total.newOutreach : "-",
-        p ? p.total.replied : t.replies,
-        t.meetingsBooked,
-        t.conversions,
-        p ? p.total.noResponse : "-",
-      ],
-    ],
-  );
-
-  const reps = r.people;
-  d.groupedBars(
-    p ? "New outreach, replies and meetings per rep" : "Requests, replies and meetings per rep",
-    reps.map((x) => x.name),
-    p
-      ? [
-          { name: "New outreach", values: p.people.map((x) => x.newOutreach) },
-          { name: "Replied", values: p.people.map((x) => x.replied) },
-          { name: "Meetings booked", values: reps.map((x) => x.meetingsBooked) },
-        ]
-      : [
-          { name: "Connection requests", values: reps.map((x) => x.requests) },
-          { name: "Replies", values: reps.map((x) => x.replies) },
-          { name: "Meetings booked", values: reps.map((x) => x.meetingsBooked) },
-        ],
-  );
-
   if (p && on("pipeline")) {
     d.heading("Pipeline");
+    const h = headlines(r);
+    d.table(
+      ["", ...h.map((x) => x.label)],
+      [["Total", ...h.map((x) => (x.value === null ? "-" : x.value))]],
+    );
     d.table(
       ["Person", ...PIPELINE_COLUMNS.map((c) => c.label)],
-      [...p.people, p.total].map((x) => [x.name, ...PIPELINE_COLUMNS.map((c) => x[c.key])]),
+      [...p.people, p.total].map((x) => [x.name, ...PIPELINE_COLUMNS.map((c) => x[c.key] ?? "-")]),
     );
-    const stages = Object.entries(p.total.stages).sort((a, b) => b[1] - a[1]);
-    if (stages.length > 0) {
-      d.hBars(
-        "Where their people stand now (by stage)",
-        stages.map(([label, value]) => ({ label, value })),
-      );
-    }
   }
 
   for (const sec of NUMBER_SECTIONS) {
@@ -279,69 +164,58 @@ export function reportPdf(
     );
   }
 
-  if (on("funnel")) d.heading("Funnel");
-  if (on("funnel"))
-    d.hBars(
-      "Conversion rates (benchmark in brackets)",
-      r.funnel.conversions.map((c) => ({
-        label: c.label,
-        value: c.rate ?? 0,
-        text: `${pct(c.rate)} (${pct(c.benchmark)}) · ${c.to} of ${c.from}`,
-      })),
-    );
-
-  if (r.plans.length > 0 && on("plans")) {
-    d.heading("Plan performance");
+  if (r.events && on("details")) {
+    const e = r.events;
+    d.heading(eventsTitle(r));
     d.table(
-      ["Plan / step", "Enrolled or done", "Replied", "Reply rate"],
-      r.plans.flatMap((pl) => [
-        [pl.name, pl.enrolled, pl.replied, pct(pl.replyRate)],
-        ...pl.steps.map((s) => [`   Step ${s.order}`, s.done, s.replies, pct(s.rate)]),
-      ]),
-      90,
+      ["", "Companies added", "People added", "Contacts", "Replies", "Meetings and demos"],
+      [
+        [
+          "Total",
+          e.counts.companies,
+          e.counts.people,
+          e.counts.contacts,
+          e.counts.replies,
+          e.counts.meetings,
+        ],
+      ],
     );
-  }
-
-  if (r.details && on("details")) {
+    for (const c of e.companies) {
+      d.y += 1;
+      d.text(`${c.name}${c.isNew ? "  [NEW]" : ""}`, 11, INK, true);
+      if (c.people.length === 0) d.text("No people added yet.", 8.5, GREY, false, M + 4);
+      for (const x of c.people) {
+        d.text(
+          `${x.name}${x.title ? `, ${x.title}` : ""}${x.isNew ? "  [NEW]" : ""}`,
+          9.5,
+          INK,
+          true,
+          M + 4,
+        );
+        d.text(x.facts.join(" · "), 8.5, GREY, false, M + 8);
+        if (x.summary) {
+          const s = x.summary;
+          if (s.offered) d.text(`Offered: ${s.offered}`, 8.5, INK, false, M + 8);
+          if (s.theySaid) d.text(`They said: ${s.theySaid}`, 8.5, INK, false, M + 8);
+          if (s.outlook) d.text(`Outlook: ${s.outlook}`, 8.5, INK, false, M + 8);
+          if (s.nextStep) d.text(`Next step: ${s.nextStep}`, 8.5, INK, false, M + 8);
+        }
+      }
+    }
+    if (e.more > 0) d.text(`${e.more} more people aren't listed.`, 8, GREY);
+  } else if (r.details && on("details")) {
     const det = r.details;
     const when = (iso: string) => formatIst(new Date(iso), "d MMM, h:mm aaa");
     d.heading("What happened");
-    d.text(
-      `${det.companies.length + det.more.companies} companies added · ${det.people.length + det.more.people} people added · ${det.actions.length + det.more.actions} contacts, replies and meetings`,
-      9,
-      GREY,
-    );
-    if (det.companies.length > 0) {
-      d.text("Companies added", 10, INK, true);
-      d.table(
-        ["Company", "Added by", "When"],
-        det.companies.map((c) => [c.name, c.by ?? "-", when(c.at)]),
-        90,
+    for (const a of det.actions) {
+      d.text(
+        `${when(a.at)} · ${a.rep} · ${a.what} · ${a.person ?? "Someone"}${a.company ? ` (${a.company})` : ""}`,
+        8.5,
+        INK,
+        true,
       );
+      if (a.text) d.text(a.text, 8.5, GREY, false, M + 4);
     }
-    if (det.people.length > 0) {
-      d.text("People added", 10, INK, true);
-      d.table(
-        ["Person", "Title", "Company", "Added by", "When"],
-        det.people.map((x) => [x.name, x.title ?? "-", x.company ?? "-", x.by ?? "-", when(x.at)]),
-        60,
-      );
-    }
-    if (det.actions.length > 0) {
-      d.text("Contacts, replies and meetings", 10, INK, true);
-      for (const a of det.actions) {
-        d.text(
-          `${when(a.at)} · ${a.rep} · ${a.what} · ${a.person ?? "Someone"}${a.company ? ` (${a.company})` : ""}`,
-          8.5,
-          INK,
-          true,
-        );
-        if (a.text) d.text(a.text, 8.5, GREY, false, M + 4);
-      }
-    }
-    const more = det.more.companies + det.more.people + det.more.actions;
-    if (more > 0)
-      d.text(`${more} more rows aren't listed (the first ${500} of each list are).`, 8, GREY);
   }
 
   return Buffer.from(d.pdf.output("arraybuffer"));

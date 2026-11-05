@@ -7,7 +7,17 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.11.0 (docs/qa-checklist.md section 18).
+Next: the owner's QA of v2.12.0 (docs/qa-checklist.md section 19).
+
+## [2.12.0] - 2026-11-05
+
+A simpler report with Events of the day, and Connection request on the person page (D-058).
+
+- **Fixed:** a report section switched off with Include in report can be switched back on (also with **Include it again** inside the folded section).
+- **Pipeline:** five headline numbers (New outreach, Follow-ups, Responded, Demos scheduled, Demos conducted) and one table per rep (People added, Companies added, New outreach, Follow-ups, Replied, Converted). The charts and "No response yet" are gone.
+- **Removed from reports:** Plan adherence, Funnel and Plan performance (the Dashboard keeps its funnel).
+- **Events of the day:** counts on top, then company by company with **New** pills for new companies and people, and a short summary next to each person: when you reached out, since when you've been talking, what we offered, what they said, the outlook and the next step.
+- **Person page:** the conversation box has **Connection request** first, with an optional note. It counts as a connection request everywhere, and on a plan's request step it asks "Is this step N?".
 
 ## [2.11.0] - 2026-11-04
 

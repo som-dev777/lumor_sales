@@ -19,7 +19,7 @@ export type Side = "me" | "them" | "note" | "event";
 type ReplyType = (typeof REPLY_TYPES)[number];
 
 export type ThreadEntry = {
-  from: "me" | "them" | "note";
+  from: "request" | "me" | "them" | "note";
   channel: ThreadChannel;
   at: Date;
   text: string;
@@ -223,7 +223,7 @@ export async function addEntryTx(
   opts: EntryOptions,
 ) {
   const text = entry.text.trim();
-  if (!text) throw new LeadError("Write the message first.");
+  if (!text && entry.from !== "request") throw new LeadError("Write the message first.");
   if (text.length > 5000) throw new LeadError("That message is too long (5,000 characters).");
   // A minute's grace for clocks; never in the future.
   if (entry.at.getTime() > opts.now.getTime() + 60_000) {
@@ -265,13 +265,28 @@ export async function addEntryTx(
 
   const p = await loadPerson(tx, personId);
   assertCan(actor, "lead.edit", p);
-  if (entry.from === "me" && p.doNotContact) {
+  if ((entry.from === "me" || entry.from === "request") && p.doNotContact) {
     throw new LeadError(`${p.fullName} is marked Do not contact. Outreach can't be logged.`);
   }
   const history = Boolean(opts.history) || toIstDate(at) < todayIst(opts.now);
   let row: typeof activity.$inferSelect | null;
 
-  if (entry.from === "them") {
+  if (entry.from === "request") {
+    // A LinkedIn connection request (D-058): a Request sent, with the note if one was typed.
+    ({ activity: row } = await logWithPlanTx(
+      tx,
+      actor,
+      personId,
+      { action: "requestSent", withNote: Boolean(text) },
+      {
+        note: text || null,
+        now: at,
+        asStep: Boolean(opts.asStep) && !opts.history,
+        override: opts.override,
+        history,
+      },
+    ));
+  } else if (entry.from === "them") {
     ({ activity: row } = await logWithPlanTx(
       tx,
       actor,
