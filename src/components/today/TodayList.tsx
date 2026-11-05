@@ -578,7 +578,8 @@ function FollowUpDialog({
   onSave: (nextAction: string, date: string) => void;
 }) {
   const [what, setWhat] = useState(task.kind === "followup" ? "" : (task.nextAction ?? ""));
-  const [date, setDate] = useState(plusDays(today, 3));
+  // Tomorrow by default (D-059).
+  const [date, setDate] = useState(plusDays(today, 1));
   return (
     <Dialog
       open

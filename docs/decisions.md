@@ -1246,3 +1246,28 @@ replaces it.
   first (before From me, From them, Note, Follow-up). It logs a Request sent, with the note if one
   is typed, so it counts in Activity, Today's new outreach and the funnel. When the person's plan
   is on its connection-request step, it asks "Is this step N of their plan?" (owner's choice).
+
+## D-059: Downloads follow what's on screen, follow-ups default to tomorrow, loading feedback, My tasks (owner, 2026-11-05)
+
+- **Date:** 2026-11-05 · **Status:** Accepted · **Version 2.13.0** (MINOR)
+- **Downloads follow the Include in report choices:** the PDF and CSV links carry the sections
+  switched off on screen (`?hide=…`), so a download always matches the page, even if it's clicked
+  while a switch is still saving. Email waits until the switches have saved. While numbers are
+  being edited, downloads wait for Save or Cancel. The saved choices still apply to anything
+  opened later (email, schedules, the links without `?hide`).
+- **Every entry comes with a next follow-up:** the conversation box (Connection request, From me,
+  From them) has **Next follow-up**, set to tomorrow; it's saved with the entry (clear it for
+  none). Before, logging a message cleared the follow-up date, so nothing was left to remind the
+  rep.
+- **Follow-up dates default to tomorrow:** the conversation box's Follow-up, Set next follow-up
+  on My tasks, Add follow-up on People, and the Next action date when adding a person all start on
+  tomorrow (IST), and can be changed. Editing an existing person keeps their date as it is, so
+  saving another change never adds a follow-up by itself.
+- **Loading feedback:** a spinning circle shows whenever the app is loading: on the page while it
+  loads, at the top of the screen while moving between pages or applying filters, and on buttons
+  while they work (as before).
+- **My tasks:** the Today page is renamed **My tasks** (sidebar, page title, tabs). Its address
+  stays `/`. Under the list, **What you logged today** (and **What you logged that day** on an
+  earlier day) shows each person's follow-up date next to the log, ready to change; when none is
+  set, **Set follow-up** offers tomorrow. It saves like Set next follow-up, so the list updates.
+  Owner or Admin, as everywhere.

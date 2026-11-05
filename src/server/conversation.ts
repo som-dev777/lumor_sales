@@ -26,6 +26,8 @@ export type ThreadEntry = {
   replyType?: ReplyType | null;
   /** From me: the date a reply is expected by (the rep confirms it; F18). */
   replyBy?: string | null;
+  /** The next follow-up, set with the entry (D-059). */
+  followUpDate?: string | null;
 };
 
 /** Where an activity sits in the thread: the rep's side, the prospect's, a note, or an event. */
@@ -336,6 +338,9 @@ export async function addEntryTx(
     ));
   }
 
+  // The next follow-up set with the entry (D-059): after the entry, so it counts from now.
+  if (entry.followUpDate) await setNextFollowUp(tx, actor, personId, entry.followUpDate, opts.now);
+
   if (entry.from === "me" && entry.replyBy) {
     await checkReplyBy(tx, entry.replyBy, toIstDate(at));
     const [later] = await tx
@@ -353,6 +358,44 @@ export async function addEntryTx(
     if (!later) await setAwaiting(tx, actor, personId, { awaitingReplyUntil: entry.replyBy });
   }
   return row;
+}
+
+/** Sets the next follow-up date (today or later), keeping the next action's words. Audited. */
+async function setNextFollowUp(
+  tx: DbOrTx,
+  actor: Actor,
+  personId: string,
+  date: string,
+  now: Date,
+) {
+  if (!isIstDate(date) || date < todayIst(now)) {
+    throw new LeadError("Pick today or a later follow-up date.");
+  }
+  const before = await loadPerson(tx, personId);
+  const [after] = await tx
+    .update(person)
+    .set({
+      nextAction: before.nextAction ?? "Follow up",
+      nextActionDate: date,
+      nextActionSetAt: new Date(),
+      snoozedUntil: null,
+      followUpRemovedAt: null,
+    })
+    .where(eq(person.id, personId))
+    .returning();
+  await writeAudit(tx, {
+    userId: actor.id,
+    entityType: "Person",
+    recordId: personId,
+    recordName: after.fullName,
+    action: "Updated",
+    before: { nextAction: before.nextAction, nextActionDate: before.nextActionDate },
+    after: {
+      nextAction: after.nextAction,
+      nextActionDate: after.nextActionDate,
+      via: "Conversation",
+    },
+  });
 }
 
 /** Saves a reviewed, pasted conversation (F18) in time order, in one transaction. */

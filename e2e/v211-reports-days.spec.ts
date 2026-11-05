@@ -44,7 +44,8 @@ test.beforeAll(async ({ browser }) => {
 test("exit check: People has Active today, and Add follow-up for tomorrow", async () => {
   await admin.goto("/people?view=all&activity=today");
   await expect(shown(admin.getByRole("link", { name: "Rhea Report" }))).toBeVisible();
-  await shown(admin.getByRole("button", { name: "Add a follow-up for Rhea Report" })).click();
+  // Logging the message already set a follow-up for tomorrow (D-059): change what it is.
+  await shown(admin.getByRole("button", { name: "Edit the follow-up for Rhea Report" })).click();
   const dialog = admin.getByRole("dialog");
   await dialog.getByLabel("Next action").fill("Send the case study");
   await dialog.getByRole("button", { name: "Tomorrow" }).click();

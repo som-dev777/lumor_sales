@@ -9,6 +9,7 @@ import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
 import { REPLY_TYPES, THREAD_CHANNELS } from "@/lib/db/enums";
+import { addDaysIst } from "@/lib/time";
 import { addFollowUpEntry, addThreadEntry } from "@/server/actions/conversation";
 import { PasteConversation } from "./PasteConversation";
 import styles from "./conversation.module.scss";
@@ -119,10 +120,14 @@ function Composer({
   const [text, setText] = useState("");
   const [replyType, setReplyType] = useState("");
   const [replyBy, setReplyBy] = useState("");
+  // The next follow-up with each entry: tomorrow unless changed (D-059).
+  const [nextDate, setNextDate] = useState(addDaysIst(now.slice(0, 10), 1));
   // Follow-up (D-055): what's next and when; the note is optional.
   const today = now.slice(0, 10);
   const [nextAction, setNextAction] = useState("");
-  const [followDate, setFollowDate] = useState("");
+  // Tomorrow by default (D-059); the rep can pick another day.
+  const tomorrow = addDaysIst(today, 1);
+  const [followDate, setFollowDate] = useState(tomorrow);
   const [error, setError] = useState<string | null>(null);
   const [askStep, setAskStep] = useState(false);
   const [warnings, setWarnings] = useState<{ list: Warning[]; asStep: boolean } | null>(null);
@@ -135,6 +140,7 @@ function Composer({
     text,
     replyType: from === "them" ? replyType : null,
     replyBy: from === "me" ? replyBy : null,
+    followUpDate: from === "request" || from === "me" || from === "them" ? nextDate || null : null,
   });
 
   const send = (opts: { asStep?: boolean; override?: boolean } = {}) =>
@@ -146,6 +152,7 @@ function Composer({
         setText("");
         setReplyType("");
         setReplyBy("");
+        setNextDate(addDaysIst(now.slice(0, 10), 1));
         setError(null);
         setWarnings(null);
       } else if (r.warnings?.length) {
@@ -175,7 +182,7 @@ function Composer({
         notify("success", r.message ?? "Follow-up set.");
         setText("");
         setNextAction("");
-        setFollowDate("");
+        setFollowDate(tomorrow);
         setError(null);
       } else setError(r.error);
     });
@@ -276,6 +283,16 @@ function Composer({
             type="date"
             value={replyBy}
             onChange={(e) => setReplyBy(e.target.value)}
+          />
+        )}
+        {(from === "request" || from === "me" || from === "them") && (
+          <TextField
+            label="Next follow-up"
+            type="date"
+            min={now.slice(0, 10)}
+            value={nextDate}
+            hint="Tomorrow unless you change it. Clear it for none."
+            onChange={(e) => setNextDate(e.target.value)}
           />
         )}
       </div>

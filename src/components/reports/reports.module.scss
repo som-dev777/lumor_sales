@@ -352,3 +352,9 @@
     margin: 0;
   }
 }
+
+// A download waiting for a save (D-059).
+.waiting {
+  cursor: progress;
+  opacity: 0.6;
+}

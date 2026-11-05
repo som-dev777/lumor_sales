@@ -2,13 +2,14 @@ import Link from "next/link";
 import { formatIstDate } from "@/lib/time";
 import { SECTIONS } from "@/lib/today-sections";
 import type { DayView as Day } from "@/server/today";
+import { LoggedList } from "./LoggedList";
 import styles from "./today.module.scss";
 
 /**
  * Another day on Today (D-057): a day ahead shows what falls due then; a day back shows what was
  * due then and is still open, and what you logged that day. Open someone to work on them.
  */
-export function DayView({ view }: { view: Day }) {
+export function DayView({ view, today }: { view: Day; today: string }) {
   const label = formatIstDate(view.day, "EEEE d MMMM");
   const groups = SECTIONS.map((s) => ({
     ...s,
@@ -59,26 +60,7 @@ export function DayView({ view }: { view: Day }) {
           ))
         )}
       </section>
-      {!view.ahead && (
-        <section className={styles.section} aria-label={`Done on ${label}`}>
-          <h2 className={styles.sectionTitle}>
-            What you logged that day <span className={styles.badge}>{view.done.length}</span>
-          </h2>
-          {view.done.length === 0 ? (
-            <p className={styles.muted}>Nothing logged that day.</p>
-          ) : (
-            <ul className={styles.doneList}>
-              {view.done.map((d, i) => (
-                <li key={i}>
-                  <span className={styles.muted}>{d.when}</span> ·{" "}
-                  {d.personId ? <Link href={`/people/${d.personId}`}>{d.name}</Link> : d.name} ·{" "}
-                  {d.what}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+      {!view.ahead && <LoggedList title={`Done on ${label}`} done={view.done} today={today} />}
     </>
   );
 }

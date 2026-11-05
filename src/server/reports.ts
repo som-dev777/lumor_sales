@@ -742,6 +742,15 @@ export function shapeOf(run: {
   };
 }
 
+/**
+ * The sections a download leaves out (D-059): the ones switched off on screen when the link was
+ * made (`?hide=…`), else the saved choice.
+ */
+export function hiddenFor(request: Request, saved: ReportSection[]): ReportSection[] {
+  const param = new URL(request.url).searchParams.get("hide");
+  return param === null ? saved : hiddenOf(param.split(","));
+}
+
 /** Includes or leaves out one section in the downloads. Audited. */
 export async function setSectionIncluded(
   db: Db,

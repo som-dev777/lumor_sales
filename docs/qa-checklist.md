@@ -570,6 +570,19 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
 - [ ] 19.5 Switch **Include in report** off on any section, then on again (or use **Include it
       again**). Reload: it stays as you left it. Try it on your phone too.
 
+## 20. Downloads, follow-ups by default, loading, My tasks (v2.13.0)
+
+- [ ] 20.1 On a report, switch **Include in report** off on a section and click **Download PDF**
+      straight away: that section isn't in the PDF. The same with **Download CSV**.
+- [ ] 20.2 On a person, choose **From me**, type a message: **Next follow-up** already shows
+      tomorrow. Change it or leave it, **Add to conversation**: the person's Next action date is
+      that day. **Add person**: Next action date starts on tomorrow.
+- [ ] 20.3 Click between pages (Companies, People, Reports) and change a filter: a small
+      "Loading…" pill with a spinning circle shows at the top until the page is ready.
+- [ ] 20.4 The sidebar says **My tasks**. Under the list, **What you logged today** shows each
+      person with their follow-up date; change one and **Save**: it moves on the list. **Previous
+      day** shows the same for that day.
+
 ---
 
 ## Before the team starts (only you can do these)

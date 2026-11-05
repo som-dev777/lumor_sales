@@ -538,7 +538,64 @@ export function pickDay(param: string | undefined, today: string): string | null
   return param;
 }
 
-export type DayDone = { personId: string | null; name: string; what: string; when: string };
+export type DayDone = {
+  personId: string | null;
+  name: string;
+  what: string;
+  when: string;
+  /** Their follow-up now (D-059), shown on the person's last log of the day. */
+  followUp: { nextAction: string | null; date: string | null; canEdit: boolean } | null;
+};
+
+/**
+ * What the rep logged on a day (D-057), each with the person's follow-up on their last log of
+ * the day, ready to change (D-059).
+ */
+export async function loggedOn(db: DbOrTx, viewer: Actor, day: string): Promise<DayDone[]> {
+  const { start, end } = istDayRange(day);
+  const logged = await db
+    .select({
+      personId: activity.personId,
+      name: person.fullName,
+      ownerId: person.ownerId,
+      nextAction: person.nextAction,
+      nextActionDate: person.nextActionDate,
+      stage: person.stage,
+      type: activity.type,
+      channel: activity.channel,
+      at: activity.occurredAt,
+    })
+    .from(activity)
+    .leftJoin(person, eq(person.id, activity.personId))
+    .where(
+      and(
+        eq(activity.userId, viewer.id),
+        notInArray(activity.type, ["Plan change", "Stage change"]),
+        gte(activity.occurredAt, start),
+        lt(activity.occurredAt, end),
+      ),
+    )
+    .orderBy(asc(activity.occurredAt));
+  const lastIndex = new Map<string, number>();
+  logged.forEach((a, i) => a.personId && lastIndex.set(a.personId, i));
+  return logged.map((a, i) => ({
+    personId: a.personId,
+    name: a.name ?? "—",
+    what: a.type === "Meeting note" ? "Note" : `${a.type} · ${a.channel}`,
+    when: formatIst(a.at, "h:mm aaa"),
+    followUp:
+      a.personId && lastIndex.get(a.personId) === i
+        ? {
+            nextAction: a.nextAction,
+            date: a.nextActionDate,
+            canEdit:
+              (a.ownerId === viewer.id || viewer.role === "Admin") &&
+              a.stage !== "Lost" &&
+              a.stage !== "Paid",
+          }
+        : null,
+  }));
+}
 export type DayView = {
   day: string;
   ahead: boolean;
@@ -570,36 +627,11 @@ export async function buildDay(
     };
   }
   const plan = await buildToday(db, viewer, now);
-  const { start, end } = istDayRange(day);
-  const logged = await db
-    .select({
-      personId: activity.personId,
-      name: person.fullName,
-      type: activity.type,
-      channel: activity.channel,
-      at: activity.occurredAt,
-    })
-    .from(activity)
-    .leftJoin(person, eq(person.id, activity.personId))
-    .where(
-      and(
-        eq(activity.userId, viewer.id),
-        notInArray(activity.type, ["Plan change", "Stage change"]),
-        gte(activity.occurredAt, start),
-        lt(activity.occurredAt, end),
-      ),
-    )
-    .orderBy(asc(activity.occurredAt));
   return {
     day,
     ahead: false,
     tasks: plan.tasks.filter((t) => t.section === "backlog" && t.dueDate === day),
-    done: logged.map((a) => ({
-      personId: a.personId,
-      name: a.name ?? "—",
-      what: a.type === "Meeting note" ? "Note" : `${a.type} · ${a.channel}`,
-      when: formatIst(a.at, "h:mm aaa"),
-    })),
+    done: await loggedOn(db, viewer, day),
   };
 }
 

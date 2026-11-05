@@ -58,7 +58,7 @@ function SidebarView({
         >
           <Menu size={20} aria-hidden />
         </button>
-        <Link href="/" className={styles.logo} aria-label="Lumor Sales Hub, go to Today">
+        <Link href="/" className={styles.logo} aria-label="Lumor Sales Hub, go to My tasks">
           <Brand />
         </Link>
         {bell && <div className={styles.topbarBell}>{bell}</div>}
@@ -78,7 +78,7 @@ function SidebarView({
           <Link
             href="/"
             className={styles.logo}
-            aria-label="Lumor Sales Hub, go to Today"
+            aria-label="Lumor Sales Hub, go to My tasks"
             onClick={() => setOpen(false)}
           >
             <Brand />

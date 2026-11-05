@@ -16,6 +16,7 @@ import {
   REPORT_COLUMNS,
 } from "@/lib/report-columns";
 import type { ReportData } from "@/server/reports";
+import { ReportButtons } from "./ReportButtons";
 import styles from "./reports.module.scss";
 
 const inr = new Intl.NumberFormat("en-IN", {
@@ -36,7 +37,12 @@ export function ReportBody({
   hidden,
   canShape,
   aiSummary,
+  canSummarise,
+  teammates,
 }: {
+  /** For the buttons above the report (D-059: they follow the switches on screen). */
+  canSummarise: boolean;
+  teammates: { id: string; name: string }[];
   reportId: string;
   /** The report as made (edits are laid over it here). */
   data: ReportData;
@@ -46,6 +52,29 @@ export function ReportBody({
   aiSummary: string | null;
 }) {
   const notify = useToast();
+  // Include in report, per section: what the server saved, and what's on screen (D-058, D-059).
+  const [switches, setSwitches] = useState({ fromServer: hidden, off: hidden });
+  if (switches.fromServer !== hidden) setSwitches({ fromServer: hidden, off: hidden });
+  const [saving, setSaving] = useState(0);
+  const [, startSwitch] = useTransition();
+  const toggle = (section: ReportSection, include: boolean) => {
+    const flip = (off: ReportSection[], on: boolean) =>
+      on ? off.filter((k) => k !== section) : [...new Set([...off, section])];
+    setSwitches((s) => ({ ...s, off: flip(s.off, include) }));
+    setSaving((n) => n + 1);
+    startSwitch(async () => {
+      const r = await includeReportSection(reportId, section, include);
+      setSaving((n) => n - 1);
+      if (!r.ok) setSwitches((s) => ({ ...s, off: flip(s.off, !include) }));
+      notify(r.ok ? "success" : "error", r.ok ? (r.message ?? "Saved.") : r.error);
+    });
+  };
+  const sectionProps = (id: ReportSection) => ({
+    id,
+    canShape,
+    included: !switches.off.includes(id),
+    onToggle: (on: boolean) => toggle(id, on),
+  });
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<ReportEdits>(edits);
   const [busy, start] = useTransition();
@@ -93,6 +122,19 @@ export function ReportBody({
 
   return (
     <>
+      <ReportButtons
+        id={reportId}
+        canSummarise={canSummarise}
+        teammates={teammates}
+        hide={switches.off}
+        waiting={
+          saving > 0
+            ? "Saving your choices…"
+            : editing
+              ? "Save or cancel the edited numbers first."
+              : null
+        }
+      />
       {canShape && (
         <div className={`${styles.editBar} ${styles.noPrint}`}>
           {editing ? (
@@ -141,13 +183,13 @@ export function ReportBody({
       )}
 
       {aiSummary && (
-        <Section id="summary" title="AI summary" {...{ reportId, hidden, canShape }}>
+        <Section title={"AI summary"} {...sectionProps("summary")}>
           <p className={styles.summary}>{aiSummary}</p>
         </Section>
       )}
 
       {p && (
-        <Section id="pipeline" title="Pipeline" {...{ reportId, hidden, canShape }}>
+        <Section title={"Pipeline"} {...sectionProps("pipeline")}>
           <div className={styles.kpis}>
             {headlines(shown).map((h) => (
               <div key={h.key} className={styles.kpi}>
@@ -213,7 +255,7 @@ export function ReportBody({
       )}
 
       {NUMBER_SECTIONS.map((sec) => (
-        <Section key={sec.key} id={sec.key} title={sec.title} {...{ reportId, hidden, canShape }}>
+        <Section key={sec.key} title={sec.title} {...sectionProps(sec.key)}>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
@@ -266,11 +308,11 @@ export function ReportBody({
       ))}
 
       {shown.events ? (
-        <Section id="details" title={eventsTitle(shown)} {...{ reportId, hidden, canShape }}>
+        <Section title={eventsTitle(shown)} {...sectionProps("details")}>
           <Events events={shown.events} />
         </Section>
       ) : shown.details ? (
-        <Section id="details" title="What happened" {...{ reportId, hidden, canShape }}>
+        <Section title={"What happened"} {...sectionProps("details")}>
           <Details details={shown.details} />
         </Section>
       ) : (
@@ -283,37 +325,21 @@ export function ReportBody({
   );
 }
 
-/** A report section with its Include in report switch (D-057). */
+/** A report section with its Include in report switch (D-057, D-058). */
 function Section({
-  id,
   title,
-  reportId,
-  hidden,
   canShape,
+  included,
+  onToggle,
   children,
 }: {
   id: ReportSection;
   title: string;
-  reportId: string;
-  hidden: ReportSection[];
   canShape: boolean;
+  included: boolean;
+  onToggle: (include: boolean) => void;
   children: React.ReactNode;
 }) {
-  const notify = useToast();
-  const [, start] = useTransition();
-  // What the server says, and what's on screen: a click shows at once; a failure puts it back.
-  const fromServer = !hidden.includes(id);
-  const [state, setState] = useState({ fromServer, included: fromServer });
-  if (state.fromServer !== fromServer) setState({ fromServer, included: fromServer });
-  const included = state.included;
-  const toggle = (next: boolean) => {
-    setState((s) => ({ ...s, included: next }));
-    start(async () => {
-      const r = await includeReportSection(reportId, id, next);
-      if (!r.ok) setState((s) => ({ ...s, included: !next }));
-      notify(r.ok ? "success" : "error", r.ok ? (r.message ?? "Saved.") : r.error);
-    });
-  };
   return (
     <section
       className={`${styles.card} ${included ? "" : `${styles.excluded} ${styles.noPrint}`}`}
@@ -328,7 +354,7 @@ function Section({
               role="switch"
               checked={included}
               aria-label={`Include ${title} in the report`}
-              onChange={(e) => toggle(e.target.checked)}
+              onChange={(e) => onToggle(e.target.checked)}
             />
             Include in report
           </label>
@@ -340,7 +366,7 @@ function Section({
         <div className={styles.excludedNote}>
           <p className={styles.muted}>Left out of the PDF, CSV, email and print.</p>
           {canShape && (
-            <Button variant="secondary" onClick={() => toggle(true)}>
+            <Button variant="secondary" onClick={() => onToggle(true)}>
               Include it again
             </Button>
           )}

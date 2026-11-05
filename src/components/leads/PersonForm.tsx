@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { addDaysIst, todayIst } from "@/lib/time";
 import { useServerResult } from "@/components/auth/useServerResult";
 import { Button } from "@/components/ui/Button";
 import { SelectField } from "@/components/ui/SelectField";
@@ -108,7 +109,13 @@ export function PersonForm({ personId, defaultValues, options, canChooseOwner, o
     formState: { errors, isSubmitting },
   } = useForm<PersonInput, unknown, PersonData>({
     resolver: zodResolver(personSchema),
-    defaultValues,
+    // Adding someone: the follow-up starts on tomorrow (D-059). Editing keeps their date.
+    defaultValues: personId
+      ? defaultValues
+      : {
+          ...defaultValues,
+          nextActionDate: defaultValues.nextActionDate || addDaysIst(todayIst(), 1),
+        },
   });
   const { formError, apply } = useServerResult(setError);
   // Fill with AI (F24): only fields left empty come back.

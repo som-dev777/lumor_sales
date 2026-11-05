@@ -18,26 +18,40 @@ export function ReportButtons({
   id,
   canSummarise,
   teammates,
+  hide = [],
+  waiting = null,
 }: {
   id: string;
   /** No summary yet, and AI is set up. */
   canSummarise: boolean;
   teammates: { id: string; name: string }[];
+  /** Sections switched off on screen: the downloads leave them out too (D-059). */
+  hide?: string[];
+  /** Why downloads must wait (a switch saving, numbers being edited), or null. */
+  waiting?: string | null;
 }) {
   const notify = useToast();
   const [busy, start] = useTransition();
+  const query = hide.length ? `?hide=${hide.join(",")}` : "";
+  const download = (kind: "pdf" | "csv", label: string) =>
+    waiting ? (
+      <span className={`${styles.linkButton} ${styles.waiting}`} aria-disabled title={waiting}>
+        <Download size={16} aria-hidden /> {label}
+      </span>
+    ) : (
+      <a className={styles.linkButton} href={`/reports/${id}/${kind}${query}`}>
+        <Download size={16} aria-hidden /> {label}
+      </a>
+    );
   return (
     <div className={`${styles.actions} ${styles.noPrint}`}>
-      <a className={styles.linkButton} href={`/reports/${id}/pdf`}>
-        <Download size={16} aria-hidden /> Download PDF
-      </a>
+      {download("pdf", "Download PDF")}
       <Button variant="secondary" onClick={() => window.print()}>
         <Printer size={16} aria-hidden /> Print
       </Button>
-      <EmailReportButton id={id} teammates={teammates} />
-      <a className={styles.linkButton} href={`/reports/${id}/csv`}>
-        <Download size={16} aria-hidden /> Download CSV
-      </a>
+      <EmailReportButton id={id} teammates={teammates} waiting={waiting} />
+      {download("csv", "Download CSV")}
+      {waiting && <span className={styles.muted}>{waiting}</span>}
       {canSummarise && (
         <Button
           variant="secondary"
@@ -60,9 +74,11 @@ export function ReportButtons({
 function EmailReportButton({
   id,
   teammates,
+  waiting,
 }: {
   id: string;
   teammates: { id: string; name: string }[];
+  waiting: string | null;
 }) {
   const notify = useToast();
   const [open, setOpen] = useState(false);
@@ -72,7 +88,12 @@ function EmailReportButton({
   const [busy, start] = useTransition();
   return (
     <>
-      <Button variant="secondary" onClick={() => setOpen(true)}>
+      <Button
+        variant="secondary"
+        onClick={() => setOpen(true)}
+        disabled={Boolean(waiting)}
+        title={waiting ?? undefined}
+      >
         <Mail size={16} aria-hidden /> Email this report
       </Button>
       <Dialog open={open} onOpenChange={setOpen} title="Email this report">

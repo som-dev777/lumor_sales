@@ -15,6 +15,7 @@ import { formatIstDate, todayIst } from "@/lib/time";
 import { aiMode } from "@/server/ai/client";
 import {
   buildDay,
+  loggedOn,
   buildTeam,
   buildToday,
   DAY_RANGE,
@@ -25,11 +26,12 @@ import {
 } from "@/server/today";
 import { DayNav } from "@/components/today/DayNav";
 import { DayView } from "@/components/today/DayView";
+import { LoggedList } from "@/components/today/LoggedList";
 import { meetingsToday } from "@/server/calendar";
 import { TodayMeetings } from "@/components/calendar/TodayMeetings";
 import { AutoRefresh } from "@/components/shell/AutoRefresh";
 
-export const metadata: Metadata = { title: "Today" };
+export const metadata: Metadata = { title: "My tasks" };
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
@@ -38,7 +40,7 @@ export default function TodayPage({ searchParams }: PageProps<"/">) {
     <Suspense
       fallback={
         <>
-          <PageHeader title="Today" description="What to do today, in order." />
+          <PageHeader title="My tasks" description="What to do today, in order." />
           <StatusMessage title="Building your list…" />
         </>
       }
@@ -68,17 +70,19 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
   };
   // Previous day / Next day (D-057): ?day=YYYY-MM-DD, up to 7 days either way.
   const day = teamView ? null : pickDay(one(params.day), todayIst(now));
-  const [plan, meetings, dayView] = await Promise.all([
+  const [plan, meetings, dayView, loggedToday] = await Promise.all([
     buildToday(getDb(), viewer, now),
     meetingsToday(getDb(), viewer.id, day ? new Date(`${day}T06:30:00Z`) : now),
     day ? buildDay(getDb(), viewer, day, now) : null,
+    // What you logged today, with each follow-up date to change (D-059).
+    day || teamView ? [] : loggedOn(getDb(), viewer, todayIst(now)),
   ]);
   return (
     <>
       {/* Meetings booked or cancelled during the day show up without reloading (D-054). */}
       <AutoRefresh />
       <PageHeader
-        title="Today"
+        title="My tasks"
         description={
           teamView
             ? `Where the team stands on ${formatIstDate(plan.today, "EEEE d MMMM")}.`
@@ -92,7 +96,7 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
             className={teamView ? styles.tab : styles.tabActive}
             aria-current={teamView ? undefined : "page"}
           >
-            My day
+            My tasks
           </Link>
           <Link
             href="/?tab=team"
@@ -112,7 +116,7 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
             today={meetings}
             title={`Meetings on ${formatIstDate(dayView.day, "EEEE d MMMM")}`}
           />
-          <DayView view={dayView} />
+          <DayView view={dayView} today={plan.today} />
         </>
       ) : (
         <>
@@ -128,6 +132,7 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
             aiReady={aiMode() !== "off"}
             today={plan.today}
           />
+          <LoggedList title="What you logged today" done={loggedToday} today={plan.today} />
         </>
       )}
     </>

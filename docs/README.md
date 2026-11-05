@@ -3,7 +3,7 @@
 Lumor Sales Hub is the internal web app where Lumor's sales team manages LinkedIn
 prospecting, from finding a lead in Sales Navigator to a paying customer.
 
-**Current version:** 2.12.0 (released 5 Nov 2026: a simpler report with Events of the day, Connection request on the person page, D-058). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
+**Current version:** 2.13.0 (released 5 Nov 2026: downloads follow the screen, follow-ups default to tomorrow, loading feedback, My tasks, D-059). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
 
 ## Documents
 

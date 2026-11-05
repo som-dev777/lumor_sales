@@ -50,7 +50,7 @@ test("exit check: Follow-up from the conversation shows on Today", async () => {
   await expect(convo).toContainText("She asked for a call this week");
   await expect(admin.locator("dl").first()).toContainText("Call about the pilot");
 
-  await shown(admin.getByRole("link", { name: "Today" })).click();
+  await shown(admin.getByRole("link", { name: "My tasks" })).click();
   await expect(admin).toHaveURL("/");
   const task = shown(admin.getByRole("listitem", { name: "Fiona Follow" }));
   await expect(task).toContainText("Call about the pilot");

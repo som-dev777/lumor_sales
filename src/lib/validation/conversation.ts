@@ -37,6 +37,12 @@ export const entrySchema = z
       .nullish()
       .refine((v) => !v || isIstDate(v), "Pick a valid date.")
       .transform((v) => v || null),
+    // The next follow-up, set with the entry (D-059); tomorrow by default in the form.
+    followUpDate: z
+      .string()
+      .nullish()
+      .refine((v) => !v || isIstDate(v), "Pick a valid follow-up date.")
+      .transform((v) => v || null),
   })
   .refine((e) => e.from === "request" || e.text.length > 0, {
     message: "Write the message first.",

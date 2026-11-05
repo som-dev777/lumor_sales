@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { ReportButtons } from "@/components/reports/ReportButtons";
 import styles from "@/components/reports/reports.module.scss";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { StatusMessage } from "@/components/ui/StatusMessage";
@@ -55,12 +54,6 @@ async function Report({ params }: Pick<PageProps<"/reports/[id]">, "params">) {
           run.scheduleId ? " by a schedule" : ""
         }`}
       />
-      <ReportButtons
-        id={run.id}
-        canSummarise={!run.aiSummary && aiMode() !== "off"}
-        teammates={teammates}
-      />
-
       <ReportBody
         reportId={run.id}
         data={run.data}
@@ -68,6 +61,8 @@ async function Report({ params }: Pick<PageProps<"/reports/[id]">, "params">) {
         hidden={hiddenOf(run.hiddenSections)}
         canShape={mayShape(viewer, run)}
         aiSummary={run.aiSummary}
+        canSummarise={!run.aiSummary && aiMode() !== "off"}
+        teammates={teammates}
       />
     </>
   );

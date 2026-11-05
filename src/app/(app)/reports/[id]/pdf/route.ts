@@ -4,9 +4,9 @@ import { getDb } from "@/lib/db/client";
 import { can } from "@/lib/permissions";
 import { getViewer } from "@/lib/session";
 import { reportPdf } from "@/server/report-pdf";
-import { getReport, shapeOf } from "@/server/reports";
+import { getReport, hiddenFor, shapeOf } from "@/server/reports";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const viewer = await getViewer();
   if (!viewer) return new Response("Please log in.", { status: 401 });
   if (!viewer.active || viewer.mustChangePassword || !can(viewer, "record.view")) {
@@ -18,7 +18,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!run) return new Response("Not found", { status: 404 });
   const name = `lumor-report-${run.fromDate}-to-${run.toDate}.pdf`;
   return new Response(
-    new Uint8Array(reportPdf(shapeOf(run).data, run.aiSummary, shapeOf(run).hidden)),
+    new Uint8Array(
+      reportPdf(shapeOf(run).data, run.aiSummary, hiddenFor(request, shapeOf(run).hidden)),
+    ),
     {
       headers: {
         "Content-Type": "application/pdf",

@@ -7,7 +7,16 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.12.0 (docs/qa-checklist.md section 19).
+Next: the owner's QA of v2.13.0 (docs/qa-checklist.md section 20).
+
+## [2.13.0] - 2026-11-05
+
+Downloads follow what's on screen, follow-ups default to tomorrow, loading feedback, My tasks (D-059).
+
+- **Report downloads match the page:** the PDF and CSV leave out every section switched off on screen, even when clicked straight away. Email waits until the switches have saved; while numbers are being edited, downloads wait for Save or Cancel.
+- **Every entry comes with a next follow-up:** the conversation box (Connection request, From me, From them) has **Next follow-up**, set to tomorrow, saved with the entry. Follow-up dates elsewhere (Follow-up, Set next follow-up, Add follow-up, adding a person) also start on tomorrow. You can change any of them.
+- **Loading feedback:** a spinning circle shows while a page loads, at the top of the screen while moving between pages or applying filters, and on buttons while they work.
+- **My tasks** (was Today): under the list, **What you logged today** shows each person's follow-up date beside the log, ready to change, or **Set follow-up** when there's none. The same on earlier days.
 
 ## [2.12.0] - 2026-11-05
 

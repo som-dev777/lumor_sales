@@ -30,11 +30,11 @@ test.beforeAll(async ({ browser }) => {
   await expect(rep).toHaveURL("/");
 });
 
-test("the sidebar lists Today, Calendar, Companies, People in that order", async () => {
+test("the sidebar lists My tasks, Calendar, Companies, People in that order", async () => {
   const nav = shown(rep.getByRole("navigation", { name: "Main" }));
   const labels = await nav.getByRole("link").allInnerTexts();
   expect(labels.slice(0, 4).map((l) => l.trim())).toEqual([
-    "Today",
+    "My tasks",
     "Calendar",
     "Companies",
     "People",

@@ -357,3 +357,70 @@ describe("Today by day (D-057)", () => {
     expect(back.done.map((d) => [d.name, d.what])).toEqual([[later.fullName, "Note"]]);
   });
 });
+
+describe("Downloads follow the screen; logs show follow-ups (D-059)", () => {
+  it("a download leaves out what's switched off on screen, else the saved choice", async () => {
+    const { hiddenFor } = await import("./reports");
+    const req = (q: string) => new Request(`https://hub.example/reports/x/pdf${q}`);
+    expect(hiddenFor(req(""), ["activity"])).toEqual(["activity"]);
+    expect(hiddenFor(req("?hide=pipeline,details,bogus"), ["activity"])).toEqual([
+      "pipeline",
+      "details",
+    ]);
+    expect(hiddenFor(req("?hide="), ["activity"])).toEqual([]);
+  });
+
+  it("What you logged shows each person's follow-up once, on their last log, editable by the owner", async () => {
+    const { loggedOn } = await import("./today");
+    const p = await lead(asha, at(9, "2026-10-01"));
+    await quickLog(t.db, asha, p.id, { action: "messageSent" }, { now: at(10) });
+    await quickLog(
+      t.db,
+      asha,
+      p.id,
+      { action: "callLogged", outcome: "No answer" },
+      { now: at(11) },
+    );
+    await setFollowUp(t.db, asha, p.id, { nextAction: "Call again", date: "2026-11-06" }, at(12));
+    const done = await loggedOn(t.db, asha, DAY);
+    expect(done.map((d) => [d.what, d.followUp])).toEqual([
+      ["Message sent · LinkedIn", null],
+      ["Call · Call", { nextAction: "Call again", date: "2026-11-06", canEdit: true }],
+    ]);
+    // An Admin who logged on Asha's lead may change it too; another rep may not.
+    await quickLog(t.db, admin, p.id, { action: "messageSent" }, { now: at(13) });
+    expect((await loggedOn(t.db, admin, DAY))[0].followUp?.canEdit).toBe(true);
+  });
+});
+
+describe("Next follow-up with each entry (D-059)", () => {
+  it("logging a message with a follow-up date keeps a follow-up; it shows on that day", async () => {
+    const p = await lead(asha, at(9, "2026-10-01"));
+    await addEntry(
+      t.db,
+      asha,
+      p.id,
+      {
+        from: "me",
+        channel: "LinkedIn",
+        at: at(10),
+        text: "Hi, a quick question",
+        followUpDate: "2026-11-05",
+      },
+      { now: at(10) },
+    );
+    const [row] = await t.db.select().from(person).where(eq(person.id, p.id));
+    expect([row.nextAction, row.nextActionDate]).toEqual(["Follow up", "2026-11-05"]);
+    const ahead = await buildDay(t.db, asha, "2026-11-05", at(12));
+    expect(ahead.tasks.map((x) => x.name)).toEqual([p.fullName]);
+    await expect(
+      addEntry(
+        t.db,
+        asha,
+        p.id,
+        { from: "them", channel: "LinkedIn", at: at(11), text: "x", followUpDate: "2026-11-01" },
+        { now: at(11) },
+      ),
+    ).rejects.toThrow("Pick today or a later follow-up date.");
+  });
+});
