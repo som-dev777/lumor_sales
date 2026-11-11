@@ -57,7 +57,10 @@ test("exit check: one lead walked from Contacted to Paid", async () => {
   personUrl = new URL(rep.url()).pathname;
 
   await logWithDialog(rep, "Request sent", async () => {}, "Contacted");
-  await expect(rep.getByText("Check acceptance ·")).toBeVisible();
+  // The next follow-up shows at the top (D-060).
+  await expect(shown(rep.getByRole("group", { name: "Plan and next follow-up" }))).toContainText(
+    "Check acceptance",
+  );
   await log(rep, "Accepted", "Connected");
   // A message on the day they accepted breaks guardrail 1: the app asks first.
   await rep.getByRole("button", { name: "Message sent", exact: true }).click();

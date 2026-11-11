@@ -560,3 +560,25 @@
   padding-inline: var(--space-1);
   font-size: var(--text-xs);
 }
+
+/* The plan step and next follow-up, at the top of a person's page (D-060). */
+.nextUp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-6);
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--color-primary-soft);
+  font-size: var(--text-sm);
+
+  > div {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.nextUpLabel {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}

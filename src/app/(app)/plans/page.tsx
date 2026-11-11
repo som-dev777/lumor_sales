@@ -17,7 +17,7 @@ export default function PlansPage({ searchParams }: PageProps<"/plans">) {
     <>
       <PageHeader
         title="Plans"
-        description="The agreed way to pitch a person: ordered steps, each with a channel, a message or script, and a wait."
+        description="The agreed way to pitch a person: ordered steps, each with a channel, a message or script, and the days until the next step."
       />
       <Suspense fallback={<StatusMessage title="Loading plans…" />}>
         <Plans searchParams={searchParams} />

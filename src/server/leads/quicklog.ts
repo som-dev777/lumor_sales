@@ -91,10 +91,16 @@ export async function quickLogTx(
     note,
     now = new Date(),
     activityExtra,
+    planSetsDates = false,
   }: {
     note?: string | null;
     now?: Date;
     activityExtra?: Partial<typeof activity.$inferInsert>;
+    /**
+     * On an active plan the plan sets the next dates (D-060): a request or an acceptance doesn't
+     * set "Check acceptance" or "Send Message 1", which would go ahead of the plan.
+     */
+    planSetsDates?: boolean;
   } = {},
 ) {
   const before = await loadPerson(tx, personId);
@@ -264,6 +270,9 @@ export async function quickLogTx(
     })
     .returning();
 
+  if (planSetsDates && (log.action === "requestSent" || log.action === "accepted")) {
+    plan = { ...plan, nextAction: before.nextAction, nextActionDate: before.nextActionDate };
+  }
   const [after] = await tx
     .update(person)
     .set({

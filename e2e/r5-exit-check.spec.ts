@@ -100,7 +100,9 @@ test("exit check: a new guardrail value is used by the next quick-log", async ()
   await add.getByRole("button", { name: "Add person" }).click();
   await expect(rep).toHaveURL(/\/people\/[0-9a-f-]{36}$/);
   await shown(rep.getByRole("button", { name: "Accepted", exact: true })).click();
-  await expect(rep.locator("dl").getByText(`Send Message 1 · ${istDatePlus(2)}`)).toBeVisible();
+  await expect(rep.getByRole("group", { name: "Plan and next follow-up" })).toContainText(
+    `${istDatePlus(2)} · Send Message 1`,
+  );
 });
 
 test.afterAll(async () => {

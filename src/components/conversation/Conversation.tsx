@@ -39,6 +39,8 @@ type Props = {
   now: string;
   currentStep: CurrentStep | null;
   defaultChannel: string;
+  /** On an active plan: the plan sets the next date unless one is typed (D-060). */
+  onPlan?: boolean;
 };
 
 type From = "request" | "me" | "them" | "note" | "follow";
@@ -55,6 +57,7 @@ export function Conversation({
   now,
   currentStep,
   defaultChannel,
+  onPlan = false,
 }: Props) {
   const [showEvents, setShowEvents] = useState(false);
   const events = items.filter((i) => i.side === "event").length;
@@ -100,6 +103,7 @@ export function Conversation({
         now={now}
         currentStep={currentStep}
         defaultChannel={defaultChannel}
+        onPlan={onPlan}
       />
     </section>
   );
@@ -112,6 +116,7 @@ function Composer({
   now,
   currentStep,
   defaultChannel,
+  onPlan = false,
 }: Omit<Props, "items">) {
   const notify = useToast();
   const [from, setFrom] = useState<From>(canLog ? "me" : "note");
@@ -120,8 +125,11 @@ function Composer({
   const [text, setText] = useState("");
   const [replyType, setReplyType] = useState("");
   const [replyBy, setReplyBy] = useState("");
-  // The next follow-up with each entry: tomorrow unless changed (D-059).
-  const [nextDate, setNextDate] = useState(addDaysIst(now.slice(0, 10), 1));
+  // The next follow-up with each entry: tomorrow unless changed (D-059). On an active plan the
+  // plan sets it, so it starts empty (D-060); a reply pauses the plan, so a reply keeps tomorrow.
+  const [typedDate, setNextDate] = useState<string | null>(null);
+  const planSets = onPlan && from !== "them";
+  const nextDate = typedDate ?? (planSets ? "" : addDaysIst(now.slice(0, 10), 1));
   // Follow-up (D-055): what's next and when; the note is optional.
   const today = now.slice(0, 10);
   const [nextAction, setNextAction] = useState("");
@@ -152,7 +160,7 @@ function Composer({
         setText("");
         setReplyType("");
         setReplyBy("");
-        setNextDate(addDaysIst(now.slice(0, 10), 1));
+        setNextDate(null);
         setError(null);
         setWarnings(null);
       } else if (r.warnings?.length) {
@@ -291,7 +299,11 @@ function Composer({
             type="date"
             min={now.slice(0, 10)}
             value={nextDate}
-            hint="Tomorrow unless you change it. Clear it for none."
+            hint={
+              planSets
+                ? "Empty: the plan sets the next date. A date here goes ahead of the plan's."
+                : "Tomorrow unless you change it. Clear it for none."
+            }
             onChange={(e) => setNextDate(e.target.value)}
           />
         )}

@@ -51,7 +51,8 @@ async function Builder() {
             customPurpose: "",
             templateId: "",
             script: "",
-            waitDays: 0,
+            // The follow-up after each step (D-060): Message 1 two days after they accept.
+            waitDays: 2,
           },
           {
             channels: [{ channel: "LinkedIn message", when: "always" }],
@@ -59,7 +60,7 @@ async function Builder() {
             customPurpose: "",
             templateId: "",
             script: "",
-            waitDays: 2,
+            waitDays: 3,
           },
         ],
       }}

@@ -162,6 +162,8 @@ export async function createPersonTx(
     .insert(person)
     .values({
       ...columnsFrom(data),
+      // When the first follow-up was set, so a plan started later goes ahead of it (D-060).
+      ...stampFollowUp({}, columnsFrom(data)),
       linkedinUrlNormalised: norm,
       companyId,
       officeId,

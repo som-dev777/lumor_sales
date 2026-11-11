@@ -334,7 +334,12 @@ export function PlanBuilder({
               ]}
             />
             <TextField
-              label="Wait (days)"
+              label="Follow up after (days)"
+              hint={
+                i === plan.steps.length - 1
+                  ? "Days after this step until the plan finishes."
+                  : `Days after this step until step ${i + 2} is due.`
+              }
               type="number"
               min={0}
               max={90}

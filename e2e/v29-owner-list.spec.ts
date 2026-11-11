@@ -48,7 +48,9 @@ test("exit check: Follow-up from the conversation shows on Today", async () => {
   await convo.getByRole("button", { name: "Set follow-up" }).click();
   await expect(shown(admin.getByText(/Follow-up set: Call about the pilot/))).toBeVisible();
   await expect(convo).toContainText("She asked for a call this week");
-  await expect(admin.locator("dl").first()).toContainText("Call about the pilot");
+  await expect(admin.getByRole("group", { name: "Plan and next follow-up" })).toContainText(
+    "Call about the pilot",
+  );
 
   await shown(admin.getByRole("link", { name: "My tasks" })).click();
   await expect(admin).toHaveURL("/");

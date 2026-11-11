@@ -84,11 +84,14 @@ function checkStructure(steps: PlanStepInput[]): Finding[] {
 
 export function checkPlan(
   planType: PlanType,
-  steps: PlanStepInput[],
+  input: PlanStepInput[],
   settings: GuardSettings,
 ): Finding[] {
-  const findings = checkStructure(steps);
+  const findings = checkStructure(input);
   if (findings.some((f) => f.level === "block")) return findings;
+  // Each step's days are the follow-up after it (D-060). The rules below read the days before
+  // each step, so shift them: step 1 is due at once, step N after step N−1's follow-up.
+  const steps = input.map((s, i) => ({ ...s, waitDays: i === 0 ? 0 : input[i - 1].waitDays }));
 
   // Guardrails 5 and 6 apply to every plan type.
   const touchIdx = steps.map((s, i) => (isTouch(s) ? i : -1)).filter((i) => i >= 0);
@@ -131,8 +134,8 @@ export function checkPlan(
     if (w < settings.msgAfterAcceptMinDays || w > settings.msgAfterAcceptMaxDays) {
       block(
         1,
-        `Step 2: message ${settings.msgAfterAcceptMinDays}–${settings.msgAfterAcceptMaxDays} days after the connection is accepted, not ${w}.`,
-        2,
+        `Step 1: follow up ${settings.msgAfterAcceptMinDays}–${settings.msgAfterAcceptMaxDays} days after the connection is accepted, not ${w}.`,
+        1,
       );
     }
   }

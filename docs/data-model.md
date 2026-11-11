@@ -298,7 +298,8 @@ plan_id (→ plan), version, step_order, channels (JSON ordered list of `{channe
 the first that applies is used, D-033; `label` names a Custom task, D-043), template_purpose
 (Template purpose, optional), custom_purpose (a purpose the author typed, D-043), template_id
 (→ template, optional), script (call script, task text or connection-request note), wait_days
-(≥ 0). Unique (plan_id, version, step_order).
+(≥ 0: the follow-up after this step, the days until the next step is due, or until the plan
+finishes after the last step; D-060 — before 2.14.0 it was read as the days before this step). Unique (plan_id, version, step_order).
 
 ### plan_enrolment
 

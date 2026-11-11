@@ -304,8 +304,8 @@ describe("replies, resume, versions, Do not contact", () => {
         planType: "Outreach",
         type: "Official",
         steps: [
-          { channels: [{ channel: "LinkedIn connection request", when: "always" }], waitDays: 0 },
-          { channels: [{ channel: "LinkedIn message", when: "always" }], waitDays: 3 },
+          { channels: [{ channel: "LinkedIn connection request", when: "always" }], waitDays: 3 },
+          { channels: [{ channel: "LinkedIn message", when: "always" }], waitDays: 0 },
         ],
       }),
     );
@@ -361,7 +361,8 @@ describe("replies, resume, versions, Do not contact", () => {
       }),
     );
     await switchPlan(t.db, rep, p.id, plan.id, on("2026-10-20"));
-    expect(await enrolment(p.id)).toMatchObject({ planId: plan.id, nextDueDate: "2026-10-21" });
+    // Step 1 is due the day they're put on the plan (D-060).
+    expect(await enrolment(p.id)).toMatchObject({ planId: plan.id, nextDueDate: "2026-10-20" });
   });
 });
 

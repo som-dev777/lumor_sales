@@ -29,19 +29,26 @@ const msg = (waitDays: number, text?: string): PlanStepInput => ({
   text,
 });
 const email = (waitDays: number): PlanStepInput => ({ channels: ch("Email"), waitDays });
+// The cases below give each step the days before it, which reads more easily; the builder saves
+// the days after each step (D-060), so `after` turns one into the other.
+const after = (steps: PlanStepInput[]) =>
+  steps.map((s, i) => ({ ...s, waitDays: steps[i + 1]?.waitDays ?? 0 }));
+const check = (type: Parameters<typeof checkPlan>[0], steps: PlanStepInput[], settings = S) =>
+  checkPlan(type, after(steps), settings);
 const blocks = (steps: PlanStepInput[], settings = S) =>
-  checkPlan("Outreach", steps, settings)
+  check("Outreach", steps, settings)
     .filter((f) => f.level === "block")
     .map((f) => f.rule);
-const seed = SEED_PLANS[0].steps.map((s) => ({
+const saved = SEED_PLANS[0].steps.map((s) => ({
   channels: s.channels,
   waitDays: s.waitDays ?? 0,
   script: s.script,
 }));
+const seed = saved.map((s, i) => ({ ...s, waitDays: i === 0 ? 0 : saved[i - 1].waitDays }));
 
 describe("plan builder (checkPlan)", () => {
   it("the seed Official Outreach plan passes every guardrail", () => {
-    expect(checkPlan("Outreach", seed, S).filter((f) => f.level === "block")).toEqual([]);
+    expect(checkPlan("Outreach", saved, S).filter((f) => f.level === "block")).toEqual([]);
   });
 
   it("rule 1: message 1–3 days after acceptance (edges 1 and 3 pass, 0 and 4 block)", () => {
@@ -65,7 +72,7 @@ describe("plan builder (checkPlan)", () => {
     expect(blocks(fourth)).not.toContain(3);
     expect(blocks(fourth)).toContain(7); // but one more step makes the plan too long
     const fifth = [...seed, msg(14), msg(18)];
-    const found = checkPlan("Outreach", fifth, S).find((f) => f.rule === 3);
+    const found = check("Outreach", fifth).find((f) => f.rule === 3);
     expect(found).toMatchObject({
       level: "block",
       message: "At most 4 follow-ups after Message 1. This plan has 5.",
@@ -86,9 +93,9 @@ describe("plan builder (checkPlan)", () => {
 
   it("rules 5 and 6 warn; rules 1–4 and 7 only apply to Outreach plans", () => {
     const steps = [msg(0), msg(1, "Just following up on this"), msg(1)];
-    const outreach = checkPlan("Outreach", steps, S);
+    const outreach = check("Outreach", steps);
     expect(outreach.filter((f) => f.level === "warn").map((f) => f.rule)).toEqual([5, 6]);
-    const trial = checkPlan("Trial", steps, S);
+    const trial = check("Trial", steps);
     expect(trial.filter((f) => f.level === "block")).toEqual([]);
     expect(bannedPhrase("Bumping this to the top")).toBe("Bumping this");
     expect(bannedPhrase("Here's an example")).toBeNull();

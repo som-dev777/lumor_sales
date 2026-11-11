@@ -32,7 +32,10 @@ import {
   taskNameOf,
   rollOffWeekend,
   daysBetween,
+  laterOf,
+  planFinished,
 } from "./schedule";
+import { placeInPlan, type PastTouch, type Placement } from "./placement";
 
 type EnrolmentRow = typeof planEnrolment.$inferSelect;
 type PersonRow = typeof person.$inferSelect;
@@ -160,7 +163,8 @@ export async function planState(db: DbOrTx, personId: string, today: string) {
   const channel = step ? resolveChannel(step.channels, p) : null;
   // A Custom task's own name, shown instead of "Manual task" (D-043).
   const taskName = step ? taskNameOf(step.channels, p) : null;
-  const finished = !step || (e.endsBy !== null && e.endsBy < today);
+  // All steps done waits out the last step's follow-up before it counts as finished (D-060).
+  const finished = planFinished(e, steps.length, today);
   let message: string | null = null;
   let templateId: string | null = null;
   if (
@@ -193,6 +197,7 @@ export async function planState(db: DbOrTx, personId: string, today: string) {
     message,
     templateId,
     finished,
+    allDone: !step,
     overdue:
       !finished &&
       e.status === "Active" &&
@@ -274,22 +279,106 @@ async function logPlanEvent(
   });
 }
 
-/** When the next step is due, after a step was done (or the plan started) on `from`. */
+/**
+ * When the next step is due: `waitDays` (the done step's follow-up, D-060) after `from`, never
+ * before `floor`, within the weekly touch limit.
+ */
 async function scheduleNext(
   tx: DbOrTx,
   personId: string,
   from: string,
-  step: StepRow,
+  waitDays: number,
   skipWeekends: boolean,
+  floor?: string,
 ) {
   const settings = await getPlaybookSettings(tx);
   const history = await touchHistory(tx, personId);
+  const due = dueAfter(from, waitDays, skipWeekends);
   return fitWeeklyLimit(
-    dueAfter(from, step.waitDays, skipWeekends),
+    floor ? rollOffWeekend(laterOf(due, floor), skipWeekends) : due,
     touchDates(history),
     settings.weeklyTouchLimit,
     skipWeekends,
   );
+}
+
+/**
+ * What the person already had, for placing them on a plan (D-060). An Outreach plan reads their
+ * whole history; a Meeting follow-up plan reads from their last meeting held, and a Trial or
+ * Onboarding plan from their last stage change, so earlier outreach doesn't count as its steps.
+ */
+async function pastTouches(tx: DbOrTx, personId: string, planType: string): Promise<PastTouch[]> {
+  const rows = await tx
+    .select({ type: activity.type, channel: activity.channel, at: activity.occurredAt })
+    .from(activity)
+    .where(eq(activity.personId, personId))
+    .orderBy(asc(activity.occurredAt), asc(activity.createdAt));
+  const mark =
+    planType === "Meeting follow-up"
+      ? "Meeting held"
+      : planType === "Trial" || planType === "Onboarding"
+        ? "Stage change"
+        : null;
+  const from = mark ? rows.map((r) => r.type).lastIndexOf(mark) : -1;
+  return rows
+    .slice(from + 1)
+    .map((r) => ({ type: r.type, channel: r.channel, date: toIstDate(r.at) }));
+}
+
+/** The plan's starting point from a placement: step, due date, acceptance and time limit. */
+async function startingPoint(
+  tx: DbOrTx,
+  p: PersonRow,
+  pl: { planType: string; skipWeekends: boolean },
+  steps: StepRow[],
+  place: Placement,
+  today: string,
+) {
+  const settings = await getPlaybookSettings(tx);
+  const currentStep = place.done + 1;
+  if (place.done === 0) {
+    // Nothing done yet: step 1 is due on the day they're put on the plan.
+    return {
+      currentStep,
+      nextDueDate: await scheduleNext(tx, p.id, today, 0, pl.skipWeekends),
+      waitingForAcceptance: false,
+      requestSentDate: null,
+      acceptedDate: null,
+      endsBy: null,
+    };
+  }
+  if (place.waitingForAcceptance) {
+    const sent = place.requestSentDate ?? today;
+    return {
+      currentStep,
+      nextDueDate: laterOf(addDaysIst(sent, settings.withdrawAfterDays), today),
+      waitingForAcceptance: true,
+      requestSentDate: place.requestSentDate,
+      acceptedDate: null,
+      endsBy: null,
+    };
+  }
+  const from = place.acceptedDate ?? place.lastDoneDate ?? today;
+  const wait = steps[place.done - 1].waitDays;
+  return {
+    currentStep,
+    nextDueDate:
+      currentStep > steps.length
+        ? laterOf(addDaysIst(from, wait), today)
+        : await scheduleNext(tx, p.id, from, wait, pl.skipWeekends, today),
+    waitingForAcceptance: false,
+    requestSentDate: place.requestSentDate,
+    acceptedDate: place.acceptedDate,
+    // The time limit counts from today: their history may be older than the plan (D-060).
+    endsBy: pl.planType === "Outreach" ? endsByFrom(today, await limitDays(tx, p)) : null,
+  };
+}
+
+/** "Starting at step 3 of 5: 2 steps were already done." for the plan's event line. */
+function placedNote(done: number, stepCount: number) {
+  if (done === 0) return "";
+  if (done >= stepCount) return ` · all ${stepCount} steps were already done`;
+  return ` · starting at step ${done + 1} of ${stepCount}: ${done} step${done === 1 ? " was" : "s were"} already done`;
 }
 
 async function limitDays(tx: DbOrTx, p: PersonRow) {
@@ -328,6 +417,9 @@ export async function enrolPeople(
         return skip(`in Nurture until ${p.nurtureUntil}`);
       }
       if (await liveEnrolment(tx, id)) return skip("already on a plan");
+      // Someone already contacted starts after what was done (D-060).
+      const place = placeInPlan(steps, await pastTouches(tx, id, pl.planType));
+      const start = await startingPoint(tx, p, pl, steps, place, today);
       const [row] = await tx
         .insert(planEnrolment)
         .values({
@@ -335,8 +427,7 @@ export async function enrolPeople(
           planId,
           version: pl.currentVersion,
           status: "Active",
-          currentStep: 1,
-          nextDueDate: await scheduleNext(tx, id, today, steps[0], pl.skipWeekends),
+          ...start,
           startedAt: now,
           createdBy: actor.id,
         })
@@ -349,7 +440,7 @@ export async function enrolPeople(
         actor,
         p,
         row.id,
-        `Enrolled in ${pl.name} (version ${pl.currentVersion})`,
+        `Enrolled in ${pl.name} (version ${pl.currentVersion})${placedNote(place.done, steps.length)}`,
         now,
       );
       await writeAudit(tx, {
@@ -362,6 +453,7 @@ export async function enrolPeople(
           plan: pl.name,
           version: pl.currentVersion,
           status: "Active",
+          currentStep: row.currentStep,
           nextDueDate: row.nextDueDate,
         },
       });
@@ -472,7 +564,7 @@ export async function completeStepTx(
       actor,
       personId,
       { action: "requestSent", withNote },
-      { now, activityExtra: link },
+      { now, activityExtra: link, planSetsDates: true },
     );
     extra = { waitingForAcceptance: true, requestSentDate: today };
     next = addDaysIst(today, settings.withdrawAfterDays); // the withdraw task's date
@@ -564,8 +656,12 @@ export async function completeStepTx(
   if (advance) {
     const nextStep = steps[e.currentStep]; // the step after this one
     extra = { ...extra, currentStep: e.currentStep + 1, callAttempts: 0 };
+    // The step's own follow-up sets the next date (D-060); after the last step, the day the
+    // plan counts as finished.
     if (channel !== "LinkedIn connection request") {
-      next = nextStep ? await scheduleNext(tx, personId, today, nextStep, pl.skipWeekends) : null;
+      next = nextStep
+        ? await scheduleNext(tx, personId, today, step.waitDays, pl.skipWeekends)
+        : addDaysIst(today, step.waitDays);
     }
     // ends_by starts at the first touch when the plan doesn't begin with a connection request.
     if (
@@ -590,13 +686,14 @@ export async function completeStepTx(
 
 // --- Events from quick-log ---------------------------------------------------------------------
 
-/** Accepted: the step after the connection request is due on acceptance + its wait. */
+/** Accepted: the step after the connection request is due on acceptance + the request's follow-up. */
 async function onAccepted(tx: DbOrTx, actor: Actor, p: PersonRow, today: string) {
   const e = await liveEnrolment(tx, p.id);
   if (!e || !e.waitingForAcceptance) return;
   const pl = await loadPlan(tx, e.planId);
   const steps = await stepsOf(tx, e.planId, e.version);
   const step = steps[e.currentStep - 1];
+  const request = steps[e.currentStep - 2];
   await updateEnrolment(
     tx,
     actor,
@@ -605,7 +702,9 @@ async function onAccepted(tx: DbOrTx, actor: Actor, p: PersonRow, today: string)
       waitingForAcceptance: false,
       acceptedDate: today,
       endsBy: pl.planType === "Outreach" ? endsByFrom(today, await limitDays(tx, p)) : e.endsBy,
-      nextDueDate: step ? await scheduleNext(tx, p.id, today, step, pl.skipWeekends) : null,
+      nextDueDate: step
+        ? await scheduleNext(tx, p.id, today, request?.waitDays ?? 0, pl.skipWeekends)
+        : null,
     },
     p.fullName,
   );
@@ -742,7 +841,12 @@ export async function logWithPlanTx(
       Boolean(opts.override),
     );
   }
-  const done = await quickLogTx(tx, actor, personId, log, { note: opts.note, now });
+  const live = await liveEnrolment(tx, personId);
+  const done = await quickLogTx(tx, actor, personId, log, {
+    note: opts.note,
+    now,
+    planSetsDates: live?.status === "Active",
+  });
   if (overrides.length) {
     await writeAudit(tx, {
       userId: actor.id,
@@ -1012,7 +1116,59 @@ export async function snoozeStep(
       settings.weeklyTouchLimit,
       pl.skipWeekends,
     );
+    // A follow-up date they set overrides the plan's date (D-060): snooze the person too.
+    if (p.nextActionDate && p.nextActionDate < date && p.snoozedUntil !== date) {
+      await tx.update(person).set({ snoozedUntil: date }).where(eq(person.id, personId));
+      await writeAudit(tx, {
+        userId: actor.id,
+        entityType: "Person",
+        recordId: personId,
+        recordName: p.fullName,
+        action: "Updated",
+        before: { snoozedUntil: p.snoozedUntil },
+        after: { snoozedUntil: date },
+      });
+    }
     return updateEnrolment(tx, actor, e, { nextDueDate: due }, p.fullName, `snoozed to ${date}`);
+  });
+}
+
+/**
+ * Matches a live plan to the person's history again (D-060): the step after what's already
+ * logged, and its due date. For people put on a plan before history was read.
+ */
+export async function placeFromHistory(db: Db, actor: Actor, personId: string, now = new Date()) {
+  return db.transaction(async (tx) => {
+    const { p, e, pl } = await loadLive(tx, actor, personId);
+    const steps = await stepsOf(tx, e.planId, e.version);
+    const today = todayIst(now);
+    const place = placeInPlan(steps, await pastTouches(tx, personId, pl.planType));
+    const start = await startingPoint(tx, p, pl, steps, place, today);
+    const after = await updateEnrolment(
+      tx,
+      actor,
+      e,
+      {
+        currentStep: start.currentStep,
+        nextDueDate: start.nextDueDate,
+        waitingForAcceptance: start.waitingForAcceptance,
+        requestSentDate: start.requestSentDate ?? e.requestSentDate,
+        acceptedDate: start.acceptedDate ?? e.acceptedDate,
+        endsBy: e.endsBy ?? start.endsBy,
+        callAttempts: 0,
+      },
+      p.fullName,
+      "matched to their history",
+    );
+    await logPlanEvent(
+      tx,
+      actor,
+      p,
+      e.id,
+      `${pl.name} matched to their history: step ${Math.min(start.currentStep, steps.length)} of ${steps.length}${start.currentStep > steps.length ? " done" : ""}`,
+      now,
+    );
+    return { enrolment: after, stepCount: steps.length };
   });
 }
 

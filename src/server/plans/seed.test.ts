@@ -13,7 +13,7 @@ beforeEach(async () => {
 afterEach(() => t.cleanup());
 
 describe("seed plans (F17, D-033)", () => {
-  it("the Official Outreach plan has the PRD's 5 steps, waits 2 → 4 → 7 → 10", async () => {
+  it("the Official Outreach plan has the PRD's 5 steps, 2 → 4 → 7 → 10 days apart", async () => {
     await seedPlans(t.db, ownerId);
     const [outreach] = await t.db.select().from(plan).where(eq(plan.name, "Official Outreach"));
     expect(outreach).toMatchObject({
@@ -35,11 +35,12 @@ describe("seed plans (F17, D-033)", () => {
         s.waitDays,
       ]),
     ).toEqual([
-      [1, ["LinkedIn connection request/always"], null, 0],
-      [2, ["LinkedIn message/always"], "Message 1", 2],
-      [3, ["LinkedIn message/always"], "Follow-up 1", 4],
-      [4, ["Call/phone", "Email/email", "LinkedIn message/always"], "Follow-up 2", 7],
-      [5, ["LinkedIn message/always"], "Break-up", 10],
+      // Each step's days are the follow-up after it (D-060).
+      [1, ["LinkedIn connection request/always"], null, 2],
+      [2, ["LinkedIn message/always"], "Message 1", 4],
+      [3, ["LinkedIn message/always"], "Follow-up 1", 7],
+      [4, ["Call/phone", "Email/email", "LinkedIn message/always"], "Follow-up 2", 10],
+      [5, ["LinkedIn message/always"], "Break-up", 0],
     ]);
     expect(steps[0].script).toBeNull(); // no note on the connection request
   });

@@ -26,6 +26,7 @@ import { loadPerson } from "./leads/people";
 import { getPlaybookSettings, quickLog, type QuickLog } from "./leads/quicklog";
 import { meetingsToday } from "./calendar";
 import { planState } from "./plans/enrolment";
+import { planFinished } from "./plans/schedule";
 import { newOutreach } from "./outreach";
 
 export { SECTIONS, type SectionKey };
@@ -110,6 +111,11 @@ export type PlanFacts = {
   planType: string;
   planName: string;
   channel: string | null;
+  /**
+   * When they were put on the plan (the enrolment's real creation time, the same clock as the
+   * follow-up's set time): only a follow-up set after it overrides the plan (D-060).
+   */
+  startedAt?: Date | null;
 };
 
 export type LeadFacts = {
@@ -168,6 +174,91 @@ export type LastActivity = {
   logged?: { at: Date; recordedAt: Date };
 };
 
+/**
+ * Acted on (D-055): something was logged on or after the follow-up's date, after it was set.
+ * Any call, message, meeting or note counts, from Today or from their page.
+ */
+export function actedOn(
+  p: Pick<LeadFacts, "nextActionSetAt">,
+  last: LastActivity | undefined,
+  date: string,
+): boolean {
+  if (!last) return false;
+  if (!p.nextActionSetAt) return toIstDate(last.at) >= date;
+  // The latest thing logged: after the follow-up was set, and dated on or after its day.
+  const logged = last.logged ?? { at: last.at, recordedAt: last.recordedAt ?? last.at };
+  return logged.recordedAt.getTime() > p.nextActionSetAt.getTime() && toIstDate(logged.at) >= date;
+}
+
+/**
+ * The latest decision wins (D-060): a follow-up set after they were put on the plan overrides
+ * the plan's dates; one set before it gives way to the plan.
+ */
+function setAfterPlan(
+  p: Pick<LeadFacts, "nextActionDate" | "nextActionSetAt">,
+  startedAt: Date | null | undefined,
+): boolean {
+  if (!startedAt) return true;
+  if (p.nextActionSetAt) return p.nextActionSetAt.getTime() >= startedAt.getTime();
+  return p.nextActionDate !== null && p.nextActionDate >= toIstDate(startedAt);
+}
+
+export type NextFollowUp = {
+  date: string;
+  /** "own": the date set on the person, which overrides the plan's; "plan": the plan's date. */
+  source: "own" | "plan";
+  what: string;
+  /** The plan's own date when the person's date overrides it. */
+  planDate: string | null;
+};
+
+/**
+ * The person's next follow-up (D-060), as their page shows it at the top: a date set on the
+ * person (until something is logged for it) wins; otherwise the plan's next step date.
+ */
+export function nextFollowUpOf(
+  p: Pick<LeadFacts, "nextAction" | "nextActionDate" | "nextActionSetAt">,
+  last: LastActivity | undefined,
+  plan: {
+    status: string;
+    waitingForAcceptance: boolean;
+    nextDueDate: string | null;
+    allDone: boolean;
+    finished: boolean;
+    currentStep: number;
+    stepCount: number;
+    channel: string | null;
+    startedAt?: Date | null;
+  } | null,
+): NextFollowUp | null {
+  const live = plan?.status === "Active";
+  const planDate = live && !plan.finished ? plan.nextDueDate : null;
+  const planWhat = !plan
+    ? ""
+    : plan.waitingForAcceptance
+      ? "Waiting for them to accept: withdraw the invite if they haven't"
+      : plan.allDone
+        ? `All ${plan.stepCount} steps done: the plan finishes`
+        : `Step ${plan.currentStep} of ${plan.stepCount}: ${plan.channel}`;
+  const overrides =
+    p.nextActionDate !== null &&
+    !actedOn(p, last, p.nextActionDate) &&
+    setAfterPlan(p, live ? plan.startedAt : null);
+  if (p.nextActionDate && (overrides || !planDate)) {
+    return {
+      date: p.nextActionDate,
+      source: "own",
+      what:
+        live && !plan.allDone && !plan.waitingForAcceptance
+          ? `${planWhat}${p.nextAction?.trim() ? ` · ${p.nextAction.trim()}` : ""}`
+          : p.nextAction?.trim() || "Follow up",
+      planDate: planDate && planDate !== p.nextActionDate ? planDate : null,
+    };
+  }
+  if (planDate) return { date: planDate, source: "plan", what: planWhat, planDate: null };
+  return null;
+}
+
 export function classifyLead(
   p: LeadFacts,
   last: LastActivity | undefined,
@@ -185,15 +276,7 @@ export function classifyLead(
   // Acted on (D-055): something was logged on or after the date, after the follow-up was set.
   // Any call, message, meeting or note counts, from Today or from their page.
   const lastDay = last ? toIstDate(last.at) : null;
-  const actedSince = (date: string) => {
-    if (!last) return false;
-    if (!p.nextActionSetAt) return lastDay! >= date;
-    // The latest thing logged: after the follow-up was set, and dated on or after its day.
-    const logged = last.logged ?? { at: last.at, recordedAt: last.recordedAt ?? last.at };
-    return (
-      logged.recordedAt.getTime() > p.nextActionSetAt.getTime() && toIstDate(logged.at) >= date
-    );
-  };
+  const actedSince = (date: string) => actedOn(p, last, date);
 
   // 1. Replies waiting.
   if (last?.type === "Reply received" && !snoozed) {
@@ -255,6 +338,28 @@ export function classifyLead(
       };
     }
     // A paused plan (they replied) doesn't hide them: their next action shows below (D-044).
+    // A follow-up date the rep set on the person overrides the plan's date (D-060), until
+    // something is logged for it. The task is still the plan's step.
+    const own =
+      plan.status === "Active" &&
+      p.nextActionDate &&
+      setAfterPlan(p, plan.startedAt) &&
+      !actedSince(p.nextActionDate)
+        ? p.nextActionDate
+        : null;
+    if (own && !(plan.waitingForAcceptance && plan.nextDueDate && plan.nextDueDate <= today)) {
+      if (snoozed || own > today) return null;
+      const step = !plan.allDone && !plan.waitingForAcceptance;
+      return {
+        section: step ? (plan.planType === "Trial" ? "trial" : "due") : "followup",
+        kind: step ? "step" : "followup",
+        detail: step
+          ? `Step ${plan.currentStep} of ${plan.stepCount}: ${plan.channel} · your follow-up date${p.nextAction?.trim() ? `: ${p.nextAction.trim()}` : ""}`
+          : `${p.nextAction?.trim() || "Follow up"} · ${formatIstDate(own)}`,
+        due: withSnooze(own),
+        ...(step ? { step: true } : {}),
+      };
+    }
     if (plan.status === "Active" && plan.waitingForAcceptance) {
       if (plan.nextDueDate !== null && plan.nextDueDate <= today) {
         return {
@@ -409,6 +514,7 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
           requestSentDate: state.enrolment.requestSentDate,
           planType: state.plan.planType,
           planName: state.plan.name,
+          startedAt: state.enrolment.createdAt,
           // What the rep sees: a Custom task's name, and a custom purpose (D-043).
           channel: `${state.taskName ?? state.channel}${state.step?.customPurpose ? ` · ${state.step.customPurpose}` : ""}`,
         }
@@ -1164,7 +1270,7 @@ export async function backlogByPerson(
       ? {
           status: l.e.status,
           allDone: l.e.currentStep > stepCount,
-          finished: l.e.currentStep > stepCount || (l.e.endsBy !== null && l.e.endsBy < today),
+          finished: planFinished(l.e, stepCount, today),
           stepCount,
           currentStep: l.e.currentStep,
           waitingForAcceptance: l.e.waitingForAcceptance,
@@ -1173,6 +1279,7 @@ export async function backlogByPerson(
           planType: l.planType,
           planName: l.planName,
           channel: null,
+          startedAt: l.e.createdAt,
         }
       : null;
     const c = classifyLead(p, latest.get(p.id), facts, today, staleBefore);
@@ -1208,6 +1315,7 @@ export async function backlogOf(db: DbOrTx, personId: string, now = new Date()) 
         planType: state.plan.planType,
         planName: state.plan.name,
         channel: state.taskName ?? state.channel,
+        startedAt: state.enrolment.createdAt,
       }
     : null;
   const latest = await latestActivity(db, [personId]);
@@ -1224,4 +1332,30 @@ export async function backlogOf(db: DbOrTx, personId: string, now = new Date()) 
     dueDate: c.due,
     daysLate: daysLate(c.due, today),
   };
+}
+
+/** The person's next follow-up for their page (D-060), from their plan state and latest log. */
+export async function nextFollowUpFor(
+  db: DbOrTx,
+  p: Pick<LeadFacts, "nextAction" | "nextActionDate" | "nextActionSetAt"> & { id: string },
+  state: Awaited<ReturnType<typeof planState>>,
+): Promise<NextFollowUp | null> {
+  const latest = await latestActivity(db, [p.id]);
+  return nextFollowUpOf(
+    p,
+    latest.get(p.id),
+    state
+      ? {
+          status: state.enrolment.status,
+          waitingForAcceptance: state.enrolment.waitingForAcceptance,
+          nextDueDate: state.enrolment.nextDueDate,
+          allDone: state.allDone,
+          finished: state.finished,
+          currentStep: state.enrolment.currentStep,
+          stepCount: state.steps.length,
+          channel: state.taskName ?? state.channel,
+          startedAt: state.enrolment.createdAt,
+        }
+      : null,
+  );
 }

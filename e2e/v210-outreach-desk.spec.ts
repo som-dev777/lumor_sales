@@ -92,7 +92,9 @@ test("exit check: a WhatsApp reply gives WhatsApp drafts, the reply type, and pa
   await expect(draft).toContainText("Interested.");
   await expect(thread()).toContainText("Dana · WhatsApp");
   await expect(thread().getByLabel("Reply type", { exact: true })).toHaveValue("Interested");
-  await expect(admin.locator("dl").first()).toContainText("(paused)");
+  await expect(admin.getByRole("group", { name: "Plan and next follow-up" })).toContainText(
+    "(paused)",
+  );
 });
 
 test("exit check: Ask AI to move to email gives drafts with subject lines", async () => {

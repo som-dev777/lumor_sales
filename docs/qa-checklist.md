@@ -583,6 +583,23 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
       person with their follow-up date; change one and **Save**: it moves on the list. **Previous
       day** shows the same for that day.
 
+## 21. Plan follow-ups, history and the next follow-up at the top (v2.14.0)
+
+- [ ] 21.1 Open each plan you use (**Plans** → the plan). Under every step it says when the next
+      step follows ("Step 3 follows 4 days later."). If a number is now on the wrong step, **Edit**
+      and move it: each step's **Follow up after (days)** is the gap _after_ that step.
+- [ ] 21.2 On someone on a plan, do the current step (**Done**). The Plan panel shows the next
+      step due that step's follow-up days later; on that day it's on **My tasks** (use **Next
+      day** to look ahead).
+- [ ] 21.3 Take someone with messages already logged and no plan; enrol them. The Plan panel and
+      the top of the page show the right step (for Official Outreach after one LinkedIn message:
+      step 3 of 5), not step 1.
+- [ ] 21.4 For someone already on a plan at the wrong step: **Switch, match or stop this plan** →
+      **Match step to history**: the step moves to match what's logged.
+- [ ] 21.5 At the top of a person on a plan: **Next follow-up** shows the plan's date and step.
+      Set a follow-up for them (conversation → **Follow-up**): the top shows your date "ahead of the
+      plan's", and My tasks shows the step on your date instead.
+
 ---
 
 ## Before the team starts (only you can do these)

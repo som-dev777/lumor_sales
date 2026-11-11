@@ -45,11 +45,12 @@ const outreach = (over: Record<string, unknown> = {}) =>
     name: "Fast outreach",
     planType: "Outreach",
     type: "Official",
+    // Each step's days are the follow-up after it (D-060).
     steps: [
-      step("LinkedIn connection request", 0),
-      step("LinkedIn message", 2, { templatePurpose: "Message 1" }),
-      step("Email", 4),
-      step("LinkedIn message", 7),
+      step("LinkedIn connection request", 2),
+      step("LinkedIn message", 4, { templatePurpose: "Message 1" }),
+      step("Email", 7),
+      step("LinkedIn message", 0),
     ],
     ...over,
   });
@@ -58,7 +59,7 @@ describe("plans (F17)", () => {
   it("an Admin creates an Official plan; it's audited and listed for everyone", async () => {
     const { plan } = await createPlan(t.db, admin, outreach());
     expect(plan).toMatchObject({ type: "Official", currentVersion: 1, ownerId: admin.id });
-    expect((await stepsOf(t.db, plan.id, 1)).map((s) => s.waitDays)).toEqual([0, 2, 4, 7]);
+    expect((await stepsOf(t.db, plan.id, 1)).map((s) => s.waitDays)).toEqual([2, 4, 7, 0]);
     expect((await t.db.select().from(auditLog)).at(-1)).toMatchObject({
       entityType: "Plan",
       action: "Created",
@@ -101,16 +102,16 @@ describe("plans (F17)", () => {
     });
     const changed = outreach({
       steps: [
-        step("LinkedIn connection request", 0),
-        step("LinkedIn message", 3),
-        step("Email", 4),
-        step("LinkedIn message", 7),
+        step("LinkedIn connection request", 3),
+        step("LinkedIn message", 4),
+        step("Email", 7),
+        step("LinkedIn message", 0),
       ],
     });
     const v2 = await updatePlan(t.db, admin, plan.id, changed);
     expect(v2).toMatchObject({ newVersion: true, plan: { currentVersion: 2 } });
-    expect((await stepsOf(t.db, plan.id, 1))[1].waitDays).toBe(2); // version 1 kept
-    expect((await stepsOf(t.db, plan.id, 2))[1].waitDays).toBe(3);
+    expect((await stepsOf(t.db, plan.id, 1))[0].waitDays).toBe(2); // version 1 kept
+    expect((await stepsOf(t.db, plan.id, 2))[0].waitDays).toBe(3);
   });
 
   it("duplicate makes a Personal copy; its creator can switch it to Official (D-043)", async () => {

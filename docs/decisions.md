@@ -1271,3 +1271,42 @@ replaces it.
   earlier day) shows each person's follow-up date next to the log, ready to change; when none is
   set, **Set follow-up** offers tomorrow. It saves like Set next follow-up, so the list updates.
   Owner or Admin, as everywhere.
+
+## D-060: A step's days are the follow-up after it; plans read the history; your own date goes first (owner, 2026-11-11)
+
+- **Date:** 2026-11-11 · **Status:** Accepted · **Version 2.14.0** (MINOR) · Changes D-031/D-033
+- **The follow-up after each step:** each plan step's days (`plan_step.wait_days`, shown as
+  **Follow up after (days)**) are now how long after _that_ step the next one is due. Step 1 is due
+  the day someone is put on the plan. After a connection request, the next step is due that many
+  days after they accept. After the last step, the plan counts as finished once its days have
+  passed. Before, each step's days counted from the step before it, so a 4-day follow-up on step 2
+  delayed step 2 rather than step 3 (owner's report).
+- **No data rewritten:** the stored numbers stay as they are (additive-only rule); they're read
+  the new way. The seed plans for new installs are shifted one step so their timing is unchanged
+  (Official Outreach: 2 → 4 → 7 → 10 days apart). Plans in use should be checked once on their
+  plan page, which now says in words when each next step follows. People already on a plan keep
+  the due date they have; the new rule applies from their next step.
+- **Plan builder checks:** the guardrails (message 1–3 days after acceptance, growing gaps, weekly
+  limit, 30-day limit) read the same timeline as before; guardrail 1 now points at step 1's
+  follow-up. A new plan starts with step 1 = 2 days, step 2 = 3 days.
+- **Placed from history:** putting someone on a plan (enrol or switch) reads what's already
+  logged and starts them at the next step. A connection request is done by a request sent or
+  accepted (or a LinkedIn message, which means they're already connected); a message step by any
+  message sent; a call by a call; a task by a task done; steps are matched in order. The next step
+  is due from the last matched touch plus that step's follow-up, never before today; a request not
+  yet accepted waits for acceptance (withdraw date as usual). The time limit counts from today.
+  Meeting follow-up plans read from the last meeting held; Trial and Onboarding from the last
+  stage change. The plan's event line says "starting at step N of M". **Match step to history**
+  on the Plan panel does the same for someone already on a plan (owner or Admin, audited).
+- **Your own date goes first:** a follow-up date set on the person _after_ they were put on the
+  plan (People, the conversation's Follow-up or Next follow-up, My tasks) overrides the plan's date
+  until something is logged for it; the task on My tasks is still the plan's step, on your date.
+  A date set before the plan gives way to it (the later decision wins). Logging a request or an
+  acceptance on someone with an active plan no longer sets "Check acceptance" / "Send Message 1",
+  since the plan sets those dates. On an active plan the conversation's **Next follow-up** starts
+  empty ("the plan sets the next date"); a reply still defaults to tomorrow (the plan pauses).
+  Snoozing a plan step also snoozes the person when their own date would show sooner.
+- **Top of the person page:** **Next follow-up** (date and what: the plan step, or your note, with
+  "ahead of the plan's date" when yours wins) and **Plan** (name, step N of M and its task, paused
+  or waiting) show first, above the other details. The old Plan and Next action details moved
+  there.

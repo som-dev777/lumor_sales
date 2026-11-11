@@ -32,6 +32,10 @@ export type PanelPlan = {
   withdrawDue: boolean;
   finished: boolean;
   timeUp: boolean;
+  /** All steps done, waiting out the last step's follow-up (D-060). */
+  allDone: boolean;
+  /** A follow-up date set on the person, which overrides the plan's date (D-060). */
+  ownDateLabel: string | null;
 };
 
 type Props = {
@@ -180,6 +184,15 @@ export function PlanPanel(props: Props) {
                 </Button>
               </div>
             </div>
+          ) : plan.allDone ? (
+            <div className={styles.form}>
+              <p>
+                All {plan.stepCount} steps are done.
+                {plan.nextDueLabel
+                  ? ` The plan finishes on ${plan.nextDueLabel} if they don't reply.`
+                  : ""}
+              </p>
+            </div>
           ) : plan.waiting ? (
             <div className={styles.form}>
               <p>
@@ -205,6 +218,12 @@ export function PlanPanel(props: Props) {
                   <span className={styles.muted}> · due {plan.nextDueLabel}</span>
                 )}
               </p>
+              {plan.ownDateLabel && (
+                <p className={styles.muted}>
+                  You set a follow-up for {plan.ownDateLabel}: it shows on My tasks that day instead
+                  of the plan&apos;s date.
+                </p>
+              )}
               {plan.channel === "LinkedIn connection request" && (
                 <>
                   <p className={styles.muted}>
@@ -313,7 +332,7 @@ export function PlanPanel(props: Props) {
           )}
 
           <details className={styles.more}>
-            <summary>Switch or stop this plan</summary>
+            <summary>Switch, match or stop this plan</summary>
             {picker(
               "Switch to",
               (id) => start(async () => say(await switchTo(personId, id))),
@@ -321,6 +340,12 @@ export function PlanPanel(props: Props) {
                 ? [...offered, ...usablePlans.filter((p) => !offered.includes(p))]
                 : usablePlans,
             )}
+            <p className={styles.muted}>
+              Wrong step? Match it to what&apos;s already logged in the conversation.
+            </p>
+            <Button variant="secondary" disabled={busy} onClick={() => command("place")}>
+              Match step to history
+            </Button>
             <Button variant="danger" disabled={busy} onClick={() => command("stop")}>
               Stop the plan
             </Button>

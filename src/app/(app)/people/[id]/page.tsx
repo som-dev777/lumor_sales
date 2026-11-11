@@ -36,7 +36,7 @@ import { planState } from "@/server/plans/enrolment";
 import { usablePlans } from "@/server/plans/plans";
 import { appNow } from "@/lib/clock";
 import { knowledgeFor } from "@/server/knowledge";
-import { backlogOf } from "@/server/today";
+import { backlogOf, nextFollowUpFor } from "@/server/today";
 import { AutoRefresh } from "@/components/shell/AutoRefresh";
 
 export const metadata: Metadata = { title: "Person" };
@@ -70,11 +70,26 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
     deskThread(db, viewer, id),
     db.select({ jobTitle: user.jobTitle }).from(user).where(eq(user.id, viewer.id)),
   ]);
-  const [links, bookings, backlog] = await Promise.all([
+  const [links, bookings, backlog, followUp] = await Promise.all([
     canLogOutreach(viewer, p.ownerId) ? bookingLinksFor(db, viewer.id) : [],
     bookingsOfPerson(db, id),
     backlogOf(db, id, now),
+    // The plan step and next follow-up shown at the top (D-060).
+    nextFollowUpFor(db, p, state),
   ]);
+  const planLine = state
+    ? `${state.plan.name} · ${
+        state.allDone
+          ? `all ${state.steps.length} steps done`
+          : `step ${state.enrolment.currentStep} of ${state.steps.length}: ${state.taskName ?? state.channel}`
+      }${
+        state.enrolment.status === "Paused"
+          ? " (paused)"
+          : state.enrolment.waitingForAcceptance
+            ? " · waiting for them to accept the request"
+            : ""
+      }`
+    : null;
   const SUGGESTED: Partial<Record<string, string>> = {
     "Meeting done": "Meeting follow-up",
     Trial: "Trial",
@@ -155,25 +170,36 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
               </>
             )}
           </p>
+          <div className={styles.nextUp} role="group" aria-label="Plan and next follow-up">
+            <div>
+              <span className={styles.nextUpLabel}>Next follow-up</span>
+              <span>
+                {followUp ? (
+                  <>
+                    <strong>{formatIstDate(followUp.date)}</strong> · {followUp.what}
+                    {followUp.source === "own" && state?.enrolment.status === "Active" && (
+                      <span className={styles.muted}>
+                        {` (your date for ${firstName}, ahead of the plan${followUp.planDate ? `'s ${formatIstDate(followUp.planDate, "d MMM")}` : ""})`}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  "None set"
+                )}
+              </span>
+            </div>
+            <div>
+              <span className={styles.nextUpLabel}>Plan</span>
+              <span>{planLine ?? "Not on a plan"}</span>
+            </div>
+          </div>
           <dl className={styles.facts}>
             {fact("Stage", <StageBadge stage={p.stage} />)}
-            {fact(
-              "Plan",
-              p.planName
-                ? `${p.planName} · step ${p.planStep}${p.planStatus === "Paused" ? " (paused)" : ""}`
-                : null,
-            )}
             {fact("Persona", p.personaName)}
             {fact("Level", p.level)}
             {fact("Office", p.officeName)}
             {fact("Owner", p.ownerName)}
             {fact("Added by", p.addedByName)}
-            {fact(
-              "Next action",
-              p.nextAction
-                ? `${p.nextAction}${p.nextActionDate ? ` · ${formatIstDate(p.nextActionDate)}` : ""}`
-                : null,
-            )}
             {fact("Market", p.market)}
             {(p.phone || p.email) &&
               fact("Contact", [p.phone, p.email].filter(Boolean).join(" · "))}
@@ -298,6 +324,11 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
                   withdrawDue: state.withdrawDue,
                   finished: state.finished,
                   timeUp: Boolean(state.step) && state.finished,
+                  allDone: state.allDone,
+                  ownDateLabel:
+                    followUp?.source === "own" && state.enrolment.status === "Active"
+                      ? formatIstDate(followUp.date)
+                      : null,
                 }
               : null
           }
@@ -334,6 +365,7 @@ async function Person({ params }: Pick<PageProps<"/people/[id]">, "params">) {
           canLog={mayEdit}
           now={toIstLocal(now)}
           currentStep={currentStep}
+          onPlan={state?.enrolment.status === "Active"}
           defaultChannel={
             situation.lastChannel && situation.lastChannel !== "In person"
               ? situation.lastChannel

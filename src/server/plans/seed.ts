@@ -1,5 +1,6 @@
 // Seed plans (F17). The Official Outreach plan is exactly the PRD's, as decided in D-033: five
-// steps, waits 2 → 4 → 7 → 10, with step 4 trying Call, then Email, then LinkedIn. The Meeting
+// steps, 2 → 4 → 7 → 10 days apart, with step 4 trying Call, then Email, then LinkedIn. Each
+// step's waitDays is the follow-up after it: the days until the next step (D-060). The Meeting
 // follow-up, Trial and Onboarding plans are ready to use too (no approvals, D-045). Safe to run
 // again: existing plans (same name) are left alone.
 import { eq } from "drizzle-orm";
@@ -22,9 +23,9 @@ export const SEED_PLANS: SeedPlan[] = [
     planType: "Outreach",
     draft: false,
     steps: [
-      { channels: only("LinkedIn connection request"), waitDays: 0 },
-      { channels: only("LinkedIn message"), templatePurpose: "Message 1", waitDays: 2 },
-      { channels: only("LinkedIn message"), templatePurpose: "Follow-up 1", waitDays: 4 },
+      { channels: only("LinkedIn connection request"), waitDays: 2 },
+      { channels: only("LinkedIn message"), templatePurpose: "Message 1", waitDays: 4 },
+      { channels: only("LinkedIn message"), templatePurpose: "Follow-up 1", waitDays: 7 },
       {
         channels: [
           { channel: "Call", when: "phone" },
@@ -33,9 +34,9 @@ export const SEED_PLANS: SeedPlan[] = [
         ],
         templatePurpose: "Follow-up 2",
         script: OUTREACH_CALL_SCRIPT,
-        waitDays: 7,
+        waitDays: 10,
       },
-      { channels: only("LinkedIn message"), templatePurpose: "Break-up", waitDays: 10 },
+      { channels: only("LinkedIn message"), templatePurpose: "Break-up", waitDays: 0 },
     ],
   },
   {
@@ -43,7 +44,7 @@ export const SEED_PLANS: SeedPlan[] = [
     planType: "Meeting follow-up",
     draft: false,
     steps: [
-      { channels: only("LinkedIn message"), templatePurpose: "Post-demo recap", waitDays: 0 },
+      { channels: only("LinkedIn message"), templatePurpose: "Post-demo recap", waitDays: 3 },
       {
         channels: [
           { channel: "Email", when: "email" },
@@ -51,7 +52,7 @@ export const SEED_PLANS: SeedPlan[] = [
         ],
         script:
           "Share one resource that answers a question they raised in the meeting, and ask one question about their next study.",
-        waitDays: 3,
+        waitDays: 5,
       },
       {
         channels: [
@@ -60,7 +61,7 @@ export const SEED_PLANS: SeedPlan[] = [
         ],
         script:
           "Check in on the decision: who else needs to see it, and what would make a trial useful.",
-        waitDays: 5,
+        waitDays: 0,
       },
     ],
   },
@@ -72,7 +73,7 @@ export const SEED_PLANS: SeedPlan[] = [
       {
         channels: only("Manual task"),
         script: "Check the trial workspace is set up and their first study is drafted.",
-        waitDays: 1,
+        waitDays: 3,
       },
       {
         channels: [
@@ -82,7 +83,7 @@ export const SEED_PLANS: SeedPlan[] = [
         ],
         script:
           "Trial check-in: what have they tried, what's blocking them, and offer a 15-minute walk-through.",
-        waitDays: 3,
+        waitDays: 5,
       },
       {
         channels: [
@@ -90,7 +91,7 @@ export const SEED_PLANS: SeedPlan[] = [
           { channel: "LinkedIn message", when: "always" },
         ],
         script: "Send one example or tip that fits the study they're running.",
-        waitDays: 5,
+        waitDays: 7,
       },
       {
         channels: [
@@ -99,7 +100,7 @@ export const SEED_PLANS: SeedPlan[] = [
         ],
         script:
           "Trial review: results so far, and agree the next step (plan, pricing, or more time).",
-        waitDays: 7,
+        waitDays: 0,
       },
     ],
   },
@@ -111,12 +112,12 @@ export const SEED_PLANS: SeedPlan[] = [
       {
         channels: only("WhatsApp"),
         script: "Create the WhatsApp group with the customer's team and introduce yourself.",
-        waitDays: 0,
+        waitDays: 1,
       },
       {
         channels: only("Manual task"),
         script: "Kick-off call: set up their first live study together. Log the minutes as a note.",
-        waitDays: 1,
+        waitDays: 7,
       },
       {
         channels: [
@@ -124,7 +125,7 @@ export const SEED_PLANS: SeedPlan[] = [
           { channel: "WhatsApp", when: "always" },
         ],
         script: "One-week check-in: anything stuck? Share a tip for their next study.",
-        waitDays: 7,
+        waitDays: 21,
       },
       {
         channels: [
@@ -132,7 +133,7 @@ export const SEED_PLANS: SeedPlan[] = [
           { channel: "WhatsApp", when: "always" },
         ],
         script: "30-day review: what they've run, what's next, and who else could use Lumor.",
-        waitDays: 21,
+        waitDays: 0,
       },
     ],
   },

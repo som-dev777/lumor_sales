@@ -7,7 +7,16 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.13.0 (docs/qa-checklist.md section 20).
+Next: the owner's QA of v2.14.0 (docs/qa-checklist.md section 21).
+
+## [2.14.0] - 2026-11-11
+
+Plan follow-ups work step by step, plans read the history, and the next follow-up shows at the top (D-060).
+
+- **Follow up after (days):** each plan step's days are now the follow-up after that step. A 4-day follow-up on step 2 makes step 3 due 4 days after step 2 is done, and it shows on My tasks that day. Step 1 is due the day someone is put on the plan; the plan finishes after the last step's follow-up. Each step says in words when the next one follows.
+- **Plans read the history:** putting someone on a plan who was already contacted starts them at the right step, worked out from what's logged (requests, acceptances, messages, calls, tasks). **Match step to history** does the same for people already on a plan.
+- **Your follow-up goes first:** a follow-up date you set on a person after they joined a plan goes ahead of the plan's date, on their page and on My tasks, until you log something for it. Otherwise the plan's date shows.
+- **Top of the person page:** Next follow-up (date and what) and Plan (step N of M) show first.
 
 ## [2.13.0] - 2026-11-05
 

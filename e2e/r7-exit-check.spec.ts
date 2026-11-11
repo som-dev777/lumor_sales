@@ -60,11 +60,12 @@ test("the seed Official Outreach plan has 5 steps, waits 2 → 4 → 7 → 10, w
   await rep.getByRole("link", { name: "Official Outreach" }).click();
   const steps = shown(rep.getByRole("region", { name: "Steps" }));
   await expect(steps.getByRole("listitem")).toHaveCount(5);
-  await expect(steps).toContainText("2 days after the connection is accepted");
+  // Each step says when the next one follows (D-060).
+  await expect(steps).toContainText("Step 2 follows 2 days after they accept.");
   await expect(steps).toContainText(
     "Call if a phone is known → otherwise Email if an email is known → otherwise LinkedIn message",
   );
-  await expect(steps).toContainText("10 days after step 4 is done");
+  await expect(steps).toContainText("Step 5 follows 10 days later.");
   await expect(shown(rep.getByText(/Skip weekends: on/))).toBeVisible();
   await expect(shown(rep.getByText("This plan follows every guardrail."))).toBeVisible();
 });
@@ -79,17 +80,17 @@ test("exit check: the builder blocks a sixth touch (and steps that break the gap
   ).toBeVisible();
   await admin.getByRole("link", { name: "Edit", exact: true }).click();
   await expect(admin).toHaveURL(/\/edit$/);
-  // One more step: the plan would run past 30 days (guardrail 7).
+  // One more step, 14 days after step 5: the plan would run past 30 days (guardrail 7).
   await admin.getByRole("button", { name: "Add step" }).click();
-  await shown(admin.getByRole("region", { name: "Step 6" }))
-    .getByLabel("Wait (days)")
+  await shown(admin.getByRole("region", { name: "Step 5" }))
+    .getByLabel("Follow up after (days)")
     .fill("14");
   await admin.getByRole("button", { name: "Save plan" }).click();
   await expect(shown(admin.getByText(/must end within 30 days/)).first()).toBeVisible();
   // Two more: a 5th follow-up after Message 1 (guardrail 3, the "sixth touch").
   await admin.getByRole("button", { name: "Add step" }).click();
-  await shown(admin.getByRole("region", { name: "Step 7" }))
-    .getByLabel("Wait (days)")
+  await shown(admin.getByRole("region", { name: "Step 6" }))
+    .getByLabel("Follow up after (days)")
     .fill("18");
   await admin.getByRole("button", { name: "Save plan" }).click();
   await expect(
@@ -98,8 +99,8 @@ test("exit check: the builder blocks a sixth touch (and steps that break the gap
   // Gaps must grow: Follow-up 2 three days after Follow-up 1 is refused.
   await admin.getByRole("button", { name: "Remove step 7" }).click();
   await admin.getByRole("button", { name: "Remove step 6" }).click();
-  await shown(admin.getByRole("region", { name: "Step 4" }))
-    .getByLabel("Wait (days)")
+  await shown(admin.getByRole("region", { name: "Step 3" }))
+    .getByLabel("Follow up after (days)")
     .fill("3");
   await admin.getByRole("button", { name: "Save plan" }).click();
   await expect(

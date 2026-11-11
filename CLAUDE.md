@@ -44,7 +44,7 @@ All dates are stored in UTC and shown in IST. Weeks run Monday to Sunday.
 2. Add a CHANGELOG.md entry (under "Unreleased" until a release).
 3. Versioning: bump MINOR once per completed release (R1 = 1.0.0, R2 = 1.1.0…)
    and PATCH for fixes. Version 2 starts at R7 = 2.0.0, then MINOR again (AI Resources = 2.1.0,
-   R8 = 2.2.0, R9 = 2.3.0, QA round 1 = 2.4.0, Calendar + AI = 2.5.0, Calendar round 2 = 2.6.0, Owner's list 3 Nov = 2.7.0, Owner's list 4 Nov = 2.8.0, Owner's second list 4 Nov = 2.9.0, Outreach Desk = 2.10.0, Reports + Today by day = 2.11.0, Simpler report = 2.12.0, My tasks + downloads = 2.13.0; D-028, D-037).
+   R8 = 2.2.0, R9 = 2.3.0, QA round 1 = 2.4.0, Calendar + AI = 2.5.0, Calendar round 2 = 2.6.0, Owner's list 3 Nov = 2.7.0, Owner's list 4 Nov = 2.8.0, Owner's second list 4 Nov = 2.9.0, Outreach Desk = 2.10.0, Reports + Today by day = 2.11.0, Simpler report = 2.12.0, My tasks + downloads = 2.13.0, Plan follow-ups = 2.14.0; D-028, D-037).
    Do not bump the version on every commit.
 4. Update docs/README.md (feature index) if anything changed there.
 5. At a release or patch, add the AppRelease record (run `npm run releases:sync`).
@@ -79,7 +79,9 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-11-05): v2.13.0 (downloads follow on-screen switches, Next follow-up with each entry,
+Done (2026-11-11): v2.14.0 (each plan step's days are the follow-up after it, enrolment reads the
+history, own follow-up date ahead of the plan's, next follow-up at the top of a person; D-060),
+v2.13.0 (downloads follow on-screen switches, Next follow-up with each entry,
 loading spinner, Today renamed My tasks with follow-ups beside logs; D-059), v2.12.0 (simpler report: five headline numbers, Events of the day with P12
 summaries, no plan sections; Connection request in the conversation box; D-058), v2.11.0 (reports you can shape + What happened, People follow-ups and Active today,
 Today by day; D-057), v2.10.0 (Outreach Desk in the AI assistant panel, D-056; spec docs/specs/outreach-desk.md),

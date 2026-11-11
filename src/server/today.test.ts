@@ -450,7 +450,12 @@ describe("every follow-up shows until converted or lost (D-044)", () => {
     await completeStep(t.db, rep, active.id, {}, NOW); // waiting for acceptance now
     await t.db
       .update(person)
-      .set({ nextAction: "Old note", nextActionDate: "2026-10-01" })
+      // Set before they were put on the plan: the plan's dates win (D-060).
+      .set({
+        nextAction: "Old note",
+        nextActionDate: "2026-10-01",
+        nextActionSetAt: new Date("2026-09-25T06:30:00Z"),
+      })
       .where(eq(person.id, active.id));
 
     const plan = await buildToday(t.db, rep, NOW);

@@ -15,7 +15,10 @@ export function rollOffWeekend(date: string, skipWeekends = true): string {
   return d === 6 ? addDaysIst(date, 2) : d === 0 ? addDaysIst(date, 1) : date;
 }
 
-/** The date a step is due: the previous step's actual done date plus its wait. */
+/**
+ * The date the next step is due: the done step's actual date plus the done step's own wait, its
+ * "follow up after" (D-060; before that, each step's wait counted from the step before it).
+ */
 export function dueAfter(doneDate: string, waitDays: number, skipWeekends = true): string {
   return rollOffWeekend(addDaysIst(doneDate, waitDays), skipWeekends);
 }
@@ -98,4 +101,25 @@ export function taskNameOf(
 /** Moves a date later by the days a plan was paused (pausing doesn't use up the limit). */
 export function extendBy(date: string | null, pausedDays: number): string | null {
   return date ? addDaysIst(date, Math.max(0, pausedDays)) : null;
+}
+
+/** The later of two IST dates. */
+export function laterOf(a: string, b: string): string {
+  return a > b ? a : b;
+}
+
+/**
+ * Whether a plan is finished (D-060): all steps done and the last step's follow-up date reached
+ * (or none set), or the time limit passed.
+ */
+export function planFinished(
+  e: { currentStep: number; nextDueDate: string | null; endsBy: string | null },
+  stepCount: number,
+  today: string,
+): boolean {
+  const allDone = e.currentStep > stepCount;
+  return (
+    (allDone && (e.nextDueDate === null || e.nextDueDate <= today)) ||
+    (e.endsBy !== null && e.endsBy < today)
+  );
 }

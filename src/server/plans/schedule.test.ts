@@ -62,7 +62,7 @@ describe("plan scheduling (F17, D-031)", () => {
       const endsBy = endsByFrom(accepted, 30);
       let done = accepted;
       const touches: string[] = [];
-      for (const wait of waits.slice(1)) {
+      for (const wait of waits.slice(0, -1)) {
         done = fitWeeklyLimit(dueAfter(done, wait), touches, 2);
         touches.push(done);
       }

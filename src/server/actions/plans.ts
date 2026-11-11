@@ -19,6 +19,7 @@ import {
   GuardrailWarning,
   nurtureLost,
   pausePlan,
+  placeFromHistory,
   resumePlan,
   snoozeStep,
   stopPlan,
@@ -201,7 +202,15 @@ export async function doStep(personId: string, input: unknown): Promise<StepResu
 }
 
 type PlanCommand =
-  "pause" | "resume" | "stop" | "withdraw" | "nurture" | "lost" | "nurtureLost" | "snooze";
+  | "pause"
+  | "resume"
+  | "stop"
+  | "withdraw"
+  | "nurture"
+  | "lost"
+  | "nurtureLost"
+  | "snooze"
+  | "place";
 
 export async function planCommand(
   personId: string,
@@ -223,6 +232,7 @@ export async function planCommand(
       lost: "Marked Lost (No response).",
       nurtureLost: "Marked Lost (No response).",
       snooze: "Snoozed.",
+      place: "Matched to their history.",
     };
     if (command === "pause") await pausePlan(db, viewer, personId, now);
     else if (command === "resume") await resumePlan(db, viewer, personId, now);
@@ -231,7 +241,18 @@ export async function planCommand(
     else if (command === "nurture") await finishPlan(db, viewer, personId, "nurture", now);
     else if (command === "lost") await finishPlan(db, viewer, personId, "lost", now);
     else if (command === "nurtureLost") await nurtureLost(db, viewer, personId, now);
-    else if (command === "snooze") {
+    else if (command === "place") {
+      // Match the plan to what's already logged (D-060).
+      const { enrolment: e, stepCount } = await placeFromHistory(db, viewer, personId, now);
+      refresh();
+      return {
+        ok: true,
+        message:
+          e.currentStep > stepCount
+            ? `All ${stepCount} steps were already done.`
+            : `Now at step ${e.currentStep} of ${stepCount}${e.nextDueDate ? `, due ${formatIstDate(e.nextDueDate, "EEE d MMM")}` : ""}.`,
+      };
+    } else if (command === "snooze") {
       const e = await snoozeStep(db, viewer, personId, now, snoozeDate(until, now));
       refresh();
       return {

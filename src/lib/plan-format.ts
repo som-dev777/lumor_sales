@@ -32,13 +32,19 @@ export function describeChannels(step: StepLike): string {
     .join(" → ");
 }
 
-/** When a step falls due, in words. */
+/**
+ * When a step falls due and what its follow-up does, in words (D-060): each step's days are
+ * the follow-up after it, so step 1 is due the day someone is put on the plan.
+ */
 export function describeWait(steps: StepLike[], index: number): string {
   const w = steps[index].waitDays;
-  const days = `${w} day${w === 1 ? "" : "s"}`;
-  if (index === 0) return w === 0 ? "On the day they're enrolled" : `${days} after enrolling`;
-  if (steps[index - 1].channels[0]?.channel === "LinkedIn connection request") {
-    return `${days} after the connection is accepted`;
+  const days = w === 0 ? "the same day" : `${w} day${w === 1 ? "" : "s"} later`;
+  const first = index === 0 ? "Due the day they're put on the plan. " : "";
+  if (index === steps.length - 1) {
+    return `${first}${w === 0 ? "The plan finishes when this step is done." : `The plan finishes ${w} day${w === 1 ? "" : "s"} after this step.`}`;
   }
-  return `${days} after step ${index} is done`;
+  if (steps[index].channels[0]?.channel === "LinkedIn connection request") {
+    return `${first}Step ${index + 2} follows ${w === 0 ? "the day they accept" : `${w} day${w === 1 ? "" : "s"} after they accept`}.`;
+  }
+  return `${first}Step ${index + 2} follows ${days}.`;
 }
