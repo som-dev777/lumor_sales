@@ -263,7 +263,11 @@ describe("booking sync to the person (D-043)", () => {
     );
     await cancelByToken(t.db, moved.token, "Budget review", NOW);
     const [after] = await t.db.select().from(person).where(eq(person.id, p.id));
-    expect(after).toMatchObject({ stage: "Replied", nextAction: "Respond" });
+    // The plan resumes, and its step is the follow-up again (D-061).
+    expect(after).toMatchObject({
+      stage: "Replied",
+      nextAction: "Step 1 of 5: LinkedIn connection request",
+    });
     expect((await liveEnrolment(t.db, p.id))!.status).toBe("Active");
     const cancelled = (await t.db.select().from(activity).where(eq(activity.personId, p.id))).find(
       (a) => a.content?.startsWith("Meeting cancelled"),

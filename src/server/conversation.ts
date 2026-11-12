@@ -12,6 +12,7 @@ import { LeadError } from "./leads/companies";
 import { loadPerson } from "./leads/people";
 import { getPlaybookSettings } from "./leads/quicklog";
 import { liveEnrolment, logWithPlanTx } from "./plans/enrolment";
+import { followUpMovesPlan } from "./plans/sync";
 
 export type { ThreadChannel };
 
@@ -383,6 +384,8 @@ async function setNextFollowUp(
     })
     .where(eq(person.id, personId))
     .returning();
+  // One follow-up per person: their active plan moves to this date too (D-061).
+  await followUpMovesPlan(tx, actor, personId, date);
   await writeAudit(tx, {
     userId: actor.id,
     entityType: "Person",

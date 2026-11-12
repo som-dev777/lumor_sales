@@ -299,7 +299,8 @@ the first that applies is used, D-033; `label` names a Custom task, D-043), temp
 (Template purpose, optional), custom_purpose (a purpose the author typed, D-043), template_id
 (→ template, optional), script (call script, task text or connection-request note), wait_days
 (≥ 0: the follow-up after this step, the days until the next step is due, or until the plan
-finishes after the last step; D-060 — before 2.14.0 it was read as the days before this step). Unique (plan_id, version, step_order).
+finishes after the last step; D-060. While a plan is active its next date is also the
+person's next_action_date, D-061 — before 2.14.0 it was read as the days before this step). Unique (plan_id, version, step_order).
 
 ### plan_enrolment
 

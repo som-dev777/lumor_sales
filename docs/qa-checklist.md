@@ -600,6 +600,17 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
       Set a follow-up for them (conversation → **Follow-up**): the top shows your date "ahead of the
       plan's", and My tasks shows the step on your date instead.
 
+## 22. One follow-up everywhere (v2.14.1)
+
+- [ ] 22.1 Put someone on a plan from their page. The top shows the next follow-up; **People**
+      shows the same date in Next action, and **My tasks** shows them on that day (use **Next
+      day** if it's later).
+- [ ] 22.2 On **My tasks**, change that person's follow-up date (beside the log, or Set next
+      follow-up). Open their page: the Plan panel's step is due on the new date, and so is the top.
+- [ ] 22.3 On **People**, **Edit the follow-up** for someone on a plan and pick another date: My
+      tasks and their page follow.
+- [ ] 22.4 Do the plan step (**Done**): the follow-up moves to the next step's date everywhere.
+
 ---
 
 ## Before the team starts (only you can do these)

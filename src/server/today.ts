@@ -25,8 +25,9 @@ import { LeadError } from "./leads/companies";
 import { loadPerson } from "./leads/people";
 import { getPlaybookSettings, quickLog, type QuickLog } from "./leads/quicklog";
 import { meetingsToday } from "./calendar";
-import { planState } from "./plans/enrolment";
+import { isPlanFollowUp, planState } from "./plans/enrolment";
 import { planFinished } from "./plans/schedule";
+import { followUpMovesPlan } from "./plans/sync";
 import { newOutreach } from "./outreach";
 
 export { SECTIONS, type SectionKey };
@@ -203,6 +204,10 @@ function setAfterPlan(
   return p.nextActionDate !== null && p.nextActionDate >= toIstDate(startedAt);
 }
 
+/** " · Send the case study": the rep's own words on a plan's follow-up, if any (D-061). */
+const note = (text: string | null) =>
+  text?.trim() && !isPlanFollowUp(text) ? ` · ${text.trim()}` : "";
+
 export type NextFollowUp = {
   date: string;
   /** "own": the date set on the person, which overrides the plan's; "plan": the plan's date. */
@@ -242,6 +247,7 @@ export function nextFollowUpOf(
         : `Step ${plan.currentStep} of ${plan.stepCount}: ${plan.channel}`;
   const overrides =
     p.nextActionDate !== null &&
+    p.nextActionDate !== planDate &&
     !actedOn(p, last, p.nextActionDate) &&
     setAfterPlan(p, live ? plan.startedAt : null);
   if (p.nextActionDate && (overrides || !planDate)) {
@@ -255,7 +261,14 @@ export function nextFollowUpOf(
       planDate: planDate && planDate !== p.nextActionDate ? planDate : null,
     };
   }
-  if (planDate) return { date: planDate, source: "plan", what: planWhat, planDate: null };
+  if (planDate) {
+    return {
+      date: planDate,
+      source: "plan",
+      what: `${planWhat}${p.nextActionDate === planDate ? note(p.nextAction) : ""}`,
+      planDate: null,
+    };
+  }
   return null;
 }
 
@@ -343,6 +356,8 @@ export function classifyLead(
     const own =
       plan.status === "Active" &&
       p.nextActionDate &&
+      // The same date is the plan's own follow-up (D-061), not an override.
+      p.nextActionDate !== plan.nextDueDate &&
       setAfterPlan(p, plan.startedAt) &&
       !actedSince(p.nextActionDate)
         ? p.nextActionDate
@@ -376,7 +391,7 @@ export function classifyLead(
         return {
           section: plan.planType === "Trial" ? "trial" : "due",
           kind: "step",
-          detail: `Step ${plan.currentStep} of ${plan.stepCount}: ${plan.channel}`,
+          detail: `Step ${plan.currentStep} of ${plan.stepCount}: ${plan.channel}${note(p.nextAction)}`,
           due: plan.nextDueDate,
           step: true,
         };
@@ -1040,6 +1055,8 @@ export async function setFollowUpTx(
     })
     .where(eq(person.id, personId))
     .returning();
+  // One follow-up per person: their active plan moves to this date too (D-061).
+  await followUpMovesPlan(tx, actor, personId, input.date);
   await writeAudit(tx, {
     userId: actor.id,
     entityType: "Person",

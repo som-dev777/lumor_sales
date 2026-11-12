@@ -36,6 +36,7 @@ import {
   planFinished,
 } from "./schedule";
 import { placeInPlan, type PastTouch, type Placement } from "./placement";
+import { followUpMovesPlan } from "./sync";
 
 type EnrolmentRow = typeof planEnrolment.$inferSelect;
 type PersonRow = typeof person.$inferSelect;
@@ -255,7 +256,103 @@ async function updateEnrolment(
     before: fields(before),
     after: { ...fields(after), ...(note ? { note } : {}) },
   });
+  await mirrorToPerson(tx, actor, before, after);
   return after;
+}
+
+/** The words for a plan's next date on the person ("Step 3 of 5: LinkedIn message"). */
+export function planFollowUpLabel(
+  e: Pick<EnrolmentRow, "currentStep" | "waitingForAcceptance">,
+  steps: StepRow[],
+  p: Pick<PersonRow, "phone" | "email">,
+): string {
+  if (e.waitingForAcceptance) return "Check acceptance";
+  const step = steps[e.currentStep - 1];
+  if (!step) return "Plan finished: choose Nurture or Lost";
+  return `Step ${e.currentStep} of ${steps.length}: ${taskNameOf(step.channels, p) ?? resolveChannel(step.channels, p)}`;
+}
+
+/** A follow-up the plan wrote (so it's cleared when the plan ends). */
+export function isPlanFollowUp(text: string | null): boolean {
+  return (
+    text !== null &&
+    (/^Step \d+ of \d+: /.test(text) ||
+      text === "Check acceptance" ||
+      text === "Plan finished: choose Nurture or Lost")
+  );
+}
+
+/**
+ * One follow-up per person (D-061): an active plan's next date and step are written onto the
+ * person, so My tasks, People, the person page and every follow-up box show the same date. When
+ * the plan pauses or ends, the follow-up it wrote is cleared (one the rep wrote stays). Audited, in the caller's transaction.
+ */
+async function mirrorToPerson(
+  tx: DbOrTx,
+  actor: Actor,
+  before: EnrolmentRow | null,
+  after: EnrolmentRow,
+) {
+  const p = await loadPerson(tx, after.personId);
+  let next: { nextAction: string | null; nextActionDate: string | null } | null = null;
+  if (after.status === "Active" && after.nextDueDate) {
+    const steps = await stepsOf(tx, after.planId, after.version);
+    next = { nextAction: planFollowUpLabel(after, steps, p), nextActionDate: after.nextDueDate };
+  } else if (
+    after.status !== "Active" &&
+    before?.status === "Active" &&
+    isPlanFollowUp(p.nextAction)
+  ) {
+    // Paused, stopped or finished: the step it wrote isn't due any more.
+    next = { nextAction: null, nextActionDate: null };
+  }
+  if (!next) return;
+  if (next.nextAction === p.nextAction && next.nextActionDate === p.nextActionDate) return;
+  await tx
+    .update(person)
+    .set({ ...next, nextActionSetAt: new Date(), followUpRemovedAt: null })
+    .where(eq(person.id, p.id));
+  await writeAudit(tx, {
+    userId: actor.id,
+    entityType: "Person",
+    recordId: p.id,
+    recordName: p.fullName,
+    action: "Updated",
+    before: { nextAction: p.nextAction, nextActionDate: p.nextActionDate },
+    after: { ...next, reason: "set by their plan" },
+  });
+}
+
+/**
+ * Brings every active plan and its person's follow-up into line once (D-061, run on deploy by
+ * `npm run sync:followups`). A follow-up the rep set after the plan last changed wins (the plan
+ * moves to it, if it isn't in the past); otherwise the plan's date is written onto the person.
+ * Safe to run again: people already in line are left alone. Returns how many changed.
+ */
+export async function syncPlanFollowUps(db: Db, now = new Date()) {
+  const today = todayIst(now);
+  const live = await db.select().from(planEnrolment).where(eq(planEnrolment.status, "Active"));
+  let changed = 0;
+  for (const e of live) {
+    await db.transaction(async (tx) => {
+      const p = await loadPerson(tx, e.personId);
+      if (!e.nextDueDate || p.nextActionDate === e.nextDueDate) return;
+      const actor: Actor = { id: p.ownerId, role: "User", active: true };
+      const repLater =
+        p.nextActionDate !== null &&
+        p.nextActionDate >= today &&
+        p.nextActionSetAt !== null &&
+        p.nextActionSetAt.getTime() > e.updatedAt.getTime() &&
+        !isPlanFollowUp(p.nextAction);
+      if (repLater) {
+        await followUpMovesPlan(tx, actor, p.id, p.nextActionDate);
+      } else {
+        await mirrorToPerson(tx, actor, null, e);
+      }
+      changed++;
+    });
+  }
+  return changed;
 }
 
 async function logPlanEvent(
@@ -435,6 +532,8 @@ export async function enrolPeople(
       if (p.nurtureUntil && p.nurtureUntil <= today) {
         await tx.update(person).set({ nurtureUntil: null }).where(eq(person.id, id));
       }
+      // The plan's first date becomes their follow-up (D-061).
+      await mirrorToPerson(tx, actor, null, row);
       await logPlanEvent(
         tx,
         actor,
@@ -1116,19 +1215,6 @@ export async function snoozeStep(
       settings.weeklyTouchLimit,
       pl.skipWeekends,
     );
-    // A follow-up date they set overrides the plan's date (D-060): snooze the person too.
-    if (p.nextActionDate && p.nextActionDate < date && p.snoozedUntil !== date) {
-      await tx.update(person).set({ snoozedUntil: date }).where(eq(person.id, personId));
-      await writeAudit(tx, {
-        userId: actor.id,
-        entityType: "Person",
-        recordId: personId,
-        recordName: p.fullName,
-        action: "Updated",
-        before: { snoozedUntil: p.snoozedUntil },
-        after: { snoozedUntil: date },
-      });
-    }
     return updateEnrolment(tx, actor, e, { nextDueDate: due }, p.fullName, `snoozed to ${date}`);
   });
 }

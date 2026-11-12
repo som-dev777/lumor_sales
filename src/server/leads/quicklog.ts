@@ -97,8 +97,8 @@ export async function quickLogTx(
     now?: Date;
     activityExtra?: Partial<typeof activity.$inferInsert>;
     /**
-     * On an active plan the plan sets the next dates (D-060): a request or an acceptance doesn't
-     * set "Check acceptance" or "Send Message 1", which would go ahead of the plan.
+     * On an active plan the plan sets the next dates (D-060, D-061): outreach or an acceptance
+     * doesn't change the follow-up, which the plan keeps in line with its next step.
      */
     planSetsDates?: boolean;
   } = {},
@@ -270,7 +270,9 @@ export async function quickLogTx(
     })
     .returning();
 
-  if (planSetsDates && (log.action === "requestSent" || log.action === "accepted")) {
+  // On an active plan the plan keeps the follow-up (D-061): outreach and an acceptance leave it
+  // as it is; doing the step or accepting moves it through the plan.
+  if (planSetsDates && (OUTREACH_ACTIONS.includes(log.action) || log.action === "accepted")) {
     plan = { ...plan, nextAction: before.nextAction, nextActionDate: before.nextActionDate };
   }
   const [after] = await tx

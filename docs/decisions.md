@@ -1310,3 +1310,26 @@ replaces it.
   "ahead of the plan's date" when yours wins) and **Plan** (name, step N of M and its task, paused
   or waiting) show first, above the other details. The old Plan and Next action details moved
   there.
+
+## D-061: One follow-up per person, kept in line with their plan (owner, 2026-11-13)
+
+- **Date:** 2026-11-13 · **Status:** Accepted · **Version 2.14.1** (PATCH) · Changes D-060's
+  "your own date goes first"
+- **The bug:** the plan kept its next date on the enrolment, and the person kept their own
+  follow-up date. The person page showed the plan's date (D-060), but My tasks' "What you
+  logged" date, Set next follow-up, the People list and the person form read the person's own
+  date, which applying or re-applying a plan never changed. So the two disagreed.
+- **One follow-up:** while someone is on an active plan, the person's follow-up _is_ the plan's
+  next step: the plan writes its date and "Step N of M: task" onto the person whenever it changes
+  (enrol, switch, Match step to history, a step done, accepted, resumed, snoozed). Setting a
+  follow-up anywhere (My tasks, the date beside a log, People's Add/Edit follow-up, the person
+  form, the conversation's Follow-up or Next follow-up, the AI summary's Confirm next step) moves
+  the plan's next step to that date too. The rep's own words stay beside the step ("Step 3 of 5:
+  LinkedIn message · Send the deck").
+- **Plans pausing or ending:** a pause, stop or finish clears the follow-up the plan wrote (one the
+  rep wrote is kept). A reply still sets "Respond". Outreach logged outside the plan (an extra
+  message, a call) leaves the plan's follow-up as it is.
+- **People already on plans:** `npm run sync:followups` (run by the Netlify build after the
+  migrations) brings each active plan and its person in line once: a follow-up the rep set after
+  the plan last changed, and not in the past, wins and moves the plan; otherwise the plan's date
+  is written onto the person. Each change is audited; running it again changes nothing.

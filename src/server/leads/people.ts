@@ -43,6 +43,7 @@ import { assertCan, can, type Actor } from "@/lib/permissions";
 import { addDaysIst, istDayRange, istWeekRange, toIstDate, todayIst } from "@/lib/time";
 import type { PersonData } from "@/lib/validation/leads";
 import { assertActiveOwner, LeadError, resolveCompanyByName } from "./companies";
+import { followUpMovesPlan } from "../plans/sync";
 
 type PersonRow = typeof person.$inferSelect;
 
@@ -225,6 +226,10 @@ export async function updatePerson(db: Db, actor: Actor, id: string, data: Perso
       .where(eq(person.id, id))
       .returning();
 
+    // One follow-up per person: a new date moves their active plan too (D-061).
+    if (after.nextActionDate !== before.nextActionDate) {
+      await followUpMovesPlan(tx, actor, id, after.nextActionDate);
+    }
     // PRD: changing the stage manually logs a "Stage change" activity.
     if (after.stage !== before.stage) await logStageChange(tx, actor, after, before.stage);
     // Do not contact overrides everything: it stops the person's plan (F17, guardrail 8).

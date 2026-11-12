@@ -1,6 +1,6 @@
 // v2.14.0 exit check (D-060): each step's days are the follow-up after it; someone already
 // contacted starts at the right step; the person's page shows the step and the next follow-up at
-// the top; a follow-up set on the person goes ahead of the plan's date.
+// the top; a follow-up set on the person moves the plan's next step to that day (D-061).
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const ADMIN = { email: "somnath@lumor.tech", password: "e2e-admin-password" };
@@ -59,13 +59,17 @@ test("exit check: someone already messaged starts at step 3; the top shows step 
   await expect(top).toContainText("Official Outreach · step 3 of 5: LinkedIn message");
   await expect(top).toContainText("Step 3 of 5: LinkedIn message");
 
-  // A follow-up set on the person now goes ahead of the plan's date.
+  // A follow-up set on the person moves the plan's step to that day: one follow-up (D-061).
   await convo.getByRole("radio", { name: "Follow-up" }).check();
   await convo.getByLabel("Next action").fill("Send the panel study");
+  const date = await convo.getByLabel("Follow-up date").inputValue();
   await convo.getByRole("button", { name: "Set follow-up" }).click();
   await expect(top).toContainText("Send the panel study");
-  await expect(top).toContainText("ahead of the plan");
-  await expect(panel).toContainText("instead of the plan's date");
+  await expect(top).toContainText("Step 3 of 5: LinkedIn message · Send the panel study");
+  const [y, m, d] = date.split("-").map(Number);
+  const MONTHS = "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" ");
+  const shownDate = `${d} ${MONTHS[m - 1]} ${y}`;
+  await expect(panel).toContainText(`due ${shownDate}`);
   await admin.screenshot({ path: "test-results/v214-person.png", fullPage: true });
 });
 

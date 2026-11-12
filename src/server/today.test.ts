@@ -7,7 +7,7 @@ import { personSchema } from "@/lib/validation/leads";
 import { planSchema } from "@/lib/validation/plans";
 import { createPerson } from "./leads/people";
 import { quickLog } from "./leads/quicklog";
-import { completeStep, enrolPeople, liveEnrolment } from "./plans/enrolment";
+import { completeStep, enrolPeople, liveEnrolment, pausePlan } from "./plans/enrolment";
 import { createPlan, updatePlan } from "./plans/plans";
 import { seedPlans } from "./plans/seed";
 import {
@@ -185,8 +185,7 @@ describe("Today v2 sections (F08)", () => {
     await enrolPeople(t.db, rep, [a.id], trial.id, NOW);
     const b = await lead("Paused Lead");
     await enrolPeople(t.db, rep, [b.id], outreachId, NOW);
-    const be = (await liveEnrolment(t.db, b.id))!;
-    await t.db.update(planEnrolment).set({ status: "Paused" }).where(eq(planEnrolment.id, be.id));
+    await pausePlan(t.db, rep, b.id, NOW);
     const c = await lead("Future Lead");
     await enrolPeople(t.db, rep, [c.id], outreachId, on("2026-11-02"));
     expect(await sections()).toEqual([["trial", "Trial Lead"]]);

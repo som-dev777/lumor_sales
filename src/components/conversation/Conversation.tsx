@@ -301,7 +301,7 @@ function Composer({
             value={nextDate}
             hint={
               planSets
-                ? "Empty: the plan sets the next date. A date here goes ahead of the plan's."
+                ? "Empty: the plan sets the next date. A date here moves the plan's next step to that day."
                 : "Tomorrow unless you change it. Clear it for none."
             }
             onChange={(e) => setNextDate(e.target.value)}

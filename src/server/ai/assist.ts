@@ -40,6 +40,7 @@ import { getCalendarLink } from "../settings";
 import type { AiPromptId } from "@/lib/db/enums";
 import { AiError, runPrompt } from "./client";
 import { deskThread, transcript } from "./desk-thread";
+import { followUpMovesPlan } from "../plans/sync";
 
 // --- Edit level (PRD) -----------------------------------------------------------------------
 
@@ -489,6 +490,8 @@ export async function applyNextStep(
       before: fields(before),
       after: { ...fields(after), source: "AI suggestion" },
     });
+    // One follow-up per person: their active plan moves to this date too (D-061).
+    await followUpMovesPlan(tx, actor, personId, after.nextActionDate);
     return after;
   });
 }

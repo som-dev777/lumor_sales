@@ -7,7 +7,15 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.14.0 (docs/qa-checklist.md section 21).
+Next: the owner's QA of v2.14.1 (docs/qa-checklist.md sections 21–22).
+
+## [2.14.1] - 2026-11-13
+
+One follow-up per person, the same everywhere (D-061).
+
+- **Fixed:** applying a plan updated the person page but not My tasks or People. Now the plan's next date is the person's follow-up: My tasks, the date beside each log, People and the person page all show it.
+- **Synced both ways:** changing a follow-up anywhere (My tasks, People, the person form, the conversation) moves the plan's next step to that date, and the plan moving on updates the follow-up.
+- **People already on plans** are brought in line once when this version goes live.
 
 ## [2.14.0] - 2026-11-11
 

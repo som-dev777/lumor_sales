@@ -184,6 +184,12 @@ missing seed plans and never changes existing ones.
   plan's date on My tasks (the task is still the step) until something is logged for it.
 - **Person page:** Next follow-up and Plan (step N of M) at the top.
 
+## One follow-up per person (v2.14.1, D-061)
+
+While someone is on an active plan, their follow-up and the plan's next step are the same date:
+the plan writes it onto the person, and a follow-up set anywhere moves the plan. Pausing or ending
+the plan clears the follow-up it wrote. `npm run sync:followups` lines up existing plans on deploy.
+
 ## Change history
 
 | Date       | Version | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -200,3 +206,4 @@ missing seed plans and never changes existing ones.
 | 2026-11-03 | 2.7.0   | Released in v2.7.0 (D-043).                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | 2026-11-03 | 2.7.2   | Delete replaces Archive; seed plans lose "(draft)"; All plans / Official / Made by me tabs; Enrol button aligned (D-045).                                                                                                                                                                                                                                                                                                                                                                  |
 | 2026-11-11 | 2.14.0  | Each step's days are the follow-up after it (Follow up after (days)); step 1 due on enrolment; the plan finishes after the last step's follow-up; enrolling reads the history and starts at the right step (Match step to history for existing plans); a follow-up set on the person after enrolment goes ahead of the plan's date; plan step and next follow-up at the top of the person page (D-060). Tests: src/server/plans/follow-up-after.test.ts, e2e/v214-plan-follow-ups.spec.ts. |
+| 2026-11-13 | 2.14.1  | One follow-up per person: the plan writes its next date onto the person, follow-ups set anywhere move the plan, pause/stop clears the plan's follow-up, deploy sync for existing plans (D-061). Tests: src/server/plans/one-follow-up.test.ts.                                                                                                                                                                                                                                             |

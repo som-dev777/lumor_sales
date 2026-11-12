@@ -79,7 +79,8 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-11-11): v2.14.0 (each plan step's days are the follow-up after it, enrolment reads the
+Done (2026-11-13): v2.14.1 (one follow-up per person: plan dates written onto the person, follow-ups
+set anywhere move the plan, deploy runs `npm run sync:followups`; D-061), v2.14.0 (each plan step's days are the follow-up after it, enrolment reads the
 history, own follow-up date ahead of the plan's, next follow-up at the top of a person; D-060),
 v2.13.0 (downloads follow on-screen switches, Next follow-up with each entry,
 loading spinner, Today renamed My tasks with follow-ups beside logs; D-059), v2.12.0 (simpler report: five headline numbers, Events of the day with P12
