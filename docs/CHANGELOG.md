@@ -7,7 +7,17 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.14.2 (docs/qa-checklist.md sections 21–23).
+Next: the owner's QA of v2.15.0 (docs/qa-checklist.md sections 21–24).
+
+## [2.15.0] - 2026-11-17
+
+Reports count everything on the date it was registered for, and find demos in the conversations (D-063).
+
+- **Fixed:** something logged today for an earlier day (a message, a follow-up, a reply) no longer shows in today's report. It counts on the day you chose, so it shows in that day's report.
+- **New outreach (people added):** one number for new people and people contacted for the first time, each counted once, on the day they were first contacted (or added, if not contacted yet).
+- **Demos scheduled:** besides booked meetings, the AI reads each conversation in the period and counts a demo date you agreed, even a tentative one. People with a demo show "Demo scheduled".
+- **Events** show only what happened in the dates you picked, with each person's facts for those dates.
+- **Removed:** the Replies and outcomes table, and the five counts at the top of Events.
 
 ## [2.14.2] - 2026-11-17
 

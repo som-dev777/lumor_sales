@@ -198,7 +198,9 @@ test("exit check: a report emailed to a teammate shows under their Shared with m
   await form.getByRole("checkbox", { name: "Somnath", exact: true }).check();
   await form.getByRole("button", { name: "Generate and send" }).click();
   await expect(fay).toHaveURL(/\/reports\/[0-9a-f-]{36}$/);
-  await expect(shown(fay.getByRole("region", { name: "Pipeline" }))).toContainText("People added");
+  await expect(shown(fay.getByRole("region", { name: "Pipeline" }))).toContainText(
+    "New outreach (people added)",
+  );
 
   await admin.goto("/reports?tab=shared");
   const history = shown(admin.getByRole("region", { name: "Report history" }));

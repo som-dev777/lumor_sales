@@ -68,8 +68,8 @@ test("exit check: the report has five headline numbers, no plan sections, and Ev
   await expect(co).toContainText("New");
   const person = co.getByRole("listitem", { name: "Ola Person" });
   await expect(person).toContainText("New");
-  await expect(person).toContainText("Connection request sent");
-  await expect(person).toContainText("(with a note)");
+  // D-063: only what happened on the day.
+  await expect(person).toContainText("On the day: 1 connection request (with a note)");
   // The summary (the stand-in AI in tests).
   await expect(person).toContainText("Next step");
   await admin.screenshot({ path: "test-results/v212-report.png", fullPage: true });

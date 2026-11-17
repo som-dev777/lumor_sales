@@ -1353,3 +1353,42 @@ replaces it.
   and **Calls** (call steps, follow-ups that say "call", and meetings to hold). Late tasks go on
   the tab they came from. Each tab shows its count; only the open tab is drawn. It opens on the
   first tab with something in it.
+
+## D-063: Reports go by the date registered; Demos scheduled from the conversations; a simpler report (owner, 2026-11-17)
+
+- **Date:** 2026-11-17 · **Status:** Accepted · **Version 2.15.0** (MINOR)
+- **The owner's rule:** the date an action is registered for is the only truth. A follow-up typed
+  in on 17 Nov for 13 Nov counts in 13 Nov's report and never in 17 Nov's; the same for replies
+  and new outreach.
+- **What was wrong:** activities were already stored with the date chosen, but three things still
+  used the day something was typed in. (1) A person added today counted as today's new outreach
+  even when their first contact was registered for an earlier day. (2) Events listed every person
+  added in the period, and each person's facts line described their whole history ("First
+  contacted 5 Nov · Talking since 11 Nov · 4 messages…"), so a one-day report showed earlier
+  days. (3) A company added today for such a person showed as today's new company.
+- **New outreach (people added)** is one number (owner: they are the same). A person counts once,
+  on the day they first entered our outreach: their first contact ever (request, message,
+  InMail or call), or, when they were added in the period and nobody contacted them before it,
+  the day they were added. A connection request to someone already contacted is a follow-up now,
+  not new outreach. Each person is credited to one rep: whoever added them in the period, else
+  whoever first contacted them. My tasks' "new people today" bar uses the same rule
+  (`newOutreach` in src/server/outreach.ts).
+- **Follow-ups:** people contacted in the period who aren't new outreach in it, by the date
+  registered. **Responded:** replies registered in the period (unchanged).
+- **Demos scheduled:** each person, once, with a Meeting booked (or moved to Meeting scheduled) in
+  the period, or whose conversation in the period sets up a demo for a later date, even a
+  tentative one. The AI reads it (P12 1.1 returns `demoScheduled` and `demoDate`). When the AI is
+  off, slow or over its 60-person limit, the app counts a message in the period that mentions a
+  demo and a day or time (`mentionsDemo`). It is a new Pipeline column; older reports keep showing
+  their meetings booked.
+- **Events** list only the period: people who are new outreach in it or had something registered
+  in it. Their facts are "New outreach: first contacted 13 Nov" (or "added …, not contacted
+  yet"), "On the day / In this period: 1 connection request, 2 messages or calls from us, 1
+  reply", "Demo scheduled: …", then stage and follow-up. P12 gets the PERIOD and a dated
+  conversation that stops at the end of the period, without drafts. A new company is shown when
+  it has someone in the period, or has nobody yet.
+- **Removed (owner):** the Replies and outcomes table, and the counts row at the top of Events
+  (companies added, people added, contacts, replies, meetings and demos), from the page, PDF, CSV
+  and email. Old reports' saved `outcomes` switches are simply ignored.
+- **Saved reports:** version 5. Reports made before keep their saved numbers; they only lose the
+  removed tables on screen.

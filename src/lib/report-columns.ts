@@ -3,15 +3,18 @@
 import type { ReportSection } from "./report-shape";
 import type { PersonNumbers, ReportData } from "@/server/reports";
 
+/** New outreach and people added are one column since D-063: a new person is new outreach. */
+export const NEW_OUTREACH_LABEL = "New outreach (people added)";
+
 export const PIPELINE_COLUMNS: {
-  key: "peopleAdded" | "companiesAdded" | "newOutreach" | "followUps" | "replied" | "converted";
+  key: "newOutreach" | "companiesAdded" | "followUps" | "replied" | "demosScheduled" | "converted";
   label: string;
 }[] = [
-  { key: "peopleAdded", label: "People added" },
+  { key: "newOutreach", label: NEW_OUTREACH_LABEL },
   { key: "companiesAdded", label: "Companies added" },
-  { key: "newOutreach", label: "New outreach" },
   { key: "followUps", label: "Follow-ups" },
-  { key: "replied", label: "Replied" },
+  { key: "replied", label: "Responded" },
+  { key: "demosScheduled", label: "Demos scheduled" },
   { key: "converted", label: "Converted" },
 ];
 
@@ -53,25 +56,12 @@ export const REPORT_COLUMNS: { key: (typeof NUMBER_KEYS)[number]; label: string 
   { key: "stepsNotRecorded", label: "Due date not recorded" },
 ];
 
-/** The three number tables on a report, by section (D-057). */
+/** The number tables on a report, by section (D-057; Replies and outcomes removed in D-063). */
 export const NUMBER_SECTIONS = [
   {
     key: "activity",
     title: "Activity",
     keys: ["requests", "messages", "emails", "calls", "callsConnected"],
-  },
-  {
-    key: "outcomes",
-    title: "Replies and outcomes",
-    keys: [
-      "replies",
-      "meetingsBooked",
-      "meetingsHeld",
-      "proposals",
-      "trials",
-      "conversions",
-      "dealValueInr",
-    ],
   },
 ] as const satisfies readonly {
   key: ReportSection;
@@ -79,18 +69,25 @@ export const NUMBER_SECTIONS = [
   keys: readonly (typeof NUMBER_KEYS)[number][];
 }[];
 
-/** The five headline numbers (D-058), from the report as shown. */
+/** The five headline numbers (D-058, D-063), from the report as shown. */
 export function headlines(r: ReportData) {
   const p = r.pipeline?.total;
   return [
-    { key: "pipeline.total.newOutreach", label: "New outreach", value: p?.newOutreach ?? null },
+    { key: "pipeline.total.newOutreach", label: NEW_OUTREACH_LABEL, value: p?.newOutreach ?? null },
     { key: "pipeline.total.followUps", label: "Follow-ups", value: p?.followUps ?? null },
     { key: "pipeline.total.replied", label: "Responded", value: p?.replied ?? null },
-    {
-      key: "numbers.total.meetingsBooked",
-      label: "Demos scheduled",
-      value: r.total.meetingsBooked,
-    },
+    // Reports from before 2.15 have no Demos scheduled column: their meetings booked.
+    p?.demosScheduled !== undefined
+      ? {
+          key: "pipeline.total.demosScheduled",
+          label: "Demos scheduled",
+          value: p.demosScheduled,
+        }
+      : {
+          key: "numbers.total.meetingsBooked",
+          label: "Demos scheduled",
+          value: r.total.meetingsBooked,
+        },
     { key: "numbers.total.meetingsHeld", label: "Demos conducted", value: r.total.meetingsHeld },
   ];
 }

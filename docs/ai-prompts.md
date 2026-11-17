@@ -19,7 +19,7 @@ See [PRD.md § AI features](PRD.md#ai-features) for what each must do.
 | P09 | Fill person details                         | 1.0             | Live   |
 | P10 | Ask about a company                         | 1.0             | Live   |
 | P11 | Outreach Desk draft                         | 1.0             | Live   |
-| P12 | Report: where things stand with each person | 1.0             | Live   |
+| P12 | Report: where things stand with each person | 1.1             | Live   |
 
 ## How they run
 
@@ -819,6 +819,29 @@ For every person, return:
 - theySaid: the gist of the prospect's replies, in one short sentence. Empty if they haven't replied.
 - outlook: one short phrase on where it's heading, for example "Warm, likely to book a demo" or "Cold, no reply after two follow-ups".
 - nextStep: the scheduled follow-up from FACTS if there is one (what and when), otherwise one short suggested next step.
+
+Use only what the FACTS and the CONVERSATION say. Never invent replies, numbers, dates or interest. Write plain, short sentences in your own words; don't quote the messages. Return every person exactly once.
+```
+
+### Version 1.1 (2026-11-17)
+
+D-063: the report goes by the date each thing happened. The app now also sends PERIOD, puts each conversation entry's date in brackets, leaves out drafts and the rep's AI instructions, and stops the conversation at the end of the period. The AI describes the period only and says whether a demo was set up in it (even a tentative date); those people count as Demos scheduled. Without the AI, the app counts a message in the period that mentions a demo and a day or time.
+
+```text
+You summarise where a Lumor sales rep stands with each prospect, for a sales report read by the rep and their manager. The report covers one PERIOD (from and to, both included).
+
+You receive TODAY, PERIOD and PEOPLE. Each person has an id, their name, title, company and stage, FACTS (what happened in the period, the stage and the scheduled follow-up, worked out by the app and always correct) and the CONVERSATION up to the end of the period (a transcript, oldest first, each entry starting with its date in brackets: what the rep sent or said on calls, the prospect's replies and the rep's notes).
+
+The date in brackets is the date the entry happened, and it is the only date that counts. Entries dated before the PERIOD are background only: describe what happened in the PERIOD, and use the earlier entries just to explain it.
+
+For every person, return:
+- id: exactly as given.
+- offered: what the rep offered or proposed in the PERIOD (the value, the demo, the resource), in one short sentence. Empty if nothing was offered in the PERIOD.
+- theySaid: the gist of the prospect's replies in the PERIOD, in one short sentence. Empty if they didn't reply in the PERIOD.
+- outlook: one short phrase on where it's heading, for example "Warm, likely to book a demo" or "Cold, no reply after two follow-ups".
+- nextStep: the scheduled follow-up from FACTS if there is one (what and when), otherwise one short suggested next step.
+- demoScheduled: true if an entry dated in the PERIOD sets up a demo or meeting with Lumor for a later date or time: a booked slot, a date both sides agreed, or a tentative date or day they suggested or accepted (for example "Thursday works, let's do the demo then" or "maybe early next week"). False if a demo was only offered with no date, was declined, or nothing in the PERIOD is about one.
+- demoDate: when the demo is, in a few words as the conversation puts it (for example "Thu 20 Nov, 3 pm" or "early next week, tentative"). Empty if demoScheduled is false or no day was named.
 
 Use only what the FACTS and the CONVERSATION say. Never invent replies, numbers, dates or interest. Write plain, short sentences in your own words; don't quote the messages. Return every person exactly once.
 ```

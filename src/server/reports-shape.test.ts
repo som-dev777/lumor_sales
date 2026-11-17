@@ -145,9 +145,10 @@ describe("Events of the day (D-058)", () => {
     await lead(asha, at(9, "2026-10-01"));
 
     const r = await buildReport(t.db, { scope: "person", userId: asha.id }, SPAN, at(18));
-    expect(r.version).toBe(4);
+    expect(r.version).toBe(5);
     const e = r.events!;
-    expect(e.counts).toEqual({ companies: 1, people: 2, contacts: 1, replies: 1, meetings: 0 });
+    // D-063: no counts row in the events any more.
+    expect(e.counts).toBeUndefined();
     expect(e.companies.map((c) => [c.name, c.isNew])).toEqual([
       [fresh.fullName.replace("Lead", "Company"), true],
       ["Old Co", false],
@@ -157,12 +158,18 @@ describe("Events of the day (D-058)", () => {
       [added.fullName, true],
       [old.fullName, false],
     ]);
+    // D-063: only what happened on the day, then where they stand.
     const facts = oldCo.people[1].facts;
-    expect(facts).toContain("First contacted 2 Oct");
-    expect(facts).toContain("Talking since 4 Nov");
-    expect(facts).toContain("1 message or call from us, 1 reply");
-    expect(facts).toContain("Follow-up: Send deck on 6 Nov");
-    expect(e.companies[0].people[0].facts[0]).toBe("Connection request sent 4 Nov (with a note)");
+    expect(facts).toEqual([
+      "On the day: 1 reply",
+      "Stage: Replied",
+      "Follow-up: Send deck on 6 Nov",
+    ]);
+    expect(oldCo.people[0].facts[0]).toBe("New outreach: added 4 Nov, not contacted yet");
+    expect(e.companies[0].people[0].facts.slice(0, 2)).toEqual([
+      "New outreach: first contacted 4 Nov",
+      "On the day: 1 connection request (with a note)",
+    ]);
     // AI off in tests: facts only, and the report says so.
     expect(oldCo.people[1].summary).toBeNull();
     expect(e.withoutSummary).toBe(3);
@@ -263,7 +270,7 @@ describe("Include in report and Edit numbers (D-057)", () => {
     const run = await createReport(t.db, asha, { scope: "person", userId: asha.id }, SPAN, {
       now: at(18),
     });
-    await setSectionIncluded(t.db, asha, run.id, "outcomes", false);
+    await setSectionIncluded(t.db, asha, run.id, "pipeline", false);
     await saveReportEdits(t.db, asha, run.id, {
       [`numbers.${asha.id}.requests`]: 7,
       // Same as the original: not kept.
@@ -274,7 +281,7 @@ describe("Include in report and Edit numbers (D-057)", () => {
     );
     await setSectionIncluded(t.db, admin, run.id, "details", false);
     const saved = (await getReport(t.db, asha, run.id))!;
-    expect(saved.hiddenSections).toEqual(["outcomes", "details"]);
+    expect(saved.hiddenSections).toEqual(["pipeline", "details"]);
     expect(saved.edits).toEqual({ [`numbers.${asha.id}.requests`]: 7 });
     // The report's own data is never changed.
     const [row] = await t.db.select().from(reportRun).where(eq(reportRun.id, run.id));
@@ -282,7 +289,7 @@ describe("Include in report and Edit numbers (D-057)", () => {
     const shaped = shapeOf(saved);
     expect(shaped.data.people[0].requests).toBe(7);
     const csv = reportCsv(shaped.data, null, shaped.hidden);
-    expect(csv).not.toContain("Replies and outcomes");
+    expect(csv).not.toContain("Pipeline");
     expect(csv).not.toContain("Events");
     expect(csv).toContain("Activity\r\nPerson,Connection requests");
     expect(csv).toContain("Asha,7,");

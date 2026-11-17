@@ -7,7 +7,6 @@ export const REPORT_SECTIONS = [
   { key: "summary", label: "AI summary" },
   { key: "pipeline", label: "Pipeline" },
   { key: "activity", label: "Activity" },
-  { key: "outcomes", label: "Replies and outcomes" },
   { key: "details", label: "Events" },
 ] as const;
 export type ReportSection = (typeof REPORT_SECTIONS)[number]["key"];
@@ -23,6 +22,7 @@ const PIPELINE_KEYS = [
   "newOutreach",
   "followUps",
   "replied",
+  "demosScheduled",
   "converted",
   "noResponse",
 ] as const;

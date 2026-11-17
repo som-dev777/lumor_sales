@@ -161,15 +161,16 @@ describe("the numbers (F19)", () => {
     expect(csv.charCodeAt(0)).toBe(0xfeff);
     // One table per section (D-057), each under its own heading.
     expect(csv).toContain("Activity\r\nPerson,Connection requests,Messages,Emails,Calls");
-    expect(csv).toContain("Replies and outcomes\r\nPerson,Replies,Meetings booked");
+    // D-063: Replies and outcomes is gone.
+    expect(csv).not.toContain("Replies and outcomes");
     // D-058: no Plan adherence, Funnel or Plan performance; five headline numbers; Events.
     expect(csv).not.toContain("Plan adherence");
     expect(csv).not.toContain("Funnel");
     expect(csv).toContain(
-      "Pipeline\r\nNew outreach,Follow-ups,Responded,Demos scheduled,Demos conducted",
+      "Pipeline\r\nNew outreach (people added),Follow-ups,Responded,Demos scheduled,Demos conducted",
     );
     expect(csv).toContain(
-      "Person,People added,Companies added,New outreach,Follow-ups,Replied,Converted",
+      "Person,New outreach (people added),Companies added,Follow-ups,Responded,Demos scheduled,Converted",
     );
     expect(csv).toContain("Events in this period");
     expect(csv).toContain("'=HYPERLINK()");

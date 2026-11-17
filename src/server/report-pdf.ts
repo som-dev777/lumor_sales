@@ -167,26 +167,13 @@ export function reportPdf(
   if (r.events && on("details")) {
     const e = r.events;
     d.heading(eventsTitle(r));
-    d.table(
-      ["", "Companies added", "People added", "Contacts", "Replies", "Meetings and demos"],
-      [
-        [
-          "Total",
-          e.counts.companies,
-          e.counts.people,
-          e.counts.contacts,
-          e.counts.replies,
-          e.counts.meetings,
-        ],
-      ],
-    );
     for (const c of e.companies) {
       d.y += 1;
       d.text(`${c.name}${c.isNew ? "  [NEW]" : ""}`, 11, INK, true);
       if (c.people.length === 0) d.text("No people added yet.", 8.5, GREY, false, M + 4);
       for (const x of c.people) {
         d.text(
-          `${x.name}${x.title ? `, ${x.title}` : ""}${x.isNew ? "  [NEW]" : ""}`,
+          `${x.name}${x.title ? `, ${x.title}` : ""}${x.isNew ? "  [NEW]" : ""}${x.demoScheduled ? "  [DEMO SCHEDULED]" : ""}`,
           9.5,
           INK,
           true,

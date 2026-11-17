@@ -619,6 +619,19 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
       and meetings under Calls; replies and messages under Follow-ups.
 - [ ] 23.3 Do a task (Done or Snooze): it leaves the tab and the count goes down.
 
+## 24. Reports by the date registered, demos from the conversation (v2.15.0)
+
+- [ ] 24.1 Open someone you contacted before. In **Conversation**, add a message **From me** and
+      set its date to a few days ago (say 13 Nov). Make a report for **Today**: they're not in
+      Events and Follow-ups doesn't count them. Make one for **13 Nov** (Custom dates): they are,
+      and Follow-ups counts them.
+- [ ] 24.2 Add a new person and log a first message dated a few days ago. Today's report doesn't
+      count them; that day's report shows them as **New** under **New outreach (people added)**.
+- [ ] 24.3 Add a reply **From them** that says e.g. "Thursday 3 pm works for the demo". Today's
+      report counts 1 under **Demos scheduled**, and the person shows **Demo scheduled**.
+- [ ] 24.4 The report has no **Replies and outcomes** section, and Events has no row of five
+      counts at the top. The Pipeline table's first column is **New outreach (people added)**.
+
 ---
 
 ## Before the team starts (only you can do these)

@@ -87,16 +87,14 @@ test("exit check: a report lists the day's events; sections can be left out; num
   await expect(co).toContainText("New");
   await expect(co.getByRole("listitem", { name: "Rhea Report" })).toContainText("New");
 
-  // Leave Replies and outcomes out: it folds away here, and the CSV doesn't have it.
-  await shown(
-    admin.getByRole("switch", { name: "Include Replies and outcomes in the report" }),
-  ).uncheck();
+  // Leave the Pipeline out: it folds away here, and the CSV doesn't have it.
+  await shown(admin.getByRole("switch", { name: "Include Pipeline in the report" })).uncheck();
   await expect(shown(admin.getByText("Left out of the report."))).toBeVisible();
-  await expect(shown(admin.getByRole("region", { name: "Replies and outcomes" }))).toContainText(
+  await expect(shown(admin.getByRole("region", { name: "Pipeline" }))).toContainText(
     "Left out of the PDF, CSV, email and print.",
   );
   const csv = await (await admin.request.get(`${reportUrl}/csv`)).text();
-  expect(csv).not.toContain("Replies and outcomes");
+  expect(csv).not.toContain("Pipeline");
   expect(csv).toContain("Rhea Report");
 
   // Edit a number on this report only.

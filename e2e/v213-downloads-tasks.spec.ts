@@ -71,7 +71,7 @@ test("exit check: a download leaves out what's switched off, even straight after
   );
   const csv = await (await admin.request.get(csvHref!)).text();
   expect(csv).not.toContain("Activity\r\n");
-  expect(csv).toContain("Replies and outcomes");
+  expect(csv).toContain("Pipeline");
   // Editing numbers: downloads wait for Save or Cancel.
   await shown(admin.getByRole("button", { name: "Edit numbers" })).click();
   await expect(admin.getByRole("link", { name: "Download PDF" })).toHaveCount(0);

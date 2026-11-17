@@ -201,9 +201,11 @@ export function ReportBody({
             ))}
           </div>
           <p className={styles.muted}>
-            New outreach: people added, sent a connection request or contacted for the first time.
-            Follow-ups: people contacted before and contacted again. Responded: people who replied
-            or interacted back. Demos: meetings booked and held.
+            Every number goes by the date an action was registered for, not the day it was typed in.
+            New outreach (people added): new people, and people contacted for the first time.
+            Follow-ups: people contacted before and contacted again. Responded: people who replied.
+            Demos scheduled: demos booked, or a demo date (even a tentative one) agreed in the
+            conversation. Demos conducted: meetings held.
           </p>
           <div className={styles.tableWrap}>
             <table className={styles.table}>
@@ -278,7 +280,6 @@ export function ReportBody({
                           `numbers.${rowKey(x)}.${k}`,
                           x[k],
                           `${x.name} · ${REPORT_COLUMNS.find((c) => c.key === k)!.label}`,
-                          k === "dealValueInr",
                         )}
                       </td>
                     ))}
@@ -295,7 +296,6 @@ export function ReportBody({
                           `numbers.total.${k}`,
                           shown.total[k],
                           `Total · ${REPORT_COLUMNS.find((c) => c.key === k)!.label}`,
-                          k === "dealValueInr",
                         )}
                       </td>
                     ))}
@@ -481,24 +481,8 @@ function Details({ details }: { details: NonNullable<ReportData["details"]> }) {
 
 /** Events of the day (D-058): company by company, new ones marked, with a summary per person. */
 function Events({ events }: { events: NonNullable<ReportData["events"]> }) {
-  const c = events.counts;
-  const tiles = [
-    { label: "Companies added", value: c.companies },
-    { label: "People added", value: c.people },
-    { label: "Contacts", value: c.contacts },
-    { label: "Replies", value: c.replies },
-    { label: "Meetings and demos", value: c.meetings },
-  ];
   return (
     <div className={styles.details}>
-      <div className={styles.kpis}>
-        {tiles.map((t) => (
-          <div key={t.label} className={styles.kpi}>
-            <span className={styles.kpiValue}>{t.value}</span>
-            <span className={styles.kpiLabel}>{t.label}</span>
-          </div>
-        ))}
-      </div>
       {events.companies.length === 0 ? (
         <p className={styles.muted}>Nothing happened in this period.</p>
       ) : (
@@ -523,6 +507,7 @@ function Events({ events }: { events: NonNullable<ReportData["events"]> }) {
                         <Link href={`/people/${x.personId}`}>{x.name}</Link>
                         {x.title ? <span className={styles.muted}>, {x.title}</span> : null}
                         {x.isNew && <span className={styles.newPill}>New</span>}
+                        {x.demoScheduled && <span className={styles.newPill}>Demo scheduled</span>}
                       </p>
                       <p className={styles.facts}>{x.facts.join(" · ")}</p>
                       {x.summary && (

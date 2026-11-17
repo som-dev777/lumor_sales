@@ -68,6 +68,8 @@ export type PipelineRow = {
   followUps?: number;
   /** People who replied in the period. */
   replied: number;
+  /** People with a demo booked or set up in the period (D-063; missing before 2.15). */
+  demosScheduled?: number;
   converted: number;
   /** Contacted for the first time in the period, no reply so far. */
   noResponse: number;
@@ -106,9 +108,10 @@ export type ReportDetails = {
 export type ReportData = {
   /**
    * 2 from v2.7.0 (adds Pipeline); 3 from v2.11.0 (adds What happened); 4 from v2.12.0 (Events
-   * of the day replaces What happened). Older saved reports keep what they had.
+   * of the day replaces What happened); 5 from v2.15.0 (dates registered, Demos scheduled from
+   * the conversations, D-063). Older saved reports keep what they had.
    */
-  version: 1 | 2 | 3 | 4;
+  version: 1 | 2 | 3 | 4 | 5;
   title: string;
   scope: "team" | "person";
   personName: string | null;
@@ -176,11 +179,15 @@ async function convertedPeople(
     );
 }
 
-/** The Pipeline section (D-043; numbers aligned with Today and People in D-057). */
+/**
+ * The Pipeline section (D-043; aligned with Today and People in D-057). Every number goes by the
+ * date registered (D-063). `demoPeople` are the people Events found a demo set up with.
+ */
 async function buildPipeline(
   db: DbOrTx,
   people: PersonNumbers[],
   range: { start: Date; end: Date },
+  demoPeople: string[] = [],
 ): Promise<{ people: PipelineRow[]; total: PipelineRow }> {
   const ids = people.map((p) => p.userId!).filter(Boolean);
   const rows = new Map<string, PipelineRow>(
@@ -194,6 +201,7 @@ async function buildPipeline(
         newOutreach: 0,
         followUps: 0,
         replied: 0,
+        demosScheduled: 0,
         converted: p.conversions,
         noResponse: 0,
         stages: {},
@@ -259,6 +267,26 @@ async function buildPipeline(
           )
       ).map((r) => r.personId),
     );
+    // Demos scheduled: booked (or moved to Meeting scheduled) in the period, or a demo set up in the
+    // period's conversation (Events, D-063). Each person once, by their owner.
+    const demoIds = new Set([
+      ...demoPeople,
+      ...(
+        await db
+          .select({ personId: activity.personId })
+          .from(activity)
+          .where(
+            and(
+              or(
+                eq(activity.type, "Meeting booked"),
+                and(eq(activity.type, "Stage change"), eq(activity.toStage, "Meeting scheduled")),
+              ),
+              gte(activity.occurredAt, range.start),
+              lt(activity.occurredAt, range.end),
+            ),
+          )
+      ).map((r) => r.personId),
+    ]);
     // Where their people stand now, and who replied, by owner.
     for (const r of await db
       .select({ id: person.id, ownerId: person.ownerId, stage: person.stage })
@@ -268,6 +296,7 @@ async function buildPipeline(
       if (!row) continue;
       row.stages[r.stage] = (row.stages[r.stage] ?? 0) + 1;
       if (repliedIds.has(r.id)) row.replied += 1;
+      if (demoIds.has(r.id)) row.demosScheduled = (row.demosScheduled ?? 0) + 1;
     }
   }
   const list = [...rows.values()];
@@ -279,11 +308,13 @@ async function buildPipeline(
     newOutreach: 0,
     followUps: 0,
     replied: 0,
+    demosScheduled: 0,
     converted: 0,
     noResponse: 0,
     stages: {},
   };
   for (const r of list) {
+    total.peopleAdded += r.peopleAdded;
     for (const c of PIPELINE_COLUMNS) total[c.key] = (total[c.key] ?? 0) + (r[c.key] ?? 0);
     total.noResponse += r.noResponse;
     for (const [k, n] of Object.entries(r.stages)) total.stages[k] = (total.stages[k] ?? 0) + n;
@@ -384,8 +415,15 @@ export async function buildReport(
   for (const p of people) for (const k of NUMBER_KEYS) total[k] += p[k];
   const personName = target.scope === "person" ? people[0].name : null;
   const repIds = target.scope === "person" ? [target.userId] : null;
+  const { demoPeople, ...events } = await buildEvents(
+    db,
+    range,
+    target.scope === "person" ? target.userId : null,
+    toIstDate(now),
+    span,
+  );
   return {
-    version: 4,
+    version: 5,
     title: `${personName ?? "Team"} · ${spanLabel(span)}`,
     scope: target.scope,
     personName,
@@ -396,13 +434,8 @@ export async function buildReport(
     total,
     funnel: await funnelTotals(db, range, repIds),
     plans: await planPerformance(db, range, repIds),
-    pipeline: await buildPipeline(db, people, range),
-    events: await buildEvents(
-      db,
-      range,
-      target.scope === "person" ? target.userId : null,
-      toIstDate(now),
-    ),
+    pipeline: await buildPipeline(db, people, range, demoPeople),
+    events,
   };
 }
 
@@ -565,9 +598,6 @@ export function reportCsv(
     rows.push(
       [],
       [eventsTitle(r)],
-      ["Companies added", "People added", "Contacts", "Replies", "Meetings and demos"],
-      [e.counts.companies, e.counts.people, e.counts.contacts, e.counts.replies, e.counts.meetings],
-      [],
       [
         "Company",
         "New company",
