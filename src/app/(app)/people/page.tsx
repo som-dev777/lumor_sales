@@ -8,6 +8,7 @@ import { AutoRefresh } from "@/components/shell/AutoRefresh";
 import { LEVELS, STAGES } from "@/lib/db/enums";
 import { PeopleTable } from "@/components/leads/PeopleTable";
 import { PersonDialogButton } from "@/components/leads/PersonDialogButton";
+import { AddManyButton } from "@/components/leads/AddManyButton";
 import styles from "@/components/leads/leads.module.scss";
 import { PageHeader } from "@/components/shell/PageHeader";
 import { PendingHint } from "@/components/ui/PendingHint";
@@ -109,6 +110,7 @@ async function People({ searchParams }: Pick<PageProps<"/people">, "searchParams
           </Link>
         </nav>
         <div className={styles.topActions}>
+          <AddManyButton options={options} />
           <PersonDialogButton options={options} canChooseOwner={isAdmin} />
         </div>
       </div>

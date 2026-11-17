@@ -494,7 +494,7 @@ export async function addDeskInfo(
 }
 
 /** Saves the Desk's own fields on an activity just created in this transaction. Audited. */
-async function setDeskFields(
+export async function setDeskFields(
   tx: DbOrTx,
   actor: Actor,
   activityId: string,

@@ -7,7 +7,16 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.15.0 (docs/qa-checklist.md sections 21–24).
+Next: the owner's QA of v2.16.0 (docs/qa-checklist.md sections 21–25).
+
+## [2.16.0] - 2026-11-18
+
+Outreach sprints: more LinkedIn outreach in less time, with no ban risk (F30, D-065).
+
+- **Add many** (People): paste up to 50 LinkedIn profile links (with name, title and company if you have them) or pick a CSV, and they're all added at once, with the same duplicate check as Add person.
+- **Connection sprint** (My tasks → Start connection sprint): the people you haven't contacted yet, Tier 1 first, one at a time, each with a connection note written for them. Open the profile, copy the note, send it on LinkedIn yourself, then click **Sent ✓**. It puts them on the Official Outreach plan and moves to the next person. Notes over LinkedIn's 300 characters can't be sent, and the sprint stops at 100 requests a week (5 days of your daily target) to keep your account safe.
+- **Follow-up sprint** (My tasks → Start follow-up sprint): who's still to accept (click **Accepted** when they have), then each message that's due, written for you, and people who said they're interested (**Book the demo**, with your booking link).
+- A connection request done as a plan step now keeps the note you sent.
 
 ## [2.15.1] - 2026-11-18
 

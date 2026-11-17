@@ -632,6 +632,26 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
 - [ ] 24.4 The report has no **Replies and outcomes** section, and Events has no row of five
       counts at the top. The Pipeline table's first column is **New outreach (people added)**.
 
+## 25. Outreach sprints and Add many (v2.16.0)
+
+- [ ] 25.1 In Sales Navigator, open a lead list. For 3 people, open ⋯ → **Copy LinkedIn.com URL**
+      and paste each link on its own line in **People → Add many**. Type a company in **Company
+      for lines without one** (or add ", Name, Title, Company" after each link). Click **Add 3
+      people**: "Added 3 people". Adding the same links again lists them as already added.
+- [ ] 25.2 **My tasks → Start connection sprint**: the first card shows a person you haven't
+      contacted, with a note written for them and "0 of 20 sent today · 0 of 100 this week".
+- [ ] 25.3 Click **Open profile** (LinkedIn opens in a new tab) and **Copy note**. On LinkedIn,
+      click Connect → Add a note, paste, send. Back in Sales Hub click **Sent ✓**: the next card
+      appears and the count goes up.
+- [ ] 25.4 Make a note longer than 300 characters: **Sent ✓** greys out and the count turns red.
+- [ ] 25.5 Open that person's page: the Plan panel shows Official Outreach, waiting for them to
+      accept; the conversation shows the note you sent.
+- [ ] 25.6 **My tasks → Start follow-up sprint**: they're under **Waiting for acceptance**. When
+      someone accepts on LinkedIn, click **Accepted**: their plan's next message gets its date.
+      On that day the message shows under **Messages to send**, written for you.
+- [ ] 25.7 Someone who replied "Interested" (logged in their conversation) shows as **Book the
+      demo**, with a reply that includes your booking link.
+
 ---
 
 ## Before the team starts (only you can do these)

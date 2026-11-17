@@ -44,7 +44,7 @@ All dates are stored in UTC and shown in IST. Weeks run Monday to Sunday.
 2. Add a CHANGELOG.md entry (under "Unreleased" until a release).
 3. Versioning: bump MINOR once per completed release (R1 = 1.0.0, R2 = 1.1.0…)
    and PATCH for fixes. Version 2 starts at R7 = 2.0.0, then MINOR again (AI Resources = 2.1.0,
-   R8 = 2.2.0, R9 = 2.3.0, QA round 1 = 2.4.0, Calendar + AI = 2.5.0, Calendar round 2 = 2.6.0, Owner's list 3 Nov = 2.7.0, Owner's list 4 Nov = 2.8.0, Owner's second list 4 Nov = 2.9.0, Outreach Desk = 2.10.0, Reports + Today by day = 2.11.0, Simpler report = 2.12.0, My tasks + downloads = 2.13.0, Plan follow-ups = 2.14.0, Report dates = 2.15.0; D-028, D-037).
+   R8 = 2.2.0, R9 = 2.3.0, QA round 1 = 2.4.0, Calendar + AI = 2.5.0, Calendar round 2 = 2.6.0, Owner's list 3 Nov = 2.7.0, Owner's list 4 Nov = 2.8.0, Owner's second list 4 Nov = 2.9.0, Outreach Desk = 2.10.0, Reports + Today by day = 2.11.0, Simpler report = 2.12.0, My tasks + downloads = 2.13.0, Plan follow-ups = 2.14.0, Report dates = 2.15.0, Outreach sprints = 2.16.0; D-028, D-037).
    Do not bump the version on every commit.
 4. Update docs/README.md (feature index) if anything changed there.
 5. At a release or patch, add the AppRelease record (run `npm run releases:sync`).
@@ -79,7 +79,7 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-11-18): v2.15.1 (Next.js 16.4.2 → 16.4.6 security update; D-064), v2.15.0 (reports by the date registered, New outreach (people added) as one
+Done (2026-11-18): v2.16.0 (outreach sprints F30: Add many, connection and follow-up sprints, the rep sends on LinkedIn; D-065), v2.15.1 (Next.js 16.4.2 → 16.4.6 security update; D-064), v2.15.0 (reports by the date registered, New outreach (people added) as one
 number, Demos scheduled from the conversation via P12 1.1, Events period-only, Replies and outcomes
 removed; D-063), v2.14.2 (My tasks in a fixed 13 reads via planStatesFor, no overlapping
 auto-refresh, New outreach / Follow-ups / Calls tabs; D-062), v2.14.1 (one follow-up per person: plan dates written onto the person, follow-ups

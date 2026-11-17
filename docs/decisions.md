@@ -1403,3 +1403,30 @@ replaces it.
 - **How it was checked:** done in a separate git worktree (owner's choice); format, typecheck,
   lint, 529 unit tests, the production build and 118 browser tests all pass. Released as the
   patch 2.15.1. No migration, so no Turso backup was needed.
+
+## D-065: Outreach sprints: Sales Hub writes and logs, the rep clicks Send on LinkedIn (owner, 2026-11-18)
+
+- **Why:** more LinkedIn sales (connection requests with a personal note, follow-ups, demos)
+  without the ban risk. Tools that send for the rep (Expandi, HeyReach, Dripify, Waalaxy, Linked
+  Helper, PhantomBuster…) break LinkedIn's User Agreement and get accounts restricted; LinkedIn has
+  no API for sending requests or messages from normal accounts. The owner chose **assisted
+  sending** with **Sales Navigator** (2026-11-13), and approved the plan on 2026-11-18.
+- **What (F30):** People → **Add many** (up to 50 profile links pasted or from a CSV, each added
+  like Add person). My tasks → **Start connection sprint**: your people never contacted, persona
+  Tier 1 first, one card at a time, the note drafted ahead by the Outreach Desk (P11, unchanged),
+  **Open profile**, **Copy note**, **Sent ✓**. **Start follow-up sprint**: requests waiting for
+  acceptance (**Accepted** moves the plan), plan messages due, and Interested / Asking for details
+  replies not answered (**Book the demo**, with the booking link the Desk already puts in).
+- **Sent ✓ goes through the plan**, as a plan step or Mark as sent does: someone on no plan is put
+  on Official Outreach first, so the request is its step 1 and the plan waits for acceptance. The
+  connection request now keeps the note's text when done as a plan step (it kept only "with a
+  note" before). The activity is credited to the AI draft (template stats, edit level).
+- **Limits:** a note is 300 characters at most (LinkedIn's limit) and can't keep a `{placeholder}`.
+  The weekly limit is 5 × the daily connection target (100 by default), checked on the server;
+  no new setting, so no database change. The sprint offers the day's target left, within the week.
+- **Sales Navigator lead links** (`linkedin.com/sales/…`) can't be matched to a profile, and every
+  person needs a profile or an email (D-043), so Add many asks for the public profile link (in
+  Sales Navigator: ⋯ → Copy LinkedIn.com URL).
+- **Not done (later, optional):** reading LinkedIn's "accepted your invitation" and "new message"
+  emails from Gmail to log acceptances and replies by themselves (Google treats Gmail read access
+  as restricted; a decision for later). The server never opens LinkedIn pages.

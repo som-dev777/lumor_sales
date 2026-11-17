@@ -3,7 +3,7 @@
 Lumor Sales Hub is the internal web app where Lumor's sales team manages LinkedIn
 prospecting, from finding a lead in Sales Navigator to a paying customer.
 
-**Current version:** 2.15.1 (released 18 Nov 2026: Next.js security update to 16.4.6, D-064; on top of 2.15.0, reports by the date registered, D-063). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
+**Current version:** 2.16.0 (released 18 Nov 2026: outreach sprints and Add many, F30, D-065). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
 
 ## Documents
 
@@ -19,7 +19,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | [email-templates/](email-templates/)         | The owner's email wording for bookings, word for word.           |
 | [deploy.md](deploy.md)                       | Putting the app online (Turso + Netlify), step by step.          |
 | [qa-checklist.md](qa-checklist.md)           | The manual check of the whole app before the team uses it.       |
-| [features/](features/)                       | One file per feature (F01–F29): requirements, tests, change log. |
+| [features/](features/)                       | One file per feature (F01–F30): requirements, tests, change log. |
 | [../CLAUDE.md](../CLAUDE.md)                 | Standing rules every Claude Code session follows.                |
 
 ## Feature index
@@ -55,6 +55,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F27 | [Calendly integration](features/F27-calendly.md)                     | P1       | 2.7.0   | Done (2.7.0)     |
 | F28 | [Company offices](features/F28-company-offices.md)                   | P1       | 2.8.0   | Done (2.8.0)     |
 | F29 | [Voice typing](features/F29-voice-typing.md)                         | P1       | 2.9.0   | Done (2.9.0)     |
+| F30 | [Outreach sprints](features/F30-outreach-sprints.md)                 | P1       | 2.16.0  | Done (2.16.0)    |
 
 ## Releases
 
@@ -77,6 +78,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | Owner's list 4 Nov     | 2.8.0   | F28, F08, F03, F02, F24, F25, F18, F23      | Released 2026-11-04 |
 | Owner's list 4 Nov (2) | 2.9.0   | F08, F02, F03, F18, F23, F24, F29           | Released 2026-11-04 |
 | Outreach Desk          | 2.10.0  | F18, F23, F10                               | Released 2026-11-04 |
+| Outreach sprints       | 2.16.0  | F30, F02, F08, F17                          | Released 2026-11-18 |
 
 ## Running the app locally
 

@@ -30,6 +30,8 @@ import { LoggedList } from "@/components/today/LoggedList";
 import { meetingsToday } from "@/server/calendar";
 import { TodayMeetings } from "@/components/calendar/TodayMeetings";
 import { AutoRefresh } from "@/components/shell/AutoRefresh";
+import sprintStyles from "@/components/sprint/sprint.module.scss";
+import { Send, MessagesSquare } from "lucide-react";
 
 export const metadata: Metadata = { title: "My tasks" };
 
@@ -121,6 +123,17 @@ async function Today({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
       ) : (
         <>
           <DayNav today={plan.today} day={plan.today} range={DAY_RANGE} />
+          {/* Outreach sprints (F30): one person at a time, the note or message written. */}
+          <nav className={sprintStyles.startBar} aria-label="Outreach sprints">
+            <Link href="/sprint" className={sprintStyles.linkButton}>
+              <Send size={16} aria-hidden />
+              Start connection sprint
+            </Link>
+            <Link href="/sprint?kind=follow" className={sprintStyles.linkButton}>
+              <MessagesSquare size={16} aria-hidden />
+              Start follow-up sprint
+            </Link>
+          </nav>
           {/* Only what's still to come (D-055): a meeting leaves once its end time passes. */}
           <TodayMeetings
             today={meetings.filter((m) => m.endsAt.getTime() > now.getTime())}

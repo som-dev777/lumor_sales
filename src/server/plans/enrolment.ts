@@ -762,7 +762,9 @@ export async function completeStepTx(
   let next: string | null = null;
 
   if (channel === "LinkedIn connection request") {
-    const withNote = Boolean(step.script?.trim());
+    // The note actually sent (an outreach sprint, F30) is kept with the request.
+    const note = input.text?.trim() || null;
+    const withNote = Boolean(note || step.script?.trim());
     overrides = await guardTouch(
       tx,
       p,
@@ -775,7 +777,7 @@ export async function completeStepTx(
       actor,
       personId,
       { action: "requestSent", withNote },
-      { now, activityExtra: link, planSetsDates: true },
+      { now, note, activityExtra: link, planSetsDates: true },
     );
     extra = { waitingForAcceptance: true, requestSentDate: today };
     next = addDaysIst(today, settings.withdrawAfterDays); // the withdraw task's date
