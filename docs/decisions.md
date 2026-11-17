@@ -1392,3 +1392,14 @@ replaces it.
   and email. Old reports' saved `outcomes` switches are simply ignored.
 - **Saved reports:** version 5. Reports made before keep their saved numbers; they only lose the
   removed tables on screen.
+
+## D-064: Next.js security update 16.4.2 → 16.4.6 (owner, 2026-11-18)
+
+- **Why:** Next.js 16.4.2 is affected by a published security advisory. Its build also stops with
+  a "SecurityFatalError" when an AI agent runs it, which broke the browser tests' first run.
+- **What:** `next` and `eslint-config-next` pinned to 16.4.6 (same major, no code changes), and
+  `experimental.agentUpgrade: "security"` in next.config.ts, as the official `next upgrade
+--agent=security` asks, so future agent upgrades stay security-only.
+- **How it was checked:** done in a separate git worktree (owner's choice); format, typecheck,
+  lint, 529 unit tests, the production build and 118 browser tests all pass. Released as the
+  patch 2.15.1. No migration, so no Turso backup was needed.

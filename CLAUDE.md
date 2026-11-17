@@ -79,7 +79,7 @@ another without waiting for a go-ahead, committing and pushing after each workin
 and tag each release. By default, stop at the end of each phase with a plain-language
 summary and the browser checklist for its exit check.
 
-Done (2026-11-17): v2.15.0 (reports by the date registered, New outreach (people added) as one
+Done (2026-11-18): v2.15.1 (Next.js 16.4.2 → 16.4.6 security update; D-064), v2.15.0 (reports by the date registered, New outreach (people added) as one
 number, Demos scheduled from the conversation via P12 1.1, Events period-only, Replies and outcomes
 removed; D-063), v2.14.2 (My tasks in a fixed 13 reads via planStatesFor, no overlapping
 auto-refresh, New outreach / Follow-ups / Calls tabs; D-062), v2.14.1 (one follow-up per person: plan dates written onto the person, follow-ups

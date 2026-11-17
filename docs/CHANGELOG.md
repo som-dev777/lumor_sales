@@ -9,6 +9,12 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 Next: the owner's QA of v2.15.0 (docs/qa-checklist.md sections 21–24).
 
+## [2.15.1] - 2026-11-18
+
+A security update for the framework the app is built on (D-064).
+
+- **Security:** Next.js moved from 16.4.2 to 16.4.6, which fixes a published security advisory. Nothing changes on screen.
+
 ## [2.15.0] - 2026-11-17
 
 Reports count everything on the date it was registered for, and find demos in the conversations (D-063).
