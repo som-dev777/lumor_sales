@@ -25,7 +25,7 @@ import { LeadError } from "./leads/companies";
 import { loadPerson } from "./leads/people";
 import { getPlaybookSettings, quickLog, type QuickLog } from "./leads/quicklog";
 import { meetingsToday } from "./calendar";
-import { isPlanFollowUp, planState } from "./plans/enrolment";
+import { isPlanFollowUp, planState, planStatesFor } from "./plans/enrolment";
 import { planFinished } from "./plans/schedule";
 import { followUpMovesPlan } from "./plans/sync";
 import { newOutreach } from "./outreach";
@@ -514,9 +514,15 @@ export async function buildToday(db: DbOrTx, viewer: Actor, now = new Date()): P
   );
   const staleBefore = addDaysIst(today, -settings.staleLeadDays);
 
+  // Every lead's plan in a few reads, not several per lead (D-062).
+  const states = await planStatesFor(
+    db,
+    leads.map((l) => l.p),
+    today,
+  );
   const tasks: Task[] = [];
   for (const { p, companyName, personaName, tier } of leads) {
-    const state = await planState(db, p.id, today);
+    const state = states.get(p.id) ?? null;
     const facts: PlanFacts | null = state
       ? {
           status: state.enrolment.status,

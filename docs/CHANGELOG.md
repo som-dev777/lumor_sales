@@ -7,7 +7,14 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.14.1 (docs/qa-checklist.md sections 21–22).
+Next: the owner's QA of v2.14.2 (docs/qa-checklist.md sections 21–23).
+
+## [2.14.2] - 2026-11-17
+
+My tasks loads again, in three tabs (D-062).
+
+- **Fixed:** My tasks hung on the live site. It read the database several times for every person; now it reads everything at once, so it loads in a moment however many people you have. The automatic refresh no longer restarts a page that's still loading.
+- **Tabs on My tasks:** New outreach (connection requests, invites to withdraw, people not contacted yet, and the daily target), Follow-ups (replies, plan messages and every other follow-up) and Calls (calls and meetings). Each tab shows how many tasks it has.
 
 ## [2.14.1] - 2026-11-13
 

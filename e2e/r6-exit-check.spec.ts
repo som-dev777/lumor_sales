@@ -112,7 +112,10 @@ test("exit check: Today shows the rep's list and ranks it; Done and Snooze clear
   await rep.goto("/");
   const replies = shown(rep.getByRole("region", { name: "Replies waiting" }));
   await expect(replies.getByRole("listitem")).toHaveCount(2);
+  // The new-outreach target sits on the New outreach tab (D-062).
+  await rep.getByRole("tab", { name: /New outreach/ }).click();
   await expect(shown(rep.getByText(/of 20 new people today/))).toBeVisible();
+  await rep.getByRole("tab", { name: /Follow-ups/ }).click();
 
   await rep.getByRole("button", { name: "Rank with AI" }).click();
   await expect(shown(rep.getByRole("region", { name: "Your week" }))).toContainText(

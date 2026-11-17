@@ -26,3 +26,31 @@ export const ORIGIN_LABEL: Partial<Record<SectionKey, string>> = {
   followup: "Follow-up",
   trial: "Trial check-in",
 };
+
+/**
+ * My tasks' three tabs (D-062): new outreach (people to start with), follow-ups (everything that
+ * recurs), and calls (call steps, follow-ups that say call, and meetings to hold).
+ */
+export const TASK_TABS = [
+  { key: "new", label: "New outreach" },
+  { key: "followups", label: "Follow-ups" },
+  { key: "calls", label: "Calls" },
+] as const;
+export type TaskTab = (typeof TASK_TABS)[number]["key"];
+
+/** Which tab a task belongs on; a late task goes where it was before it went late. */
+export function tabOf(task: {
+  section: SectionKey;
+  origin?: SectionKey;
+  kind: string;
+  channel?: string | null;
+  detail: string;
+  nextAction?: string | null;
+}): TaskTab {
+  const section = task.section === "backlog" ? (task.origin ?? "followup") : task.section;
+  if (task.channel === "Call" || section === "meeting") return "calls";
+  if (task.kind === "followup" && /\bcall/i.test(task.nextAction ?? "")) return "calls";
+  if (task.channel === "LinkedIn connection request" || task.kind === "withdraw") return "new";
+  if (section === "stale" && task.detail === "Nothing logged yet") return "new";
+  return "followups";
+}

@@ -611,6 +611,14 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
       tasks and their page follow.
 - [ ] 22.4 Do the plan step (**Done**): the follow-up moves to the next step's date everywhere.
 
+## 23. My tasks loads, in three tabs (v2.14.2)
+
+- [ ] 23.1 Open **My tasks**: the list appears within a few seconds.
+- [ ] 23.2 Three tabs show at the top with counts: **New outreach**, **Follow-ups**, **Calls**.
+      Connection requests are under New outreach, with the "new people today" target; call steps
+      and meetings under Calls; replies and messages under Follow-ups.
+- [ ] 23.3 Do a task (Done or Snooze): it leaves the tab and the count goes down.
+
 ---
 
 ## Before the team starts (only you can do these)

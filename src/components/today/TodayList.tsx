@@ -9,7 +9,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { TextArea } from "@/components/ui/TextArea";
 import { TextField } from "@/components/ui/TextField";
 import { useToast } from "@/components/ui/Toast";
-import { SECTIONS } from "@/lib/today-sections";
+import { SECTIONS, TASK_TABS, tabOf, type TaskTab } from "@/lib/today-sections";
 import { SuggestionCard } from "@/components/ai/SuggestionCard";
 import {
   doneTask,
@@ -31,8 +31,16 @@ type Props = {
   today: string;
 };
 
-/** Today's list (F08): grouped by section, or in the AI's order after Rank with AI. */
-export function TodayList({ tasks, outreach, aiReady, today }: Props) {
+/**
+ * Today's list (F08): in three tabs (D-062), New outreach, Follow-ups and Calls, each grouped by
+ * section, or in the AI's order after Rank with AI. Only the open tab is drawn.
+ */
+export function TodayList({ tasks: all, outreach, aiReady, today }: Props) {
+  const count = (key: TaskTab) => all.filter((t) => tabOf(t) === key).length;
+  const [tab, setTab] = useState<TaskTab>(
+    () => TASK_TABS.find((t) => all.some((x) => tabOf(x) === t.key))?.key ?? "new",
+  );
+  const tasks = all.filter((t) => tabOf(t) === tab);
   const [ranking, setRanking] = useState<{ order: Task[]; summary: string | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, start] = useTransition();
@@ -47,6 +55,22 @@ export function TodayList({ tasks, outreach, aiReady, today }: Props) {
 
   // Tasks done or snoozed since ranking drop out; new ones go at the end.
   const live = new Map(tasks.map((t) => [t.id, t]));
+  const tabs = (
+    <div className={styles.tabs} role="tablist" aria-label="Kinds of task">
+      {TASK_TABS.map((t) => (
+        <button
+          key={t.key}
+          type="button"
+          role="tab"
+          aria-selected={tab === t.key}
+          className={tab === t.key ? styles.tabActive : styles.tab}
+          onClick={() => setTab(t.key)}
+        >
+          {t.label} <span className={styles.badge}>{count(t.key)}</span>
+        </button>
+      ))}
+    </div>
+  );
   const ranked = ranking
     ? [
         ...ranking.order.filter((t) => live.has(t.id)),
@@ -56,36 +80,42 @@ export function TodayList({ tasks, outreach, aiReady, today }: Props) {
 
   return (
     <>
-      <section className={styles.card} aria-label="Today's target">
-        <div className={styles.targetHead}>
-          <h2 className={styles.cardTitle}>New outreach</h2>
-          <span className={styles.targetCount}>
-            {outreach.sent} of {outreach.target} new people today
-          </span>
-        </div>
-        <progress
-          className={styles.bar}
-          aria-label="New people reached today"
-          value={Math.min(outreach.sent, outreach.target)}
-          max={Math.max(outreach.target, 1)}
-        />
-        <p className={styles.muted}>
-          {outreach.left > 0
-            ? `${outreach.left} to go today. Adding a person, a connection request or a first message counts.`
-            : "Target reached for today. Nice work."}
-          {outreach.left > 0 && (outreach.persona || outreach.accountFilter) && (
-            <>
-              {" "}
-              Suggested: {[outreach.persona, outreach.accountFilter].filter(Boolean).join(" in ")}.
-            </>
-          )}
-        </p>
-      </section>
+      {tabs}
+      {tab === "new" && (
+        <section className={styles.card} aria-label="Today's target">
+          <div className={styles.targetHead}>
+            <h2 className={styles.cardTitle}>New outreach</h2>
+            <span className={styles.targetCount}>
+              {outreach.sent} of {outreach.target} new people today
+            </span>
+          </div>
+          <progress
+            className={styles.bar}
+            aria-label="New people reached today"
+            value={Math.min(outreach.sent, outreach.target)}
+            max={Math.max(outreach.target, 1)}
+          />
+          <p className={styles.muted}>
+            {outreach.left > 0
+              ? `${outreach.left} to go today. Adding a person, a connection request or a first message counts.`
+              : "Target reached for today. Nice work."}
+            {outreach.left > 0 && (outreach.persona || outreach.accountFilter) && (
+              <>
+                {" "}
+                Suggested: {[outreach.persona, outreach.accountFilter].filter(Boolean).join(" in ")}
+                .
+              </>
+            )}
+          </p>
+        </section>
+      )}
 
       <div className={styles.toolbar}>
         <p className={styles.muted}>
           {tasks.length === 0
-            ? "Nothing due. Time for new outreach."
+            ? all.length === 0
+              ? "Nothing due. Time for new outreach."
+              : "Nothing here today. See the other tabs."
             : `${tasks.length} ${tasks.length === 1 ? "task" : "tasks"} for today${
                 tasks.some((t) => t.section === "backlog")
                   ? `, ${tasks.filter((t) => t.section === "backlog").length} of them from earlier days`

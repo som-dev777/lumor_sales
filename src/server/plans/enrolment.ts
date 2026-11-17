@@ -6,7 +6,16 @@ import { and, asc, desc, eq, gt, inArray } from "drizzle-orm";
 import { writeAudit } from "@/lib/audit";
 import type { Db, DbOrTx } from "@/lib/db/client";
 import type { CallOutcome } from "@/lib/db/enums";
-import { activity, company, person, planEnrolment, template, user } from "@/lib/db/schema";
+import {
+  activity,
+  company,
+  person,
+  plan,
+  planEnrolment,
+  planStep,
+  template,
+  user,
+} from "@/lib/db/schema";
 import { assertCan, can, type Actor } from "@/lib/permissions";
 import { addDaysIst, toIstDate, todayIst } from "@/lib/time";
 import { placeholdersIn } from "@/lib/validation/library";
@@ -104,6 +113,30 @@ function touchDates(history: HistoryItem[]): string[] {
     .map((h) => h.date);
 }
 
+type TemplateRow = typeof template.$inferSelect;
+
+/**
+ * The best template for a step and person, from a list (D-034): a fixed template, or the active
+ * ones for the step's purpose ranked by persona and level, Official first.
+ */
+export function pickTemplate(
+  step: StepRow,
+  p: Pick<PersonRow, "personaId" | "level">,
+  rows: TemplateRow[],
+): TemplateRow | null {
+  if (step.templateId) return rows.find((t) => t.id === step.templateId) ?? null;
+  if (!step.templatePurpose) return null;
+  const score = (t: TemplateRow) =>
+    (p.personaId && t.personaId === p.personaId ? 4 : t.personaId ? -2 : 0) +
+    (p.level && t.level === p.level ? 2 : t.level === "Any" ? 1 : 0) +
+    (t.type === "Official" ? 1 : 0);
+  return (
+    rows
+      .filter((t) => t.purpose === step.templatePurpose && t.status === "Active")
+      .sort((a, b) => score(b) - score(a))[0] ?? null
+  );
+}
+
 /** The best active template for a step and person (D-034): persona and level, Official first. */
 export async function templateFor(
   tx: DbOrTx,
@@ -119,11 +152,7 @@ export async function templateFor(
     .select()
     .from(template)
     .where(and(eq(template.purpose, step.templatePurpose), eq(template.status, "Active")));
-  const score = (t: (typeof rows)[number]) =>
-    (p.personaId && t.personaId === p.personaId ? 4 : t.personaId ? -2 : 0) +
-    (p.level && t.level === p.level ? 2 : t.level === "Any" ? 1 : 0) +
-    (t.type === "Official" ? 1 : 0);
-  return rows.sort((a, b) => score(b) - score(a))[0] ?? null;
+  return pickTemplate(step, p, rows);
 }
 
 /** Fills the placeholders we know from the person ({Name}, {First name}, {Company}…). */
@@ -151,15 +180,18 @@ export function fillPlaceholders(
   );
 }
 
-export type PlanState = Awaited<ReturnType<typeof planState>>;
+export type PlanState = NonNullable<ReturnType<typeof stateFrom>>;
 
-/** Everything the person page and Today need about a person's plan. */
-export async function planState(db: DbOrTx, personId: string, today: string) {
-  const e = await liveEnrolment(db, personId);
-  if (!e) return null;
-  const [p] = await db.select().from(person).where(eq(person.id, personId));
-  const pl = await loadPlan(db, e.planId);
-  const steps = await stepsOf(db, e.planId, e.version);
+/** A plan's state from rows already loaded (no database reads), for one person or many. */
+function stateFrom(
+  e: EnrolmentRow,
+  p: PersonRow,
+  pl: typeof plan.$inferSelect,
+  steps: StepRow[],
+  templates: TemplateRow[],
+  names: { owner: string | null; company: string | null },
+  today: string,
+) {
   const step = steps[e.currentStep - 1] ?? null;
   const channel = step ? resolveChannel(step.channels, p) : null;
   // A Custom task's own name, shown instead of "Manual task" (D-043).
@@ -175,16 +207,14 @@ export async function planState(db: DbOrTx, personId: string, today: string) {
     channel !== "Manual task" &&
     channel !== "LinkedIn connection request"
   ) {
-    const t = await templateFor(db, step, p);
+    const t = pickTemplate(step, p, templates);
     templateId = t?.id ?? null;
-    const [owner] = await db.select({ name: user.name }).from(user).where(eq(user.id, p.ownerId));
-    const companyName = await companyNameOf(db, p.companyId);
     message = t
       ? fillPlaceholders(t.body, {
           fullName: p.fullName,
           title: p.title,
-          company: companyName,
-          repName: owner?.name ?? null,
+          company: names.company,
+          repName: names.owner,
         })
       : (step.script ?? "");
   }
@@ -215,13 +245,95 @@ export async function planState(db: DbOrTx, personId: string, today: string) {
   };
 }
 
-async function companyNameOf(db: DbOrTx, companyId: string | null) {
-  if (!companyId) return null;
-  const [c] = await db
-    .select({ name: company.name })
-    .from(company)
-    .where(eq(company.id, companyId));
-  return c?.name ?? null;
+/** Everything the person page and Today need about a person's plan. */
+export async function planState(db: DbOrTx, personId: string, today: string) {
+  const [p] = await db.select().from(person).where(eq(person.id, personId));
+  if (!p) return null;
+  return (await planStatesFor(db, [p], today)).get(personId) ?? null;
+}
+
+/**
+ * The plan state of many people at once, in a fixed handful of reads however many there are
+ * (My tasks, D-062): one read per kind of row instead of about seven per person, which on the
+ * live database took minutes for a few hundred people.
+ */
+export async function planStatesFor(
+  db: DbOrTx,
+  people: PersonRow[],
+  today: string,
+): Promise<Map<string, PlanState>> {
+  const out = new Map<string, PlanState>();
+  const chunks = <T>(list: T[]) =>
+    Array.from({ length: Math.ceil(list.length / 400) }, (_, i) =>
+      list.slice(i * 400, i * 400 + 400),
+    );
+  const live: EnrolmentRow[] = [];
+  for (const ids of chunks(people.map((p) => p.id))) {
+    live.push(
+      ...(await db
+        .select()
+        .from(planEnrolment)
+        .where(
+          and(
+            inArray(planEnrolment.personId, ids),
+            inArray(planEnrolment.status, ["Active", "Paused"]),
+          ),
+        )),
+    );
+  }
+  if (live.length === 0) return out;
+  const planIds = [...new Set(live.map((e) => e.planId))];
+  const byPerson = new Map(people.map((p) => [p.id, p]));
+  const ownerIds = [...new Set(live.map((e) => byPerson.get(e.personId)!.ownerId))];
+  const companyIds = [
+    ...new Set(
+      live.map((e) => byPerson.get(e.personId)!.companyId).filter((c): c is string => c !== null),
+    ),
+  ];
+  const [plans, allSteps, templates, owners] = await Promise.all([
+    db.select().from(plan).where(inArray(plan.id, planIds)),
+    db
+      .select()
+      .from(planStep)
+      .where(inArray(planStep.planId, planIds))
+      .orderBy(asc(planStep.stepOrder)),
+    db.select().from(template),
+    db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.id, ownerIds)),
+  ]);
+  const companies: { id: string; name: string }[] = [];
+  for (const ids of chunks(companyIds)) {
+    companies.push(
+      ...(await db
+        .select({ id: company.id, name: company.name })
+        .from(company)
+        .where(inArray(company.id, ids))),
+    );
+  }
+  const planById = new Map(plans.map((r) => [r.id, r]));
+  const ownerName = new Map(owners.map((r) => [r.id, r.name]));
+  const companyName = new Map(companies.map((r) => [r.id, r.name]));
+  for (const e of live) {
+    const p = byPerson.get(e.personId)!;
+    const pl = planById.get(e.planId);
+    if (!pl) continue;
+    const steps = allSteps.filter((st) => st.planId === e.planId && st.version === e.version);
+    out.set(
+      p.id,
+      stateFrom(
+        e,
+        p,
+        pl,
+        steps,
+        templates,
+        {
+          owner: ownerName.get(p.ownerId) ?? null,
+          company: p.companyId ? (companyName.get(p.companyId) ?? null) : null,
+        },
+        today,
+      ),
+    );
+  }
+  return out;
 }
 
 // --- Writing helpers -------------------------------------------------------------------------

@@ -1333,3 +1333,23 @@ replaces it.
   migrations) brings each active plan and its person in line once: a follow-up the rep set after
   the plan last changed, and not in the past, wins and moves the plan; otherwise the plan's date
   is written onto the person. Each change is audited; running it again changes nothing.
+
+## D-062: My tasks loads in a fixed handful of reads, and has three tabs (owner, 2026-11-17)
+
+- **Date:** 2026-11-17 · **Status:** Accepted · **Version 2.14.2** (PATCH)
+- **The bug:** My tasks hung on the live site. For each of the rep's people it read the database
+  about seven times, one after another (the plan, its steps, templates, owner, company…). For 300
+  people with 150 on plans that was 758 reads; locally it takes a tenth of a second, but every read
+  to Turso is a network round trip, so on Netlify the page ran for minutes and was cut off. The
+  page also refreshes itself every minute, and each refresh restarted the slow load.
+- **The fix:** every person's plan is read together (`planStatesFor` in
+  src/server/plans/enrolment.ts): one read each for enrolments, plans, steps, templates, owners
+  and companies. My tasks now takes 13 reads however many people there are (a test checks it
+  stays at 20 or fewer). The single-person page uses the same code, so both give the same answer.
+  The automatic refresh no longer starts while the previous one is still loading.
+- **Three tabs** on My tasks (owner's idea): **New outreach** (connection-request steps, invites
+  to withdraw, people never contacted, and the daily new-people target), **Follow-ups**
+  (everything that recurs: replies, plan messages, follow-ups, nudges, finished plans, Nurture),
+  and **Calls** (call steps, follow-ups that say "call", and meetings to hold). Late tasks go on
+  the tab they came from. Each tab shows its count; only the open tab is drawn. It opens on the
+  first tab with something in it.

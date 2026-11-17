@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useTransition } from "react";
 
 /**
  * Keeps a page current (D-054, D-055):
@@ -10,15 +10,26 @@ import { useEffect, useRef } from "react";
  *   you logged elsewhere (say, on a person's page) shows at once;
  * - as soon as you come back to the browser tab;
  * - every `everyMs` while the tab is open (0 = never), so meetings booked meanwhile show up.
+ * A refresh still loading is never restarted by the next one (D-062), so a slow page finishes.
  */
 export function AutoRefresh({ everyMs = 60_000 }: { everyMs?: number }) {
   const router = useRouter();
   const shownBefore = useRef(false);
+  const [loading, start] = useTransition();
+  const busy = useRef(false);
   useEffect(() => {
-    if (shownBefore.current) router.refresh();
+    busy.current = loading;
+  }, [loading]);
+  useEffect(() => {
+    const load = () => {
+      if (busy.current) return;
+      busy.current = true;
+      start(() => router.refresh());
+    };
+    if (shownBefore.current) load();
     shownBefore.current = true;
     const refresh = () => {
-      if (document.visibilityState === "visible") router.refresh();
+      if (document.visibilityState === "visible") load();
     };
     const timer = everyMs > 0 ? setInterval(refresh, everyMs) : null;
     document.addEventListener("visibilitychange", refresh);
