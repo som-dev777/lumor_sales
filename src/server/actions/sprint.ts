@@ -12,6 +12,7 @@ import { DESK_CHANNELS } from "@/lib/db/enums";
 import { PermissionError } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { AiError } from "../ai/client";
+import { syncLinkedInEmails, type SyncResult } from "../google/linkedin-mail";
 import { addMany, type BulkResult } from "../leads/bulk-add";
 import { LeadError } from "../leads/companies";
 import { GuardrailWarning } from "../plans/enrolment";
@@ -122,6 +123,19 @@ export async function addManyPeople(input: unknown): Promise<SprintResult<BulkRe
     const data = await addMany(getDb(), viewer, text, defaults);
     refresh();
     return { ok: true, data };
+  } catch (e) {
+    return failure(e);
+  }
+}
+
+/** Check now (D-066): reads the rep's new LinkedIn emails from Gmail and logs them. */
+export async function checkLinkedInEmails(): Promise<SprintResult<SyncResult & { ok: true }>> {
+  const viewer = await requireUser();
+  try {
+    const r = await syncLinkedInEmails(getDb(), viewer, await appNow());
+    if (!r.ok) return { ok: false, error: r.problem };
+    refresh();
+    return { ok: true, data: r };
   } catch (e) {
     return failure(e);
   }

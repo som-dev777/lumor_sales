@@ -1430,3 +1430,37 @@ replaces it.
 - **Not done (later, optional):** reading LinkedIn's "accepted your invitation" and "new message"
   emails from Gmail to log acceptances and replies by themselves (Google treats Gmail read access
   as restricted; a decision for later). The server never opens LinkedIn pages.
+
+## D-066: LinkedIn emails read from Gmail log acceptances and replies (owner, 2026-11-18)
+
+- **Why:** the owner asked for the optional Release C of the outreach sprints plan (D-065): reps
+  shouldn't have to click Accepted or paste replies by hand. LinkedIn emails the rep when someone
+  accepts ("… accepted your invitation") and when someone messages them ("New message from …").
+  Reading the rep's own email is within LinkedIn's rules: Sales Hub still never opens LinkedIn.
+- **What:** a rep can **Connect Gmail** (follow-up sprint, or Calendar → Availability). Google's
+  `gmail.readonly` permission is asked for only then, on top of the calendar permissions, with the
+  same encrypted token (F26). Every 15 minutes (the existing scheduled job) and on **Check now**,
+  Sales Hub asks Gmail only for emails from linkedin.com about invitations and messages since the
+  last one it read (the first time, the last 7 days, up to 30 a run), and for each:
+  - **Matches the person** by the profile links in the email (`linkedin.com/in/…`, compared with
+    each person's normalised profile link), else by the sender's full name when exactly one of
+    the rep's own people has it. Only the rep's own people are changed.
+  - **Accepted:** logs Request accepted at the email's time through the plan (the next step is
+    dated from that day, D-060), unless their last request event is already an acceptance.
+  - **Message:** logs Reply received (LinkedIn, no reply type) with the message text from the email
+    through the conversation (F18), so the plan, the follow-up ("Respond") and My tasks update as
+    if the rep had typed it, unless the same words are already in the thread. LinkedIn's email can
+    shorten long messages.
+  - **Remembers every email** it read (`linkedin_email`: Gmail's id, kind, sender, result), so an
+    email is never logged twice, and shows the latest 10 with what happened (Logged, Already
+    logged, Not matched, Skipped). Each email read is audited.
+- **Unanswered replies without a reply type** (as Gmail logs them) now also show in the follow-up
+  sprint as **Answer the reply**, so they get a drafted answer; Interested / Asking for details
+  stay **Book the demo**.
+- **Google's rules:** `gmail.readonly` is a restricted permission. It works without Google's
+  security review while the OAuth app is used by the team's own accounts (under 100 users; an
+  "unverified app" notice may show on Google's screen) or is an Internal app on Google Workspace.
+  The owner turns on the Gmail API and adds the permission to the consent screen once
+  (docs/deploy.md). Disconnecting Google removes Gmail access too.
+- **Also fixed:** deleting a person now also deletes their Outreach Desk drafts (they blocked the
+  delete once a sprint had drafted for them).

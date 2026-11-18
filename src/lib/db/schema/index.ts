@@ -20,3 +20,4 @@ export * from "./ai-chat";
 export * from "./calendar";
 export * from "./notification";
 export * from "./desk";
+export * from "./linkedin-email";

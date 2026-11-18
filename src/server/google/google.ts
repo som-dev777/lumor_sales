@@ -20,6 +20,13 @@ export const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/meetings.space.settings",
 ];
 
+/** Read-only Gmail, asked for only when the rep connects Gmail for LinkedIn emails (D-066). */
+export const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+
+/** True when the rep allowed Sales Hub to read their Gmail (D-066). */
+export const canReadGmail = (scope: string | null | undefined) =>
+  Boolean(scope?.includes("gmail.readonly"));
+
 /** True when the rep's connection allows opening the Meet (connected after D-052). */
 export const canOpenMeet = (scope: string | null | undefined) =>
   Boolean(scope?.includes("meetings.space.settings"));
@@ -34,13 +41,13 @@ export function googleConfigured(): boolean {
 
 export const googleRedirectUri = () => `${appUrl()}/api/google/callback`;
 
-/** Google's sign-in page for connecting the calendar. */
-export function googleAuthUrl(state: string, loginHint?: string): string {
+/** Google's sign-in page for connecting the calendar (and, when asked, Gmail: D-066). */
+export function googleAuthUrl(state: string, loginHint?: string, gmail = false): string {
   const u = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   u.searchParams.set("client_id", process.env.GOOGLE_CLIENT_ID!.trim());
   u.searchParams.set("redirect_uri", googleRedirectUri());
   u.searchParams.set("response_type", "code");
-  u.searchParams.set("scope", GOOGLE_SCOPES.join(" "));
+  u.searchParams.set("scope", [...GOOGLE_SCOPES, ...(gmail ? [GMAIL_SCOPE] : [])].join(" "));
   u.searchParams.set("access_type", "offline");
   u.searchParams.set("prompt", "consent");
   u.searchParams.set("include_granted_scopes", "true");
@@ -103,6 +110,8 @@ export type GoogleConnectionView = {
   lastError: string | null;
   /** False for a connection made before D-052: reconnect so the Meet opens for everyone. */
   opensMeet: boolean;
+  /** True when the rep connected Gmail for LinkedIn emails (D-066). */
+  readsGmail: boolean;
 };
 
 export async function connectionView(
@@ -118,7 +127,12 @@ export async function connectionView(
     .from(googleConnection)
     .where(eq(googleConnection.userId, userId));
   return row
-    ? { email: row.email, lastError: row.lastError, opensMeet: canOpenMeet(row.scope) }
+    ? {
+        email: row.email,
+        lastError: row.lastError,
+        opensMeet: canOpenMeet(row.scope),
+        readsGmail: canReadGmail(row.scope),
+      }
     : null;
 }
 
@@ -191,7 +205,7 @@ export async function disconnectGoogle(db: Db, actor: Actor, userId: string) {
 }
 
 /** A fresh access token for the rep, or null (not connected, or Google refused). */
-async function accessToken(db: Db, userId: string): Promise<string | null> {
+export async function accessToken(db: Db, userId: string): Promise<string | null> {
   if (!googleConfigured()) return null;
   const [row] = await db.select().from(googleConnection).where(eq(googleConnection.userId, userId));
   if (!row) return null;

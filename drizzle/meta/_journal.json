@@ -169,6 +169,13 @@
       "when": 1793802013402,
       "tag": "0023_report_shape",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1794978469060,
+      "tag": "0024_linkedin_email",
+      "breakpoints": true
     }
   ]
 }

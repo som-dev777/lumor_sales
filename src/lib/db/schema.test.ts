@@ -77,6 +77,7 @@ describe("migrations", () => {
       "invite",
       "knowledge_file",
       "knowledge_revision",
+      "linkedin_email",
       "login_attempt",
       "meeting_type",
       "notification",

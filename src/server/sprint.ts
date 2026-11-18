@@ -247,7 +247,8 @@ async function cardRows(db: DbOrTx, ids: string[]) {
 
 /**
  * The follow-up sprint: who's waiting for an acceptance; then plan messages due today or
- * overdue; then Interested / Asking for details replies not answered yet (Book the demo).
+ * overdue; then replies not answered yet: Interested / Asking for details (Book the demo) and
+ * replies with no reply type (Answer the reply, D-066).
  */
 export async function followUpQueue(db: DbOrTx, actor: Actor, now = new Date()) {
   const today = todayIst(now);
@@ -340,11 +341,12 @@ export async function followUpQueue(db: DbOrTx, actor: Actor, now = new Date()) 
     "Call",
     "Meeting booked",
   ]);
+  // Interested / Asking for details: Book the demo. No reply type yet (as Gmail logs them,
+  // D-066): Answer the reply.
   const toAnswer = [...talk.values()].filter(
     (r) =>
       r.type === "Reply received" &&
-      r.replyType &&
-      (BOOK_TYPES as readonly string[]).includes(r.replyType),
+      (!r.replyType || (BOOK_TYPES as readonly string[]).includes(r.replyType)),
   );
   const answerRows = await cardRows(
     db,
@@ -355,7 +357,13 @@ export async function followUpQueue(db: DbOrTx, actor: Actor, now = new Date()) 
     if (["Meeting scheduled", "Meeting done", "Proposal sent", "Trial", "Paid"].includes(r.p.stage))
       continue;
     cards.push(
-      cardFrom(r, "reply", "LinkedIn message", "Book the demo", talk.get(r.p.id)?.content ?? null),
+      cardFrom(
+        r,
+        "reply",
+        "LinkedIn message",
+        talk.get(r.p.id)?.replyType ? "Book the demo" : "Answer the reply",
+        talk.get(r.p.id)?.content ?? null,
+      ),
     );
   }
   return { waiting, cards };

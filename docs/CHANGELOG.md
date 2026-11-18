@@ -7,7 +7,16 @@ MINOR once per release (R1 = 1.0.0, R2 = 1.1.0…), PATCH for fixes.
 
 - Work in progress goes under `## [Unreleased]
 
-Next: the owner's QA of v2.16.0 (docs/qa-checklist.md sections 21–25).
+Next: the owner's Google setup for Gmail (docs/deploy.md) and QA of v2.17.0 (docs/qa-checklist.md sections 21–26).
+
+## [2.17.0] - 2026-11-18
+
+Acceptances and replies are logged from LinkedIn's emails in Gmail (F30, D-066).
+
+- **Connect Gmail** (follow-up sprint, or Calendar → Availability): Sales Hub then reads LinkedIn's "accepted your invitation" and "new message" emails in your Gmail every 15 minutes, finds the person by their profile link, and logs **Request accepted** (the plan moves on) or **Reply received** with what they wrote. It only reads LinkedIn's emails; it never sends or changes anything, and never opens LinkedIn.
+- **LinkedIn emails** panel in the follow-up sprint: **Check now**, and the last 10 emails read with what happened (logged, already logged, not matched).
+- Replies with no reply type now show in the follow-up sprint as **Answer the reply**, with a reply written for you.
+- **Fixed:** deleting a person failed once a sprint or the Outreach Desk had drafted for them.
 
 ## [2.16.0] - 2026-11-18
 

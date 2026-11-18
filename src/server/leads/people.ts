@@ -27,6 +27,8 @@ import {
   activity,
   aiChat,
   aiChatMessage,
+  deskEntry,
+  linkedinEmail,
   booking,
   company,
   person,
@@ -276,6 +278,9 @@ export async function deletePerson(db: Db, actor: Actor, id: string) {
     const chats = tx.select({ id: aiChat.id }).from(aiChat).where(eq(aiChat.personId, id));
     await tx.delete(aiChatMessage).where(inArray(aiChatMessage.chatId, chats));
     await tx.delete(aiChat).where(eq(aiChat.personId, id));
+    // Outreach Desk drafts go too; LinkedIn emails read stay, unlinked (D-066).
+    await tx.delete(deskEntry).where(eq(deskEntry.personId, id));
+    await tx.update(linkedinEmail).set({ personId: null }).where(eq(linkedinEmail.personId, id));
     await tx.delete(person).where(eq(person.id, id));
     await writeAudit(tx, {
       userId: actor.id,

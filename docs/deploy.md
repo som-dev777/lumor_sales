@@ -219,6 +219,20 @@ works as before.
 6. Each rep: Calendar → Availability → **Connect Google Calendar** → choose their account →
    **Allow**. They come back to "Connected as …".
 
+**LinkedIn emails from Gmail (v2.17.0, D-066), once:**
+
+1. **APIs & Services → Library**: search **Gmail API** → **Enable**.
+2. **OAuth consent screen → Data access / Scopes → Add or remove scopes**: paste
+   `https://www.googleapis.com/auth/gmail.readonly` in "Manually add scopes", add it, **Save**.
+   Google calls this a _restricted_ permission. With **Internal** (company Google Workspace) there's
+   nothing more to do. With **External**, it works for your own team without Google's review: keep
+   each rep under **Test users** (or, if the app is "In production", reps see an "unverified app"
+   notice and click **Advanced → Go to Lumor Sales Hub**; up to 100 people). In testing mode
+   Google asks reps to reconnect every 7 days.
+3. Netlify needs `CRON_SECRET` (already used for reports and reminders) so the 15-minute check runs.
+4. Each rep: **My tasks → Start follow-up sprint → Connect Gmail** → choose the Gmail that gets
+   their LinkedIn emails → tick every box → **Continue**. Then **Check now** reads the last 7 days.
+
 **Already connected before v2.7.9?** Do steps 2 and 3 for the Meet permission only, then each rep
 clicks **Reconnect Google** on Calendar → Availability (a yellow note asks them to) and allows
 the new permission. From then on, anyone with the meeting's link joins straight away.

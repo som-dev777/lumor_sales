@@ -1,8 +1,8 @@
 # F30: Outreach sprints (LinkedIn without the ban risk)
 
-- **Priority:** P1 · **Release:** v2.16.0 · **Status:** Done (2.16.0)
-- **Decisions:** D-065 (assisted sending, never a bot), D-056 (Outreach Desk drafts), D-060/D-061
-  (plan follow-ups)
+- **Priority:** P1 · **Release:** v2.16.0, v2.17.0 (LinkedIn emails) · **Status:** Done (2.17.0)
+- **Decisions:** D-065 (assisted sending, never a bot), D-066 (LinkedIn emails from Gmail), D-056
+  (Outreach Desk drafts), D-060/D-061 (plan follow-ups), D-042 (Google connection)
 
 ## Why
 
@@ -68,12 +68,40 @@ then **Sent ✓** in Sales Hub. Aim: about 20 personalised requests plus the day
   left; does the plan step, so the next step's date reaches the person, People and My tasks; a
   reply is logged as your response) and **Skip**.
 
+### LinkedIn emails from Gmail (D-066, v2.17.0)
+
+- **Connect Gmail** (follow-up sprint panel "LinkedIn emails", or Calendar → Availability): the
+  Google sign-in also asks to read email (`gmail.readonly`). Only the rep's own Gmail, only
+  emails from linkedin.com about invitations and messages are read; nothing is sent or changed in
+  Gmail. Disconnect Google (Availability) removes it.
+- **When:** every 15 minutes (the scheduled job) and on **Check now**. The first time it reads the
+  last 7 days; then from the newest email it read (a day's overlap, never twice). Up to 30 emails
+  a run.
+- **Which person:** the profile link in the email (`linkedin.com/in/…`) matched with the person's
+  profile link; else the sender's full name when exactly one of your own people has it. Only your
+  own people are changed.
+- **"X accepted your invitation":** logs **Request accepted** at the email's time, through the
+  plan (the next step's date moves, D-060). Not logged again if the last request event is already
+  an acceptance.
+- **"New message from X" / "X sent you a message" / InMail replies:** logs **Reply received**
+  (LinkedIn) with the message text from the email, through the conversation, so the follow-up
+  becomes Respond today and the plan reacts to the reply. Skipped when the same words are already
+  in the thread. LinkedIn's email can shorten a long message; the full message is on LinkedIn.
+  No reply type is set: the rep sets it on the person's page if they like.
+- **Digests and everything else** (job alerts, "N new messages", posts) are skipped.
+- **The panel** shows whether Gmail is connected, **Check now**, and the last 10 emails read with
+  what happened: Logged acceptance, Logged reply, Already logged, Not matched (with the name, to
+  add them), Skipped.
+- **Follow-up sprint:** unanswered replies with no reply type show as **Answer the reply** (a reply
+  draft), besides Interested / Asking for details as **Book the demo**.
+
 ## Screens
 
 - My tasks: **Start connection sprint** and **Start follow-up sprint** above the list.
 - `/sprint` (connection) and `/sprint?kind=follow` (follow-ups): filters, the progress bar, one
   card at a time.
 - People: **Add many** next to Add person.
+- Follow-up sprint: the **LinkedIn emails** panel (Connect Gmail, Check now, last 10 emails).
 
 ## Tests
 
@@ -82,11 +110,18 @@ then **Sent ✓** in Sales Hub. Aim: about 20 personalised requests plus the day
   Sent logs Request sent with the note and puts them on the plan waiting for acceptance; over 300
   characters and placeholders refused; follow-up sprint finds due message steps and Interested
   replies; Accepted moves the plan.
+- Vitest (`src/server/google/linkedin-mail.test.ts`, Gmail faked): parsing acceptance, message,
+  InMail and digest emails; matching by profile link and by unique name; acceptance logged
+  through the plan once; reply logged with its text once; emails never read twice; other reps'
+  people untouched; no Gmail permission = nothing read.
 - Browser (`e2e/v216-sprint.spec.ts`): paste 3 profiles; start the sprint; Sent on each card; the
   person shows the plan waiting for acceptance.
 
 ## Change history
 
-| Date       | Version | Change                       |
-| ---------- | ------- | ---------------------------- |
-| 2026-11-18 | 2.16.0  | Feature doc written (D-065). |
+| Date       | Version | Change                                                                                                          |
+| ---------- | ------- | --------------------------------------------------------------------------------------------------------------- |
+| 2026-11-18 | 2.16.0  | Feature doc written (D-065).                                                                                    |
+| 2026-11-18 | 2.16.0  | Built and released: Add many, connection and follow-up sprints.                                                 |
+| 2026-11-18 | 2.17.0  | LinkedIn emails from Gmail (doc before code, D-066).                                                            |
+| 2026-11-18 | 2.17.0  | Built and released: Connect Gmail, the 15-minute check, Check now, the LinkedIn emails panel, Answer the reply. |

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/shell/PageHeader";
+import { LinkedInEmails } from "@/components/sprint/LinkedInEmails";
 import { Sprint } from "@/components/sprint/Sprint";
 import { WaitingList } from "@/components/sprint/WaitingList";
 import styles from "@/components/sprint/sprint.module.scss";
@@ -12,6 +13,8 @@ import { StatusMessage } from "@/components/ui/StatusMessage";
 import { appNow } from "@/lib/clock";
 import { getDb } from "@/lib/db/client";
 import { requireUser } from "@/lib/session";
+import { connectionView, googleConfigured } from "@/server/google/google";
+import { recentLinkedInEmails } from "@/server/google/linkedin-mail";
 import { leadFormOptions } from "@/server/leads/options";
 import { connectionQueue, followUpQueue } from "@/server/sprint";
 
@@ -58,7 +61,11 @@ async function SprintView({ searchParams }: Pick<PageProps<"/sprint">, "searchPa
   );
 
   if (follow) {
-    const { waiting, cards } = await followUpQueue(db, viewer, now);
+    const [{ waiting, cards }, google, emails] = await Promise.all([
+      followUpQueue(db, viewer, now),
+      connectionView(db, viewer.id),
+      recentLinkedInEmails(db, viewer.id),
+    ]);
     return (
       <>
         <PageHeader
@@ -66,9 +73,15 @@ async function SprintView({ searchParams }: Pick<PageProps<"/sprint">, "searchPa
           description="Check who accepted, then send the messages that are due. You send each one on LinkedIn; Sales Hub writes it and logs it."
         />
         {tabs}
+        <LinkedInEmails
+          configured={googleConfigured()}
+          readsGmail={Boolean(google?.readsGmail)}
+          rows={emails}
+          result={one(params.gmail)}
+        />
         <WaitingList rows={waiting} now={now.getTime()} />
         <h2 className={styles.sectionTitle}>Messages to send ({cards.length})</h2>
-        <Sprint kind="follow" cards={cards} />
+        <Sprint key={cards.map((c) => c.personId).join()} kind="follow" cards={cards} />
       </>
     );
   }

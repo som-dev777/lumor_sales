@@ -88,6 +88,19 @@ async function Availability({
               asking. Your Google account ({connected.email}) owns the meetings.
             </p>
             <CheckMeetButton />
+            <p className={styles.muted}>
+              {connected.readsGmail ? (
+                <>
+                  LinkedIn emails: Sales Hub reads LinkedIn&rsquo;s acceptance and message emails in
+                  this Gmail and logs them (follow-up sprint).
+                </>
+              ) : (
+                <>
+                  LinkedIn emails: <a href="/api/google/connect?gmail=1">Connect Gmail</a> so
+                  acceptances and replies are logged from LinkedIn&rsquo;s emails.
+                </>
+              )}
+            </p>
             <div className={styles.row}>
               {(connected.lastError || !connected.opensMeet) && (
                 <a className={styles.buttonLink} href="/api/google/connect">

@@ -276,3 +276,12 @@ export const RESOURCE_CATEGORIES = [
 export type ResourceCategory = (typeof RESOURCE_CATEGORIES)[number];
 
 export const RESOURCE_KINDS = ["file", "link"] as const;
+
+// LinkedIn emails read from the rep's Gmail (F30, D-066).
+export const LINKEDIN_EMAIL_KINDS = ["Accepted", "Message", "Other"] as const;
+export const LINKEDIN_EMAIL_RESULTS = [
+  "Logged",
+  "Already logged",
+  "Not matched",
+  "Skipped",
+] as const;

@@ -652,6 +652,27 @@ Before you start: Netlify must have **RESEND_API_KEY** and **EMAIL_FROM** (email
 - [ ] 25.7 Someone who replied "Interested" (logged in their conversation) shows as **Book the
       demo**, with a reply that includes your booking link.
 
+## 26. LinkedIn emails from Gmail (v2.17.0)
+
+Do the "LinkedIn emails from Gmail" steps in [deploy.md](deploy.md) first (Gmail API on, the
+Gmail permission added, `CRON_SECRET` on Netlify).
+
+- [ ] 26.1 **My tasks → Start follow-up sprint**: the **LinkedIn emails** box says to connect Gmail.
+      Click **Connect Gmail**, pick the Gmail your LinkedIn emails go to, tick every box, Continue.
+      You're back on the follow-up sprint with "Gmail connected".
+- [ ] 26.2 Click **Check now**: "Read N LinkedIn emails…" (or "No new LinkedIn emails"). The list
+      shows the last emails read and what happened to each.
+- [ ] 26.3 When someone you sent a request to accepts on LinkedIn, wait for LinkedIn's email (or
+      click Check now after it arrives): they leave **Waiting for acceptance**, and their page
+      shows Request accepted with the time of the email and the plan's next step dated from it.
+- [ ] 26.4 When one of your people messages you on LinkedIn: their page shows **Reply received**
+      with what they wrote, the follow-up is **Respond** today, and the follow-up sprint shows
+      them as **Answer the reply** with a reply written for you.
+- [ ] 26.5 An email from someone who isn't in Sales Hub shows "Not matched" with their name.
+      Click Check now again: nothing is logged twice.
+- [ ] 26.6 Calendar → Availability still shows Google connected, with "LinkedIn emails: Sales Hub
+      reads…".
+
 ---
 
 ## Before the team starts (only you can do these)

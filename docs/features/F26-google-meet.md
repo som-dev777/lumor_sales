@@ -27,7 +27,7 @@ time that's taken in Google.
 - **Security:** the token Google returns is stored encrypted (AES-256-GCM), only on the server,
   never shown. The sign-in is protected by a one-time state code in a cookie. Each connection
   and disconnection is audited (without the token).
-- **Scopes:** `calendar.events`, `calendar.freebusy` and (from 2.7.9, D-052) `meetings.space.settings`, used to make each new booking's Meet open.
+- **Scopes:** `calendar.events`, `calendar.freebusy` and (from 2.7.9, D-052) `meetings.space.settings`, used to make each new booking's Meet open. From 2.17.0 (D-066) **Connect Gmail** also asks for `gmail.readonly`, only when the rep chooses it, to log LinkedIn's emails (F30).
 - **Busy times:** checked when the booking page loads and again when booking. If Google can't
   be reached, slots use only the app's bookings.
 - **One link, open to anyone (D-050, D-052, D-053):** a meeting has exactly one Meet link, the
@@ -73,3 +73,4 @@ time that's taken in Google.
 | 2026-11-03 | 2.7.9   | Each new booking's Meet is set to open (Meet REST API, new `meetings.space.settings` permission; reconnect once), so nobody waits in the lobby (D-052).                                             |
 | 2026-11-04 | 2.7.10  | Plan (before code): verified Open setting, saved per meeting, shown in the meeting window with the host account; Check Google Meet; upcoming meetings opened on reconnect (D-053).                  |
 | 2026-11-04 | 2.7.10  | Built and released: verified Open setting, `booking.meet_open`, meeting window status with the link as text and the host account, Check Google Meet, upcoming meetings opened on reconnect (D-053). |
+| 2026-11-18 | 2.17.0  | Connect Gmail adds `gmail.readonly` to the same connection, for LinkedIn emails (F30, D-066).                                                                                                       |

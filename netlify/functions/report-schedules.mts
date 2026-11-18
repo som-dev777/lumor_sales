@@ -1,5 +1,6 @@
-// Netlify scheduled function (F19, D-039; reminders D-043): every 15 minutes it asks the app to
-// run the report schedules that are due and to send the booking reminders that are due. The app
+// Netlify scheduled function (F19, D-039; reminders D-043; LinkedIn emails D-066): every 15
+// minutes it asks the app to run the report schedules that are due, to send the booking reminders
+// that are due, and to read the reps' new LinkedIn emails from Gmail. The app
 // does the work and checks CRON_SECRET; nothing else lives here.
 export default async function scheduledJobs(): Promise<Response> {
   const base = process.env.URL ?? process.env.BETTER_AUTH_URL;
@@ -9,7 +10,7 @@ export default async function scheduledJobs(): Promise<Response> {
     return new Response("Not set up", { status: 500 });
   }
   let ok = true;
-  for (const job of ["reports", "reminders"]) {
+  for (const job of ["reports", "reminders", "linkedin-emails"]) {
     try {
       const res = await fetch(`${base.replace(/\/$/, "")}/api/cron/${job}`, {
         method: "POST",

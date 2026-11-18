@@ -461,6 +461,23 @@ invitee a reschedule replaced).
 | summary      | text             |
 | changes      | JSON list        |
 
+### linkedin_email (D-066)
+
+A LinkedIn email read from a rep's Gmail ("… accepted your invitation", a new message), kept so
+each email is read once and the rep sees what was logged. Unique on (`user_id`, `gmail_id`).
+
+| Column      | Rules                                                                     |
+| ----------- | ------------------------------------------------------------------------- |
+| user_id     | → user, required (whose Gmail)                                            |
+| gmail_id    | Gmail's id for the email, required                                        |
+| kind        | `Accepted`, `Message` or `Other` (CHECK)                                  |
+| from_name   | the person's name as LinkedIn wrote it                                    |
+| subject     | the email's subject, required                                             |
+| received_at | when Gmail received it (UTC), required                                    |
+| person_id   | → person, the person it was matched to (emptied if the person is deleted) |
+| activity_id | the activity logged from it (plain id)                                    |
+| result      | `Logged`, `Already logged`, `Not matched` or `Skipped` (CHECK)            |
+
 ### desk_entry (D-056)
 
 The Outreach Desk's instructions to the AI and its drafts. They never count in the funnel;
@@ -528,4 +545,4 @@ columns `calendar_profile.notify_email`, `meeting_type.google_meet`, `booking.go
 and `booking.meet_link`. 0014 (v2.7.0, D-043) makes `person.linkedin_url` optional (with the
 LinkedIn-or-email check) and adds `person.review_note`; adds `calendly_booking`; the round 3
 calendar columns on `calendar_profile`, `meeting_type` and `booking`; `plan_step.custom_purpose`;
-`report_run.shared_with`; and the `report` and `calendly` notification kinds. 0015 (v2.7.2, D-045) turns the seeded draft plans into ordinary Official plans and drops "(draft)" from their names. From 2.7.2 a meeting's `cc_emails` also holds guests added by email. 0016 (v2.7.4, D-047) adds `calendar_profile.use_google_busy` (default on). 0017 (v2.7.5, D-048) adds `meeting_type.deleted_at` and sets every `buffer_min` to 0 (gaps are gone). 0018 (v2.7.8, D-051) sets every `min_notice_hours` to 0 (same-day booking) and every `use_google_busy` to off; the app now uses 0 and off as the defaults. 0019 (v2.7.10, D-053) adds `booking.meet_open`. 0020 (v2.8.0, D-054) adds the `company_office` table, `person.office_id` and `person.follow_up_removed_at`. 0021 (v2.9.0, D-055) adds `person.next_action_set_at` (empty for existing people: any activity on or after their follow-up date clears it). 0022 (v2.10.0, D-056) adds the `desk_entry` table, `person.brief`, `user.job_title` and `activity.desk_channel`, `subject`, `from_draft_id` and `option_index`; additive only, no existing row changed (proved by `src/server/desk-migration.test.ts`). 0023 (v2.11.0, D-057) adds `report_run.hidden_sections` and `report_run.edits`.
+`report_run.shared_with`; and the `report` and `calendly` notification kinds. 0015 (v2.7.2, D-045) turns the seeded draft plans into ordinary Official plans and drops "(draft)" from their names. From 2.7.2 a meeting's `cc_emails` also holds guests added by email. 0016 (v2.7.4, D-047) adds `calendar_profile.use_google_busy` (default on). 0017 (v2.7.5, D-048) adds `meeting_type.deleted_at` and sets every `buffer_min` to 0 (gaps are gone). 0018 (v2.7.8, D-051) sets every `min_notice_hours` to 0 (same-day booking) and every `use_google_busy` to off; the app now uses 0 and off as the defaults. 0019 (v2.7.10, D-053) adds `booking.meet_open`. 0020 (v2.8.0, D-054) adds the `company_office` table, `person.office_id` and `person.follow_up_removed_at`. 0021 (v2.9.0, D-055) adds `person.next_action_set_at` (empty for existing people: any activity on or after their follow-up date clears it). 0022 (v2.10.0, D-056) adds the `desk_entry` table, `person.brief`, `user.job_title` and `activity.desk_channel`, `subject`, `from_draft_id` and `option_index`; additive only, no existing row changed (proved by `src/server/desk-migration.test.ts`). 0023 (v2.11.0, D-057) adds `report_run.hidden_sections` and `report_run.edits`. 0024 (v2.17.0, D-066) adds the `linkedin_email` table; additive only.

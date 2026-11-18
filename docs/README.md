@@ -3,7 +3,7 @@
 Lumor Sales Hub is the internal web app where Lumor's sales team manages LinkedIn
 prospecting, from finding a lead in Sales Navigator to a paying customer.
 
-**Current version:** 2.16.0 (released 18 Nov 2026: outreach sprints and Add many, F30, D-065). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
+**Current version:** 2.17.0 (released 18 Nov 2026: acceptances and replies logged from LinkedIn's emails in Gmail, F30, D-066). See [qa-checklist.md](qa-checklist.md) and [deploy.md](deploy.md).
 
 ## Documents
 
@@ -55,7 +55,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | F27 | [Calendly integration](features/F27-calendly.md)                     | P1       | 2.7.0   | Done (2.7.0)     |
 | F28 | [Company offices](features/F28-company-offices.md)                   | P1       | 2.8.0   | Done (2.8.0)     |
 | F29 | [Voice typing](features/F29-voice-typing.md)                         | P1       | 2.9.0   | Done (2.9.0)     |
-| F30 | [Outreach sprints](features/F30-outreach-sprints.md)                 | P1       | 2.16.0  | Done (2.16.0)    |
+| F30 | [Outreach sprints](features/F30-outreach-sprints.md)                 | P1       | 2.17.0  | Done (2.17.0)    |
 
 ## Releases
 
@@ -79,6 +79,7 @@ prospecting, from finding a lead in Sales Navigator to a paying customer.
 | Owner's list 4 Nov (2) | 2.9.0   | F08, F02, F03, F18, F23, F24, F29           | Released 2026-11-04 |
 | Outreach Desk          | 2.10.0  | F18, F23, F10                               | Released 2026-11-04 |
 | Outreach sprints       | 2.16.0  | F30, F02, F08, F17                          | Released 2026-11-18 |
+| LinkedIn emails        | 2.17.0  | F30, F26, F18                               | Released 2026-11-18 |
 
 ## Running the app locally
 
